@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# build output
+Airbourne-Arena/source/dist/
+Airbourne-Arena/source/.next/
+Airbourne-Arena/source/.vinext/
+
+# local tooling state (npm cache, HOME, tmp — created by scripts/sites-env.sh)
+Airbourne-Arena/source/.sites-runtime/
+Airbourne-Arena/source/.wrangler/
+
+# local env
+.env
+.env.*
+!.env.example
+
+# the distribution archive the working tree was extracted from; the extracted
+# tree is what is tracked, so keeping both would double the repo for nothing
+*.zip
+
+# editor / OS
+.DS_Store
+*.swp
