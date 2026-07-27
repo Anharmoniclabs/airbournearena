@@ -237,9 +237,9 @@
   /* HUD reflow for small screens */
   body.touch #bl{display:none}
   body.touch #feed{top:auto;bottom:calc(150px + env(safe-area-inset-bottom));font-size:9px}
-  body.touch #mapWrap{width:118px;height:118px;bottom:auto;
+  body.touch #mapWrap{width:92px;height:92px;bottom:auto;
     top:calc(96px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
-  body.touch #mapWrap.big{width:min(74vh,74vw);height:min(74vh,74vw);top:50%;right:50%;
+  body.touch #mapWrap.big{width:min(64vh,64vw);height:min(64vh,64vw);top:50%;right:50%;
     transform:translate(50%,-50%)}
   body.touch #score{min-width:0;padding:6px 14px;top:calc(8px + env(safe-area-inset-top))}
   body.touch #scoreLine{font-size:20px} body.touch #clock{font-size:9px;margin-top:4px}
@@ -319,7 +319,7 @@
     /* clears the instrument bracket at its two-row height, which is what it
        wraps to on a 320px screen */
     body.touch #tape{top:calc(172px + env(safe-area-inset-top));width:min(210px,62vw)}
-    body.touch #mapWrap{width:92px;height:92px;top:calc(204px + env(safe-area-inset-top))}
+    body.touch #mapWrap{width:72px;height:72px;top:calc(204px + env(safe-area-inset-top))}
     body.touch #feed{display:none}
     body.touch #tStick{width:62%;height:42%}
     body.touch #coach{bottom:calc(252px + env(safe-area-inset-bottom));width:min(230px,62vw)}
@@ -329,6 +329,7 @@
      fire button pushed ROLL off the left edge of the screen. */
   @media (orientation:portrait) and (max-width:400px){
     body.touch{--tpad:14px;--tgap:8px;--b-fire:84px;--b-mid:58px;--b-sm:48px}
+    body.touch #mapWrap{width:66px;height:66px}
     body.touch #coach{width:min(198px,60vw)}
   }
   /* Short landscape — the case this game is actually played in. 340-400px of
@@ -336,7 +337,7 @@
      everything shrinks together instead of stacking on top of each other. */
   @media (orientation:landscape) and (max-height:520px){
     body.touch{--tpad:10px;--tgap:7px;--b-fire:74px;--b-mid:52px;--b-sm:46px}
-    body.touch #mapWrap{width:84px;height:84px;top:calc(58px + env(safe-area-inset-top))}
+    body.touch #mapWrap{width:68px;height:68px;top:calc(58px + env(safe-area-inset-top))}
     body.touch #tape{top:calc(76px + env(safe-area-inset-top));width:min(200px,30vw);height:20px}
     body.touch #tl{flex-wrap:wrap;max-width:34vw;gap:6px 10px;padding:5px 8px}
     body.touch #tl .val{font-size:13px}
@@ -846,9 +847,15 @@ var caseSkin=gameTexture('assets/cemi-case-skin-v2.webp',1,1);
 var caseObjectiveSkin=assetLoader.load('assets/cemi-case-objective-v3.webp');
 caseObjectiveSkin.anisotropy=LOW?1:Math.min(8,renderer.capabilities.getMaxAnisotropy());
 if('encoding' in caseObjectiveSkin)caseObjectiveSkin.encoding=THREE.sRGBEncoding;
-var baseAtlas=gameTexture('assets/team-airbases-v2.webp',.5,1);
-var blueBaseSkin=baseAtlas.clone();blueBaseSkin.offset.set(0,0);blueBaseSkin.needsUpdate=true;
-var redBaseSkin=baseAtlas.clone();redBaseSkin.offset.set(.5,0);redBaseSkin.needsUpdate=true;
+var airstripSkin={
+  blue:assetLoader.load('assets/blue-airstrip-v1.webp'),
+  red:assetLoader.load('assets/red-airstrip-v1.webp')
+};
+Object.keys(airstripSkin).forEach(function(k){
+  var t=airstripSkin[k];
+  t.anisotropy=LOW?1:Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  if('encoding' in t)t.encoding=THREE.sRGBEncoding;
+});
 var portalAtlas=gameTexture('assets/team-goal-portals-v2.webp',.5,1);
 var bluePortalSkin=portalAtlas.clone();bluePortalSkin.offset.set(0,0);bluePortalSkin.needsUpdate=true;
 var redPortalSkin=portalAtlas.clone();redPortalSkin.offset.set(.5,0);redPortalSkin.needsUpdate=true;
@@ -1010,7 +1017,7 @@ function buildBase(team){
 
   put(new THREE.Mesh(new THREE.CylinderGeometry(215,240,10,32),deck),0,5,0);
   var pad=new THREE.Mesh(new THREE.PlaneGeometry(430,430),
-    new THREE.MeshBasicMaterial({map:team==='blue'?blueBaseSkin:redBaseSkin,
+    new THREE.MeshBasicMaterial({map:airstripSkin[team],
       color:0xffffff,side:THREE.DoubleSide}));
   pad.rotation.x=-Math.PI/2;
   put(pad,0,10.7,0);
@@ -2569,13 +2576,19 @@ function stepBullets(dt){
 }
 
 /* ---------- camera ---------- */
+var camOff=new THREE.Vector3(),camWant=new THREE.Vector3(),camLook=new THREE.Vector3(),
+    camLookWant=new THREE.Vector3(),camTargetDir=new THREE.Vector3(),camLookReady=false,
+    camModeSeen=-1;
 function camWork(dt){
   var subject=player.alive?player:(core.carrier||fighters.find(function(o){return o.alive;})||player);
   axes(subject);
-  var off=st.camMode===0?new THREE.Vector3(0,6.5,26):
-          st.camMode===1?new THREE.Vector3(0,3.6,14):new THREE.Vector3(0,1.5,.6);
-  var want=off.clone().applyQuaternion(subject.quat).add(subject.pos);
-  camera.position.lerp(want,st.camMode===2?1:1-Math.pow(.0012,dt));
+  var bank=Math.atan2(-_r.y,_u.y);
+  var turnPivot=st.camMode===2||cfg.motion?0:smooth(.30,1.18,Math.abs(bank));
+  if(st.camMode===0)camOff.set(-Math.sin(bank)*5.2*turnPivot,6.5,26+turnPivot*4.5);
+  else if(st.camMode===1)camOff.set(-Math.sin(bank)*2.7*turnPivot,3.6,14+turnPivot*2.2);
+  else camOff.set(0,1.5,.6);
+  camWant.copy(camOff).applyQuaternion(subject.quat).add(subject.pos);
+  camera.position.lerp(camWant,st.camMode===2?1:1-Math.pow(.0012,dt));
   var cg=ground(camera.position.x,camera.position.z)+4;
   if(camera.position.y<cg)camera.position.y=cg;
   /* buffet and hit shake — the first thing to go when motion is reduced */
@@ -2585,8 +2598,30 @@ function camWork(dt){
     camera.position.y+=rnd(-jitter,jitter);
     camera.position.z+=rnd(-jitter,jitter);
   }
-  camera.up.copy(WORLD_UP).lerp(_u,st.camMode===2?1:.55).normalize();
-  camera.lookAt(tmpV.copy(subject.pos).addScaledVector(_f,st.camMode===2?60:36));
+  var lookDist=st.camMode===2?60:(st.camMode===0?38:30);
+  camLookWant.copy(subject.pos).addScaledVector(_f,lookDist);
+  /* Wide banks pivot the sightline into the turn. A live lock adds a capped
+     bias toward the other aircraft, so both planes stay readable without
+     pulling the player out of frame. */
+  if(turnPivot>0)camLookWant.addScaledVector(_r,Math.sin(bank)*12*turnPivot);
+  var tracked=!cfg.motion&&lockOn.target&&lockOn.target.alive?lockOn.target:null;
+  if(tracked&&st.camMode!==2){
+    camTargetDir.copy(tracked.pos).sub(subject.pos);
+    var trackRange=camTargetDir.length();
+    if(trackRange>1)camLookWant.addScaledVector(camTargetDir.multiplyScalar(1/trackRange),
+      Math.min(42,trackRange*.075)*(.38+turnPivot*.38));
+  }
+  if(!camLookReady||camModeSeen!==st.camMode){
+    camLook.copy(camLookWant);camLookReady=true;camModeSeen=st.camMode;
+  }
+  else camLook.lerp(camLookWant,1-Math.pow(.018,dt));
+  camera.up.copy(WORLD_UP).lerp(_u,st.camMode===2?1:.52+turnPivot*.26).normalize();
+  camera.lookAt(camLook);
+  var targetFov=70+(st.camMode===2?0:turnPivot*6);
+  if(Math.abs(camera.fov-targetFov)>.03){
+    camera.fov+=(targetFov-camera.fov)*Math.min(1,dt*4.5);
+    camera.updateProjectionMatrix();
+  }
   subject.mesh.visible=!(st.camMode===2&&subject===player);
 }
 
