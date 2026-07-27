@@ -5,6 +5,7 @@ node_modules/
 Airbourne-Arena/source/dist/
 Airbourne-Arena/source/.next/
 Airbourne-Arena/source/.vinext/
+Airbourne-Arena/source/.vite/
 
 # local tooling state (npm cache, HOME, tmp — created by scripts/sites-env.sh)
 Airbourne-Arena/source/.sites-runtime/

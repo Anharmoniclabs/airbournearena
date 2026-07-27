@@ -1,0 +1,81 @@
+# Publishes the standalone game to GitHub Pages.
+#
+# The game is one self-contained HTML file plus an assets folder, so the site is
+# just Airbourne-Arena/ lifted to the site root. Every asset reference in the
+# game is relative, which is what lets it work unchanged at a project subpath
+# like /airbournearena/ as well as straight off a local disk.
+#
+# The Next/vinext project under source/ is deliberately NOT deployed here — it
+# targets Cloudflare Workers and needs a server. Pages serves the static game.
+name: Deploy game to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Airbourne-Arena/index.html"
+      - "Airbourne-Arena/manifest.webmanifest"
+      - "Airbourne-Arena/assets/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it: a half-published site
+# is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the game is intact
+        working-directory: Airbourne-Arena/source
+        # Pure node:test, no dependencies — verifies the served copy is in sync,
+        # that all asset paths are relative, and that every referenced asset
+        # actually exists. New art landing in only one of the two asset folders
+        # has already shipped a game with missing textures once.
+        run: node --test tests/game-html.test.mjs
+
+      - name: Assemble the site
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          cp Airbourne-Arena/index.html _site/
+          cp Airbourne-Arena/manifest.webmanifest _site/
+          cp -r Airbourne-Arena/assets _site/assets
+          # Without this, Jekyll processes the tree and silently drops anything
+          # beginning with an underscore.
+          touch _site/.nojekyll
+
+      - name: Verify every referenced asset made it into the artifact
+        run: |
+          set -euo pipefail
+          missing=0
+          for ref in $(grep -o 'assets/[a-zA-Z0-9._/-]*' _site/index.html | sort -u); do
+            if [ ! -f "_site/$ref" ]; then
+              echo "::error::missing from published site: $ref"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          echo "published $(find _site -type f | wc -l) files, $(du -sh _site | cut -f1)"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

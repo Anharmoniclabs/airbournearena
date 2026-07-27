@@ -179,59 +179,53 @@
   #stickKnob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
     border-radius:50%;background:rgba(111,227,208,.28);border:1px solid rgba(111,227,208,.75);
     box-shadow:0 0 16px rgba(111,227,208,.25)}
-  .tbtn{position:absolute;pointer-events:auto;touch-action:none;display:grid;place-items:center;
+  /* One grid holds every action control, instead of a per-button right/bottom
+     pair per breakpoint. Hand-placed offsets are what put THR-up on top of the
+     minimap and BOOST under THR-down on a 320px phone: each rule was correct on
+     the screen it was written for. A grid cannot overlap itself, so a breakpoint
+     only has to set three sizes and the whole cluster stays laid out. */
+  body.touch{--tpad:18px;--tgap:10px;--b-fire:100px;--b-mid:70px;--b-sm:58px;--b-pill:44px}
+  #tActions{position:absolute;
+    right:calc(var(--tpad) + env(safe-area-inset-right));
+    bottom:calc(var(--tpad) + env(safe-area-inset-bottom));
+    display:grid;gap:var(--tgap);pointer-events:none;
+    align-items:center;justify-items:center;
+    grid-template-areas:"pills pills pills pills"
+                        "roll  thrup boost fire"
+                        ".     thrdn pass  fire"}
+  #tPills{grid-area:pills;justify-self:end;display:flex;gap:var(--tgap);pointer-events:none}
+  #tRoll{grid-area:roll} #tUp{grid-area:thrup} #tBoost{grid-area:boost}
+  #tDn{grid-area:thrdn} #tPass{grid-area:pass} #tFire{grid-area:fire}
+  .tbtn{position:relative;pointer-events:auto;touch-action:none;display:grid;place-items:center;
     border-radius:50%;border:1px solid var(--line);background:rgba(6,14,20,.34);
     backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
     font-size:10px;letter-spacing:.14em;color:var(--teal);font-weight:600}
   .tbtn.press{background:rgba(111,227,208,.28);transform:scale(.94)}
   .tbtn.off{opacity:.25}
-  #tFire{width:106px;height:106px;font-size:13px;color:#ff8b80;border-color:rgba(255,95,86,.55);
-    right:calc(20px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom))}
+  #tFire{width:var(--b-fire);height:var(--b-fire);font-size:13px;color:#ff8b80;
+    border-color:rgba(255,95,86,.55)}
   #tFire.press{background:rgba(255,95,86,.28)}
-  #tPass{width:80px;height:80px;color:var(--amber);border-color:rgba(255,179,71,.55);
-    right:calc(138px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom))}
+  #tPass{width:var(--b-mid);height:var(--b-mid);color:var(--amber);border-color:rgba(255,179,71,.55)}
   #tPass.press{background:rgba(255,179,71,.28)}
-  #tUp,#tDn{width:56px;height:56px;font-size:11px}
-  #tUp{right:calc(46px + env(safe-area-inset-right));bottom:calc(140px + env(safe-area-inset-bottom))}
-  #tDn{right:calc(150px + env(safe-area-inset-right));bottom:calc(122px + env(safe-area-inset-bottom))}
-  .pill{position:absolute;pointer-events:auto;touch-action:none;padding:7px 13px;border-radius:14px;
-    border:1px solid var(--line);background:rgba(6,14,20,.34);font-size:9px;letter-spacing:.18em;
-    color:var(--teal);bottom:calc(20px + env(safe-area-inset-bottom))}
-  .pill.press{background:rgba(111,227,208,.25)}
-  #tRoll{width:62px;height:62px;font-size:10px;color:var(--blue);border-color:rgba(79,195,255,.5);
-    right:calc(228px + env(safe-area-inset-right));bottom:calc(96px + env(safe-area-inset-bottom))}
+  #tUp,#tDn{width:var(--b-sm);height:var(--b-sm);font-size:11px}
+  #tRoll{width:var(--b-sm);height:var(--b-sm);font-size:10px;color:var(--blue);
+    border-color:rgba(79,195,255,.5)}
   #tRoll.press{background:rgba(79,195,255,.28)}
-  #tBoost{width:66px;height:66px;font-size:9px;color:var(--amber);border-color:rgba(255,179,71,.52);
-    right:calc(232px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom))}
+  #tBoost{width:var(--b-mid);height:var(--b-mid);font-size:9px;color:var(--amber);
+    border-color:rgba(255,179,71,.52)}
   #tBoost.press{background:rgba(255,179,71,.28);box-shadow:0 0 24px rgba(255,179,71,.35)}
-  #tCam{left:50%;margin-left:-104px} #tMap{left:50%;margin-left:-40px}
-  #tLock{left:50%;margin-left:26px;color:var(--amber);border-color:rgba(255,179,71,.5)}
+  /* 44px minimum on every control: a 26px-tall pill is under the size a thumb
+     can hit reliably, and it is the one accessibility floor a game HUD can
+     still honour without giving up screen. */
+  .pill{position:relative;pointer-events:auto;touch-action:none;display:grid;place-items:center;
+    min-height:var(--b-pill);min-width:60px;padding:0 14px;border-radius:calc(var(--b-pill) / 2);
+    border:1px solid var(--line);background:rgba(6,14,20,.34);font-size:9px;letter-spacing:.18em;
+    color:var(--teal)}
+  .pill.press{background:rgba(111,227,208,.25)}
+  #tLock{color:var(--amber);border-color:rgba(255,179,71,.5)}
   #tLock.press{background:rgba(255,179,71,.25)}
   #tLock.armed{background:rgba(255,179,71,.2);color:var(--amber)}
-  @media (orientation:portrait){
-    body.touch #tl{flex-wrap:wrap;max-width:56vw;gap:8px 12px}
-    body.touch #tape{top:calc(126px + env(safe-area-inset-top));width:min(210px,62vw)}
-    body.touch #mapWrap{width:100px;height:100px;top:calc(164px + env(safe-area-inset-top))}
-    body.touch #feed{display:none}
-    body.touch #tStick{width:62%;height:42%}
-    body.touch #tFire{width:88px;height:88px;
-      right:calc(16px + env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom))}
-    body.touch #tPass{width:66px;height:66px;
-      right:calc(110px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom))}
-    body.touch #tRoll{width:54px;height:54px;
-      right:calc(20px + env(safe-area-inset-right));bottom:calc(116px + env(safe-area-inset-bottom))}
-    body.touch #tBoost{width:54px;height:54px;
-      right:calc(80px + env(safe-area-inset-right));bottom:calc(116px + env(safe-area-inset-bottom))}
-    body.touch #tUp{width:48px;height:48px;
-      right:calc(100px + env(safe-area-inset-right));bottom:calc(158px + env(safe-area-inset-bottom))}
-    body.touch #tDn{width:48px;height:48px;
-      right:calc(100px + env(safe-area-inset-right));bottom:calc(104px + env(safe-area-inset-bottom))}
-    body.touch .pill{bottom:calc(196px + env(safe-area-inset-bottom))}
-    body.touch #tCam{left:auto;right:calc(20px + env(safe-area-inset-right));margin-left:0}
-    body.touch #tMap{left:auto;right:calc(92px + env(safe-area-inset-right));margin-left:0}
-    body.touch #tLock{left:auto;right:calc(164px + env(safe-area-inset-right));margin-left:0}
-    body.touch #center{top:40%}
-  }
+
   #rollHud{position:fixed;left:50%;top:calc(50% + 46px);transform:translateX(-50%);font-size:9px;
     letter-spacing:.22em;color:var(--blue);opacity:0;pointer-events:none;text-align:center;
     text-shadow:0 0 10px rgba(79,195,255,.5)}
@@ -249,8 +243,10 @@
   body.touch #tl{gap:12px;padding:7px 10px;top:calc(8px + env(safe-area-inset-top));
     left:calc(10px + env(safe-area-inset-left))}
   body.touch #tl .val{font-size:15px} body.touch #tl .lbl{font-size:8px}
+  /* the pause button owns the top right corner in touch mode, so the weather
+     panel starts to the left of it rather than underneath */
   body.touch #tr{padding:7px 10px;min-width:0;top:calc(8px + env(safe-area-inset-top));
-    right:calc(12px + env(safe-area-inset-right))}
+    right:calc(66px + env(safe-area-inset-right))}
   body.touch #tape{top:calc(78px + env(safe-area-inset-top));width:min(250px,44vw);height:24px}
   body.touch #prompt{bottom:calc(140px + env(safe-area-inset-bottom));font-size:10px}
   body.touch #center{top:46%}
@@ -303,6 +299,47 @@
   body.touch #coach{top:auto;bottom:calc(214px + env(safe-area-inset-bottom));left:10px;width:min(270px,70vw)}
   body.touch #sessionTag{display:none}
   @media(max-width:720px){#coach{width:min(250px,54vw)}}
+
+  /* ===================== phone layouts =====================
+     These come after every base `body.touch` rule on purpose. A media query
+     adds no specificity, so an orientation override placed above them loses to
+     whatever the generic rule says and the panel never moves — which is how the
+     score panel came to sit on top of the airspeed readout on every phone. */
+  @media (orientation:portrait){
+    /* The score is centred and the instrument bracket is as wide as the stats
+       make it, so side by side they always collided. Stack them instead:
+       score and pause on the top line, instruments under, then tape, then map. */
+    body.touch #tl{flex-wrap:wrap;max-width:calc(100vw - 24px);gap:8px 14px;
+      top:calc(72px + env(safe-area-inset-top))}
+    /* clears the instrument bracket at its two-row height, which is what it
+       wraps to on a 320px screen */
+    body.touch #tape{top:calc(172px + env(safe-area-inset-top));width:min(210px,62vw)}
+    body.touch #mapWrap{width:92px;height:92px;top:calc(204px + env(safe-area-inset-top))}
+    body.touch #feed{display:none}
+    body.touch #tStick{width:62%;height:42%}
+    body.touch #coach{bottom:calc(252px + env(safe-area-inset-bottom));width:min(230px,62vw)}
+    body.touch #center{top:40%}
+  }
+  /* A 320-400px wide phone cannot carry the full-size cluster: at 100px the
+     fire button pushed ROLL off the left edge of the screen. */
+  @media (orientation:portrait) and (max-width:400px){
+    body.touch{--tpad:14px;--tgap:8px;--b-fire:84px;--b-mid:58px;--b-sm:48px}
+    body.touch #coach{width:min(198px,60vw)}
+  }
+  /* Short landscape — the case this game is actually played in. 340-400px of
+     height has to hold the top readouts, the minimap and a two-row cluster, so
+     everything shrinks together instead of stacking on top of each other. */
+  @media (orientation:landscape) and (max-height:520px){
+    body.touch{--tpad:10px;--tgap:7px;--b-fire:74px;--b-mid:52px;--b-sm:46px}
+    body.touch #mapWrap{width:84px;height:84px;top:calc(58px + env(safe-area-inset-top))}
+    body.touch #tape{top:calc(76px + env(safe-area-inset-top));width:min(200px,30vw);height:20px}
+    body.touch #tl{flex-wrap:wrap;max-width:34vw;gap:6px 10px;padding:5px 8px}
+    body.touch #tl .val{font-size:13px}
+    body.touch #coach{top:auto;bottom:calc(14px + env(safe-area-inset-bottom));
+      left:calc(12px + env(safe-area-inset-left));width:min(250px,34vw)}
+    body.touch #prompt{bottom:calc(96px + env(safe-area-inset-bottom))}
+    body.touch #center{top:44%}
+  }
 
   /* ===================== HUD scale =====================
      Each panel scales from the corner it is anchored to, so raising the scale
@@ -382,13 +419,14 @@
   .endStat span{display:block;font-size:8px;letter-spacing:.2em;color:rgba(223,243,255,.45);margin-top:4px}
 
   /* ===================== touch pause ===================== */
+  /* Top right, above the minimap, in both orientations: centred at the top it
+     sat inside the score panel, and bottom left in portrait it sat under the
+     coaching card — in both cases invisible and untappable. */
   #tPause{position:absolute;pointer-events:auto;touch-action:none;display:grid;place-items:center;
-    width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(6,14,20,.42);
+    width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(6,14,20,.42);
     color:var(--teal);font-size:11px;letter-spacing:0;
-    top:calc(10px + env(safe-area-inset-top));left:calc(50% - 19px)}
+    top:calc(8px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
   #tPause.press{background:rgba(111,227,208,.28)}
-  @media (orientation:portrait){body.touch #tPause{top:auto;
-    bottom:calc(232px + env(safe-area-inset-bottom));left:calc(14px + env(safe-area-inset-left))}}
 
   /* ===================== reduced motion =====================
      Screen shake and lightning flash are the two things that reliably trigger
@@ -452,7 +490,7 @@
 <div id="coach">
   <div id="coachTop"><div class="lbl">FIRST SORTIE</div><div id="coachStep">01 / 06</div></div>
   <div id="coachGoal">Build speed and bank through the arena.</div>
-  <div id="coachHint">W adds throttle. A / D banks the aircraft.</div>
+  <div id="coachHint">W adds throttle. Hold A / D to tighten the turn.</div>
   <div id="coachTrack"><i></i></div>
 </div>
 <div id="sessionTag">LOCAL SORTIE · LIVE METRICS</div>
@@ -508,15 +546,19 @@
 
 <div id="touch">
   <div id="tStick"><div id="stickBase"><div id="stickKnob"></div></div></div>
-  <div class="tbtn" id="tFire">FIRE</div>
-  <div class="tbtn" id="tPass">PASS</div>
-  <div class="tbtn" id="tUp">THR&#9650;</div>
-  <div class="tbtn" id="tDn">THR&#9660;</div>
-  <div class="tbtn" id="tRoll">ROLL</div>
-  <div class="tbtn" id="tBoost">BOOST</div>
-  <div class="pill" id="tCam">CAM</div>
-  <div class="pill" id="tMap">MAP</div>
-  <div class="pill" id="tLock">LOCK</div>
+  <div id="tActions">
+    <div id="tPills">
+      <div class="pill" id="tCam">CAM</div>
+      <div class="pill" id="tMap">MAP</div>
+      <div class="pill" id="tLock">LOCK</div>
+    </div>
+    <div class="tbtn" id="tRoll">ROLL</div>
+    <div class="tbtn" id="tUp">THR&#9650;</div>
+    <div class="tbtn" id="tBoost">BOOST</div>
+    <div class="tbtn" id="tDn">THR&#9660;</div>
+    <div class="tbtn" id="tPass">PASS</div>
+    <div class="tbtn" id="tFire">FIRE</div>
+  </div>
   <div id="tPause">&#10073;&#10073;</div>
 </div>
 <div id="rollHud"></div>
@@ -555,7 +597,7 @@
       <div>
         <div class="hd">FLYING</div>
         <div class="row"><b>MOUSE</b><span>Steer — the nose chases the teal reticle</span></div>
-        <div class="row"><b>A / D</b><span>Turn left / right (banks and holds it)</span></div>
+        <div class="row"><b>A / D</b><span>Turn left / right — tap to correct, hold to tighten</span></div>
         <div class="row"><b>W / S</b><span>Throttle up / down</span></div>
         <div class="row"><b>&uarr; &darr;</b><span>Pitch · &larr; &rarr; also turn</span></div>
         <div class="row"><b>SHIFT</b><span>Firewall the throttle</span></div>
@@ -1127,8 +1169,25 @@ var CL_A=5.2, CL0=0.06, A_CRIT=0.30;
 var A_TRIM=0.045;      // trim angle of attack — hands off, it flies level
 var G_LIMIT=8.0;       // structural limit
 var SIDE_K=0.0022;
-var PITCH_RATE=1.60, ROLL_RATE=3.3, YAW_RATE=0.60, STAB=1.9;
-var BANK_HOLD=1.08;    // ~62 deg of bank when you hold a turn key
+var PITCH_RATE=1.60, ROLL_RATE=4.8, YAW_RATE=0.60, STAB=1.9;
+
+/* ===================== turn response =====================
+   A turn rate is g*tan(bank)/V whatever the input device, so the only way to
+   make the aircraft come around faster is to bank it further and pull harder.
+   62 deg of bank with a token amount of back pressure gave ~17 deg/s — an
+   airliner. These numbers ask for a fighter's turn instead, and the angle of
+   attack cap below is what keeps that from being a departure.
+
+   BANK_SNAP is where a tap puts you, BANK_MAX where holding the turn ends up.
+   Tapping stays precise for lining up a shot; holding builds to a max-rate
+   turn over TURN_RAMP seconds. */
+var BANK_SNAP=0.92;    // ~53 deg — instant, on the first frame of the input
+var BANK_MAX=1.40;     // ~80 deg — sustained, held turn
+var TURN_RAMP=0.55;    // seconds from snap to max while the input is held
+var ROLL_GAIN=3.4;     // bank error -> roll command; higher stops the roll dead
+var LEVEL_GAIN=2.6;    // roll back to wings level when the input is released
+var ALPHA_GAIN=7.0;    // angle of attack error -> pitch command
+var ALPHA_CAP=0.88;    // fraction of A_CRIT the turn governor will ask for
 
 var _f=new THREE.Vector3(),_u=new THREE.Vector3(),_r=new THREE.Vector3(),
     _vd=new THREE.Vector3(),_ld=new THREE.Vector3(),_ac=new THREE.Vector3(),
@@ -1203,18 +1262,55 @@ function stepFlight(f,ctl,dt){
   }
 }
 
+/* ===================== turn governor =====================
+   Back pressure as an angle of attack command rather than a fixed stick
+   deflection. Ask for the g the bank angle needs, convert it to the AoA that
+   makes that g at this airspeed, and close the loop on the AoA the airframe is
+   actually flying. Three things fall out of it for free:
+
+     - the same input gives the same turn at 120 knots and at 300, because the
+       required deflection is solved rather than guessed;
+     - the cap sits just under A_CRIT, so holding the turn all the way in
+       settles at the best rate the wing has instead of departing;
+     - at low speed it asks for everything available and simply gets a wider
+       turn, which is the honest answer.                                    */
+function alphaPull(f,nWant){
+  var q2=f.speed*f.speed;
+  if(q2<400)return 0;                     /* too slow for the wing to bite */
+  var clReq=clamp(nWant,0,G_LIMIT)*G/(LIFT_K*q2);
+  var aReq=clamp((clReq-CL0)/CL_A,-A_CRIT*ALPHA_CAP,A_CRIT*ALPHA_CAP);
+  return clamp((aReq-f.alpha)*ALPHA_GAIN,-1,1);
+}
+/* load factor that holds altitude at a given bank — 1/cos, capped so a
+   knife-edge bank does not ask for infinite g */
+function bankLoad(bank){return 1/Math.max(0.14,Math.cos(bank));}
+
 /* Steering: give it a world direction, get stick inputs back.
-   Used identically by the mouse and by every AI pilot. */
-function steerTo(f,dir,gain){
+   Used identically by the mouse, the thumbstick, the gamepad and every AI
+   pilot. `hard` is the player's profile: it banks further and pulls through
+   the turn under the governor above, so a full stick deflection is a real
+   max-rate turn instead of a lazy 62 deg arc. AI pilots keep the softer
+   original numbers, degraded further by skill. */
+function steerTo(f,dir,gain,hard){
   axes(f);
   var ex=dir.dot(_r),ey=dir.dot(_u),ez=dir.dot(_f);
   var horiz=Math.hypot(ex,ez);
   var pitchErr=Math.atan2(ey,horiz);
   var yawErr=Math.atan2(ex,ez);
   var bankNow=Math.atan2(-_r.y,_u.y);
-  var bankWant=clamp(yawErr*(gain||1.7),-1.25,1.25);
-  var roll=clamp(-(bankWant-bankNow)*1.9,-1,1);
-  var pitch=clamp(pitchErr*2.5+Math.abs(bankNow)*0.55,-1,1);
+  var cap=hard?BANK_MAX:1.25;
+  var bankWant=clamp(yawErr*(gain||1.7),-cap,cap);
+  var roll=clamp(-(bankWant-bankNow)*(hard?ROLL_GAIN:1.9),-1,1);
+  var pitch;
+  if(hard){
+    /* blend the turn pull in with bank angle: small corrections around level
+       stay pure aiming, so the nose still settles on a target instead of
+       ballooning every time the reticle moves */
+    var blend=smooth(0.30,0.85,Math.abs(bankNow));
+    pitch=clamp(pitchErr*2.6+alphaPull(f,bankLoad(bankNow))*blend,-1,1);
+  } else {
+    pitch=clamp(pitchErr*2.5+Math.abs(bankNow)*0.55,-1,1);
+  }
   var yaw=clamp(yawErr*0.6,-1,1)*0.30;
   return {pitch:pitch,roll:roll,yaw:yaw,throttle:1,pitchErr:pitchErr,yawErr:yawErr};
 }
@@ -1224,7 +1320,9 @@ function steerTo(f,dir,gain){
    Not an animation — the aircraft rolls hard while holding back pressure, so
    the lift vector sweeps a cone and the flight path corkscrews sideways. The
    displacement is what actually takes you out of somebody's gun solution. */
-var ROLL_DUR=1.05, ROLL_CD=3.4, ROLL_MUL=2.0;
+/* ROLL_MUL is a multiple of ROLL_RATE, so it drops as the base roll rate rises
+   — the barrel roll is still a single revolution and not one and a half. */
+var ROLL_DUR=1.05, ROLL_CD=3.4, ROLL_MUL=1.35;
 function startRoll(f,dir){
   if(!f.alive||f.roll.t>0||f.roll.cd>0||f.speed<70)return false;
   f.roll.t=ROLL_DUR; f.roll.dir=dir; f.roll.cd=ROLL_CD; f.evade=1;
@@ -1316,6 +1414,9 @@ function emit(type,data){
 
 /* mouse-aim reticle, in normalised screen space */
 var aim={x:0,y:0}, AIM_R=0.55;
+/* how long the current turn input has been held, and which way — reversing the
+   turn restarts the ramp so a reversal is as crisp as the first input */
+var turnHold=0, turnDir=0;
 function mouseSens(){return cfg.sens/100000;}
 var aimDir=new THREE.Vector3(0,0,-1);
 
@@ -1832,7 +1933,7 @@ var bannerT=0;
 function banner(msg,t){el.center.textContent=msg;bannerT=t||1.2;}
 
 var coachSteps=[
-  {goal:'Build speed and bank through the arena.',hint:'W adds throttle. A / D banks the aircraft.'},
+  {goal:'Build speed and bank through the arena.',hint:'W adds throttle. Hold A / D to tighten the turn.'},
   {goal:'Learn the energy trade.',hint:'Climb to gain height, then lower the nose to recover speed.'},
   {goal:'Recover cleanly from a stall.',hint:'Ease off the turn and let the nose fall until airflow returns.'},
   {goal:'Secure the drifting case.',hint:'Fly through the amber hard case at midfield.'},
@@ -2310,25 +2411,41 @@ function playerControl(dt){
 
   if(kTurn!==0||kPitch!==0){
     /* keyboard: bank to a target and hold it, then pull — that's what turns
-       an aeroplane. Raw roll input alone just rolls you in circles. */
-    var bankWant=kTurn*BANK_HOLD;
+       an aeroplane. Raw roll input alone just rolls you in circles.
+
+       The bank target ramps while the key is held, which is what makes one key
+       do two jobs: a tap is a crisp 53 deg correction that stops where you put
+       it, holding winds up to 80 deg and the governor pulls it round at the
+       best rate the wing has. */
+    if(kTurn!==0&&kTurn===turnDir)turnHold=Math.min(1,turnHold+dt/TURN_RAMP);
+    else turnHold=0;
+    turnDir=kTurn;
+    var bankWant=kTurn*(BANK_SNAP+(BANK_MAX-BANK_SNAP)*turnHold);
     var pitchCmd=kPitch*st.invertY;
     if(kTurn!==0&&kPitch===0){
-      /* hold the turn level: feed in exactly the back pressure that zeroes the
-         vertical speed, instead of a fixed pull that spirals you to the ceiling */
-      pitchCmd=clamp(-player.vel.y*0.010+Math.abs(bankNow)*0.12,-1,1);
+      /* Level turn: the load factor that holds altitude at a bank angle is
+         1/cos, taken from the bank the aircraft is actually at rather than the
+         one being rolled towards — pulling for 80 deg while still passing
+         through 20 balloons you several hundred feet up on every roll-in. A
+         slow vertical-speed trim then mops up what the wing cannot deliver. */
+      pitchCmd=clamp(alphaPull(player,bankLoad(bankNow))
+                     +clamp(-player.vel.y*0.006,-0.30,0.30),-1,1);
     }
     ctl={pitch:pitchCmd,
-         roll:kTurn!==0?clamp(-(bankWant-bankNow)*2.0,-1,1):clamp(-bankNow*1.7,-1,1),
+         roll:kTurn!==0?clamp(-(bankWant-bankNow)*ROLL_GAIN,-1,1)
+                       :clamp(-bankNow*LEVEL_GAIN,-1,1),
          yaw:0,throttle:thr};
   } else if(canAim){
-    ctl=steerTo(player,aimDir,1.8);
+    turnHold=0; turnDir=0;
+    ctl=steerTo(player,aimDir,2.2,true);
     ctl.throttle=thr;
-    /* soften it so the nose settles instead of hunting */
-    ctl.pitch*=0.9; ctl.roll*=0.85;
+    /* light damping only — the old 0.85 on roll was most of why the reticle
+       felt like it was steering through treacle */
+    ctl.pitch*=0.95; ctl.roll*=0.97;
   } else {
     /* nothing touched yet: roll wings level and fly on */
-    ctl={pitch:0,roll:clamp(-bankNow*1.7,-1,1),yaw:0,throttle:thr};
+    turnHold=0; turnDir=0;
+    ctl={pitch:0,roll:clamp(-bankNow*LEVEL_GAIN,-1,1),yaw:0,throttle:thr};
   }
 
   ctl=applyRoll(player,ctl,dt);
