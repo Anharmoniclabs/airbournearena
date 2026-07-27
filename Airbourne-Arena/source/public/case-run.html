@@ -197,34 +197,38 @@
   #tRoll{grid-area:roll} #tUp{grid-area:thrup} #tBoost{grid-area:boost}
   #tDn{grid-area:thrdn} #tPass{grid-area:pass} #tFire{grid-area:fire}
   .tbtn{position:relative;pointer-events:auto;touch-action:none;display:grid;place-items:center;
-    border-radius:50%;border:1px solid var(--line);background:rgba(6,14,20,.34);
-    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-    font-size:10px;letter-spacing:.14em;color:var(--teal);font-weight:600}
-  .tbtn.press{background:rgba(111,227,208,.28);transform:scale(.94)}
+    border-radius:50%;border:1px solid var(--line);background-color:transparent;
+    background-image:url('assets/touch-control-round-v1.webp');background-position:center;
+    background-repeat:no-repeat;background-size:100% 100%;
+    font-size:10px;letter-spacing:.14em;color:var(--teal);font-weight:600;
+    text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 9px currentColor}
+  .tbtn.press{transform:scale(.94);filter:brightness(1.3) saturate(1.18)}
   .tbtn.off{opacity:.25}
   #tFire{width:var(--b-fire);height:var(--b-fire);font-size:13px;color:#ff8b80;
     border-color:rgba(255,95,86,.55)}
-  #tFire.press{background:rgba(255,95,86,.28)}
+  #tFire.press{box-shadow:0 0 28px rgba(255,95,86,.34)}
   #tPass{width:var(--b-mid);height:var(--b-mid);color:var(--amber);border-color:rgba(255,179,71,.55)}
-  #tPass.press{background:rgba(255,179,71,.28)}
+  #tPass.press{box-shadow:0 0 22px rgba(255,179,71,.28)}
   #tUp,#tDn{width:var(--b-sm);height:var(--b-sm);font-size:11px}
   #tRoll{width:var(--b-sm);height:var(--b-sm);font-size:10px;color:var(--blue);
     border-color:rgba(79,195,255,.5)}
-  #tRoll.press{background:rgba(79,195,255,.28)}
+  #tRoll.press{box-shadow:0 0 22px rgba(79,195,255,.3)}
   #tBoost{width:var(--b-mid);height:var(--b-mid);font-size:9px;color:var(--amber);
     border-color:rgba(255,179,71,.52)}
-  #tBoost.press{background:rgba(255,179,71,.28);box-shadow:0 0 24px rgba(255,179,71,.35)}
+  #tBoost.press{box-shadow:0 0 24px rgba(255,179,71,.35)}
   /* 44px minimum on every control: a 26px-tall pill is under the size a thumb
      can hit reliably, and it is the one accessibility floor a game HUD can
      still honour without giving up screen. */
   .pill{position:relative;pointer-events:auto;touch-action:none;display:grid;place-items:center;
     min-height:var(--b-pill);min-width:60px;padding:0 14px;border-radius:calc(var(--b-pill) / 2);
-    border:1px solid var(--line);background:rgba(6,14,20,.34);font-size:9px;letter-spacing:.18em;
-    color:var(--teal)}
-  .pill.press{background:rgba(111,227,208,.25)}
+    border:1px solid var(--line);background-color:transparent;
+    background-image:url('assets/touch-control-pill-v1.webp');background-position:center;
+    background-repeat:no-repeat;background-size:100% 100%;
+    font-size:9px;letter-spacing:.18em;color:var(--teal);
+    text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 8px currentColor}
+  .pill.press{transform:scale(.96);filter:brightness(1.28) saturate(1.15)}
   #tLock{color:var(--amber);border-color:rgba(255,179,71,.5)}
-  #tLock.press{background:rgba(255,179,71,.25)}
-  #tLock.armed{background:rgba(255,179,71,.2);color:var(--amber)}
+  #tLock.armed{color:var(--amber);box-shadow:0 0 19px rgba(255,179,71,.28)}
 
   #rollHud{position:fixed;left:50%;top:calc(50% + 46px);transform:translateX(-50%);font-size:9px;
     letter-spacing:.22em;color:var(--blue);opacity:0;pointer-events:none;text-align:center;
@@ -251,8 +255,9 @@
   body.touch #prompt{bottom:calc(140px + env(safe-area-inset-bottom));font-size:10px}
   body.touch #center{top:46%}
   body.touch #aimRet{width:52px;height:52px;margin:-26px 0 0 -26px}
-  body.touch .tbtn{box-shadow:inset 0 0 24px rgba(111,227,208,.05),0 7px 24px rgba(0,0,0,.2)}
+  body.touch .tbtn{box-shadow:0 7px 24px rgba(0,0,0,.28)}
   body.touch #tStick{min-width:44vw}
+  body.touch #coach{display:none}
   @media (pointer:coarse) and (max-width:900px){
     body.touch #tr{display:none}
     body.touch #score{max-width:46vw}
@@ -423,10 +428,13 @@
      sat inside the score panel, and bottom left in portrait it sat under the
      coaching card — in both cases invisible and untappable. */
   #tPause{position:absolute;pointer-events:auto;touch-action:none;display:grid;place-items:center;
-    width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(6,14,20,.42);
+    width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background-color:transparent;
+    background-image:url('assets/touch-control-round-v1.webp');background-position:center;
+    background-repeat:no-repeat;background-size:100% 100%;
     color:var(--teal);font-size:11px;letter-spacing:0;
+    text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 8px currentColor;
     top:calc(8px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
-  #tPause.press{background:rgba(111,227,208,.28)}
+  #tPause.press{transform:scale(.94);filter:brightness(1.3) saturate(1.18)}
 
   /* ===================== reduced motion =====================
      Screen shake and lightning flash are the two things that reliably trigger
@@ -835,6 +843,9 @@ var teamAtlas=gameTexture('assets/team-skins-v2.webp',.5,1);
 var blueSkin=teamAtlas.clone();blueSkin.offset.set(0,0);blueSkin.needsUpdate=true;
 var redSkin=teamAtlas.clone();redSkin.offset.set(.5,0);redSkin.needsUpdate=true;
 var caseSkin=gameTexture('assets/cemi-case-skin-v2.webp',1,1);
+var caseObjectiveSkin=assetLoader.load('assets/cemi-case-objective-v3.webp');
+caseObjectiveSkin.anisotropy=LOW?1:Math.min(8,renderer.capabilities.getMaxAnisotropy());
+if('encoding' in caseObjectiveSkin)caseObjectiveSkin.encoding=THREE.sRGBEncoding;
 var baseAtlas=gameTexture('assets/team-airbases-v2.webp',.5,1);
 var blueBaseSkin=baseAtlas.clone();blueBaseSkin.offset.set(0,0);blueBaseSkin.needsUpdate=true;
 var redBaseSkin=baseAtlas.clone();redBaseSkin.offset.set(.5,0);redBaseSkin.needsUpdate=true;
@@ -1051,10 +1062,16 @@ var coreMesh=(function buildCase(){
   handle.position.y=6; g.add(handle);
   return g;
 })();
+coreMesh.visible=false;
 coreGroup.add(coreMesh);
+var coreCaseSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:caseObjectiveSkin,transparent:true,
+  alphaTest:.06,depthWrite:false,fog:true}));
+coreCaseSprite.scale.set(11.5,5.75,1);
+coreCaseSprite.renderOrder=3;
+coreGroup.add(coreCaseSprite);
 var coreGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite('rgba(255,220,150,.95)','rgba(255,150,40,.4)'),
   transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
-coreGlow.scale.set(90,90,1); coreGroup.add(coreGlow);
+coreGlow.scale.set(48,48,1); coreGroup.add(coreGlow);
 var coreBeam=new THREE.Mesh(new THREE.CylinderGeometry(9,9,1600,10,1,true),
   new THREE.MeshBasicMaterial({color:0xffb347,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false}));
 coreGroup.add(coreBeam);
@@ -1510,8 +1527,10 @@ function stepCore(dt){
     var c=core.carrier;
     if(!c.alive)core.carrier=null;
     else{
-      var back=tmpV.set(0,0,1).applyQuaternion(c.quat);
-      core.pos.copy(c.pos).addScaledVector(back,11); core.pos.y-=2;
+      /* The generated case is a small hover pickup: carry it above the
+         aircraft's local spine instead of towing a full-size box behind it. */
+      var above=tmpV.set(0,1,0).applyQuaternion(c.quat);
+      core.pos.copy(c.pos).addScaledVector(above,5.4);
       var g=GOALS[c.team];
       if(Math.hypot(core.pos.x-g.x,core.pos.z-g.z)<GOAL_R&&Math.abs(core.pos.y-g.y)<430)scoreCap(c);
     }
@@ -1544,7 +1563,12 @@ function stepCore(dt){
   coreMesh.rotation.z=Math.sin(performance.now()*.0016)*.16;
   coreMesh.position.y=Math.sin(performance.now()*.0022)*1.8;
   var pulse=1+Math.sin(performance.now()*.006)*.12;
-  coreGlow.scale.set(90*pulse,90*pulse,1);
+  var carried=!!core.carrier,caseW=carried?7.2:11.5,glowSize=carried?18:48;
+  coreCaseSprite.scale.set(caseW,caseW*.5,1);
+  coreCaseSprite.material.rotation=Math.sin(performance.now()*.0016)*.035;
+  coreCaseSprite.position.y=Math.sin(performance.now()*.0022)*(carried?.35:.8);
+  coreGlow.scale.set(glowSize*pulse,glowSize*pulse,1);
+  coreGlow.material.opacity=carried?.34:.78;
   coreBeam.visible=!core.carrier;
 }
 
