@@ -1303,11 +1303,19 @@ function steerTo(f,dir,gain,hard){
   var roll=clamp(-(bankWant-bankNow)*(hard?ROLL_GAIN:1.9),-1,1);
   var pitch;
   if(hard){
-    /* blend the turn pull in with bank angle: small corrections around level
+    /* Blend the turn pull in with bank angle: small corrections around level
        stay pure aiming, so the nose still settles on a target instead of
-       ballooning every time the reticle moves */
+       ballooning every time the reticle moves.
+
+       Only ever adds pull. Here the player is commanding the nose directly, so
+       a governor that can also subtract becomes a ceiling on the aim: it would
+       push back precisely when the reticle is hauling the aircraft round.
+       Holding altitude is the keyboard's job, where nobody is flying the nose
+       by hand. (Measured on its own this clamp changes the stick turn rate by
+       under half a degree per second — it is here to stop the governor fighting
+       the player, not because it showed up as a number.) */
     var blend=smooth(0.30,0.85,Math.abs(bankNow));
-    pitch=clamp(pitchErr*2.6+alphaPull(f,bankLoad(bankNow))*blend,-1,1);
+    pitch=clamp(pitchErr*2.6+Math.max(0,alphaPull(f,bankLoad(bankNow)))*blend,-1,1);
   } else {
     pitch=clamp(pitchErr*2.5+Math.abs(bankNow)*0.55,-1,1);
   }
