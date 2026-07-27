@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<title>AIRBOURNE ARENA — CASE RUN 4v4</title>
+<!--
+  This site is published straight from the main branch at /, and the game lives
+  in Airbourne-Arena/ so that its one self-contained HTML file and its assets
+  stay together. That leaves the root serving nothing, so this hands straight
+  over to the game.
+
+  Switching Settings -> Pages -> Source to "GitHub Actions" retires this file:
+  the deploy workflow lifts Airbourne-Arena/ to the site root and the game is
+  served at / with no hop. The workflow does not publish this file, so the two
+  arrangements do not fight each other.
+
+  The dark background and the theme colour are here so the hand-over does not
+  flash white on the way through.
+-->
+<link rel="canonical" href="https://anharmoniclabs.github.io/airbournearena/Airbourne-Arena/">
+<meta http-equiv="refresh" content="0; url=./Airbourne-Arena/">
+<style>
+  html,body{height:100%;margin:0;background:#05070d;color:#dff3ff;
+    font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+  main{height:100%;display:grid;place-content:center;text-align:center;gap:14px;padding:24px}
+  h1{margin:0;font-size:13px;letter-spacing:.34em;font-weight:600;color:#6fe3d0}
+  p{margin:0;font-size:11px;letter-spacing:.16em;color:rgba(223,243,255,.45)}
+  a{color:#6fe3d0}
+</style>
+</head>
+<body>
+<main>
+  <h1>AIRBOURNE ARENA</h1>
+  <p>STARTING CASE RUN&hellip;</p>
+  <p><a href="./Airbourne-Arena/">Open the game</a> if this does not move on its own.</p>
+</main>
+<script>
+  /* replace() rather than assignment: the back button should leave the site
+     instead of bouncing off this page straight back into the game */
+  location.replace('./Airbourne-Arena/');
+</script>
+</body>
+</html>
