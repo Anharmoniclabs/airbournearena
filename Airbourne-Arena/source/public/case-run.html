@@ -3315,25 +3315,38 @@ var cTop=new THREE.Color(),cBot=new THREE.Color(),cSun=new THREE.Color(),sunDir=
 var hangarScene=new THREE.Scene();
 hangarScene.background=new THREE.Color(0x080e15);
 hangarScene.fog=new THREE.FogExp2(0x080e15,0.0075);
-var hangarCam=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.1,700);
+/* A 72-degree rectilinear lens pulled both aircraft apart at the screen edges
+   and made their wings/fuselages look horizontally stretched. The hangar uses
+   a more natural walk-around lens; flight keeps its wider action camera. */
+var hangarCam=new THREE.PerspectiveCamera(IS_TOUCH?65:58,innerWidth/innerHeight,0.1,700);
 var HW=46,HD=34,HH=15;                        /* half width, half depth, height */
 var hangarBays={blue:new THREE.Vector3(-17,0,-9),red:new THREE.Vector3(17,0,-9)};
-var BOARD_POS=new THREE.Vector3(0,4.2,-33.2);
+var BOARD_POS=new THREE.Vector3(0,7.1,-33.2);
 
 (function buildHangar(){
-  var concrete=new THREE.MeshPhongMaterial({map:hangarFloorSkin,color:0xffffff,shininess:4,flatShading:true});
-  var panel=new THREE.MeshPhongMaterial({map:breakwaterSkin,color:0x8e9699,shininess:8,flatShading:true});
+  var concrete=new THREE.MeshPhongMaterial({
+    map:gameTexture('assets/hangar-floor-diffusion-4k-v1.webp',6,4.5),
+    color:0xffffff,shininess:4,flatShading:true});
+  var wallPanel=new THREE.MeshPhongMaterial({
+    map:gameTexture('assets/breakwater-field-surface-diffusion-4k-v1.webp',6,1),
+    color:0x9ca3a5,shininess:8,flatShading:true});
+  var sidePanel=new THREE.MeshPhongMaterial({
+    map:gameTexture('assets/breakwater-field-surface-diffusion-4k-v1.webp',4.5,1),
+    color:0x9ca3a5,shininess:8,flatShading:true});
+  var roofPanel=new THREE.MeshPhongMaterial({
+    map:gameTexture('assets/breakwater-field-surface-diffusion-4k-v1.webp',6,4.5),
+    color:0x747c80,shininess:6,flatShading:true});
   var beam=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
     color:0x58616a,shininess:14,flatShading:true});
 
   var floor=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HD*2),concrete);
   floor.rotation.x=-Math.PI/2; hangarScene.add(floor);
-  var roof=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HD*2),panel);
+  var roof=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HD*2),roofPanel);
   roof.rotation.x=Math.PI/2; roof.position.y=HH; hangarScene.add(roof);
-  var back=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HH),panel);
+  var back=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HH),wallPanel);
   back.position.set(0,HH/2,-HD); hangarScene.add(back);
   [-1,1].forEach(function(s){
-    var wall=new THREE.Mesh(new THREE.PlaneGeometry(HD*2,HH),panel);
+    var wall=new THREE.Mesh(new THREE.PlaneGeometry(HD*2,HH),sidePanel);
     wall.rotation.y=-s*Math.PI/2; wall.position.set(s*HW,HH/2,0); hangarScene.add(wall);
   });
   /* roof trusses, which are what actually sell the size of the room */
@@ -3350,9 +3363,13 @@ var BOARD_POS=new THREE.Vector3(0,4.2,-33.2);
     mark.rotation.x=-Math.PI/2; mark.position.set(b.x,.04,b.z); hangarScene.add(mark);
     var lamp=new THREE.PointLight(0xfff2d8,1.5,64); lamp.position.set(b.x,HH-2.2,b.z);
     hangarScene.add(lamp);
-    var housing=new THREE.Mesh(new THREE.BoxGeometry(7,.5,3),
-      new THREE.MeshBasicMaterial({color:0xfff0d2}));
-    housing.position.set(b.x,HH-1.4,b.z); hangarScene.add(housing);
+    var housing=new THREE.Mesh(new THREE.BoxGeometry(6.5,.32,2.1),beam);
+    housing.position.set(b.x,HH-1.22,b.z); hangarScene.add(housing);
+    var diffuser=new THREE.Mesh(new THREE.PlaneGeometry(5.5,1.25),
+      new THREE.MeshBasicMaterial({color:0xffe4b5,transparent:true,opacity:.72,
+        side:THREE.DoubleSide}));
+    diffuser.rotation.x=Math.PI/2;diffuser.position.set(b.x,HH-1.42,b.z);
+    hangarScene.add(diffuser);
   });
   /* barracks end: bunks and lockers down the left wall */
   var bunkMat=new THREE.MeshPhongMaterial({map:readyRoomSkin,color:0x8c9298,shininess:6,flatShading:true});
@@ -3369,13 +3386,13 @@ var BOARD_POS=new THREE.Vector3(0,4.2,-33.2);
     locker.position.set(-HW+1.2,2.5,z+3.4); hangarScene.add(locker);
   }
   /* Generated board hardware behind live, editable briefing copy. */
-  var board=new THREE.Mesh(new THREE.PlaneGeometry(26,13),
+  var board=new THREE.Mesh(new THREE.PlaneGeometry(15,15),
     new THREE.MeshBasicMaterial({map:briefingBoardSkin}));
   board.position.copy(BOARD_POS); hangarScene.add(board);
-  var bc=document.createElement('canvas'); bc.width=1024; bc.height=512;
+  var bc=document.createElement('canvas'); bc.width=1024; bc.height=1024;
   var bx=bc.getContext('2d');
   bx.fillStyle='#6fe3d0'; bx.font='600 44px ui-monospace,monospace';
-  bx.fillText('ARENA LEAGUE — CORE RUN', 64, 92);
+  bx.fillText('ARENA LEAGUE — CORE RUN', 64, 175);
   bx.fillStyle='rgba(223,243,255,.62)'; bx.font='400 25px ui-monospace,monospace';
   [ 'Two league flights. One Arena Core adrift at midfield.',
     'Deliver it through the scoring ring in the opposing half.',
@@ -3388,13 +3405,13 @@ var BOARD_POS=new THREE.Vector3(0,4.2,-33.2);
     '',
     'THE GUNS around each ring belong to whoever owns that half.',
     'Nobody makes the run alone.' ].forEach(function(line,i){
-    bx.fillText(line, 52, 158+i*31);
+    bx.fillText(line, 52, 258+i*51);
   });
   var boardTex=new THREE.CanvasTexture(bc);
   /* The generated board art carries its own frame, so the copy has to sit
      inside that frame rather than across the whole plane — at full width the
      last two lines fell off the bottom of the panel and onto the wall. */
-  var boardCopy=new THREE.Mesh(new THREE.PlaneGeometry(20.8,10.4),
+  var boardCopy=new THREE.Mesh(new THREE.PlaneGeometry(11.7,11.7),
     new THREE.MeshBasicMaterial({map:boardTex,transparent:true,depthWrite:false}));
   boardCopy.position.copy(BOARD_POS);boardCopy.position.z+=.025;hangarScene.add(boardCopy);
 
@@ -3425,10 +3442,10 @@ var BOARD_POS=new THREE.Vector3(0,4.2,-33.2);
   doorGlow.position.set(0,(HH-2)/2,HD-.4); doorGlow.rotation.y=Math.PI;
   hangarScene.add(doorGlow);
   [-1,1].forEach(function(s){
-    var jamb=new THREE.Mesh(new THREE.BoxGeometry(7,HH,1.2),panel);
+    var jamb=new THREE.Mesh(new THREE.BoxGeometry(7,HH,1.2),sidePanel);
     jamb.position.set(s*(HW-3.5),HH/2,HD-.4); hangarScene.add(jamb);
   });
-  var lintel=new THREE.Mesh(new THREE.BoxGeometry(HW*2,2,1.2),panel);
+  var lintel=new THREE.Mesh(new THREE.BoxGeometry(HW*2,2,1.2),wallPanel);
   lintel.position.set(0,HH-1,HD-.4); hangarScene.add(lintel);
 
   hangarScene.add(new THREE.AmbientLight(0x4d5866,.85));
