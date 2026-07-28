@@ -789,6 +789,7 @@
 </div>
 
 <script src="assets/three-r128.min.js"></script>
+<script src="assets/GLTFLoader-r128.js"></script>
 <script>
 (function(){
 'use strict';
@@ -946,8 +947,9 @@ setTouchMode(IS_TOUCH);
 var LOW=IS_TOUCH;   /* trim the scene for phone GPUs */
 
 /* ===================== arena ===================== */
-/* A long capsule gives both teams room to circle behind a goal while keeping
-   the fight concentrated along the base-to-base axis. */
+/* Objectives stay concentrated around the two bases, but the world itself is
+   open. arenaDistance remains useful for AI/object placement only; it never
+   damages or turns the player around. */
 var ARENA=3400, ARENA_RUN=2350, ARENA_RADIUS=1550, BASE_X=2500;
 var BASES={blue:new THREE.Vector3(-BASE_X,460,0), red:new THREE.Vector3(BASE_X,460,0)};
 var GOALS={blue:new THREE.Vector3(BASE_X,380,0), red:new THREE.Vector3(-BASE_X,380,0)};
@@ -1064,7 +1066,6 @@ var terrainSkin=liftedTexture('assets/volcanic-terrain-v2.webp',2.4,2.4,'#78787a
 var caseSkin=gameTexture('assets/arena-core-skin-v2.webp',1,1);
 var caseObjectiveSkin=tuneTexture(assetLoader.load('assets/arena-core-objective-v3.webp'));
 var airstripSkin=teamTextures('assets/blue-airstrip-v1.webp','assets/red-airstrip-v1.webp');
-var portalSkin=atlasPair('assets/team-goal-portals-v2.webp');
 var cityFacadeSkin=gameTexture('assets/city-facades-diffusion-v1.webp',1,1);
 var cityRoofSkin=gameTexture('assets/city-roofs-diffusion-v1.webp',1,1);
 var roadSkin=gameTexture('assets/road-surface-diffusion-v1.webp',1,1);
@@ -1248,15 +1249,12 @@ function buildGoal(team){
   var ring=new THREE.Mesh(new THREE.TorusGeometry(GOAL_R,5,8,44),
     teamMat(team,new THREE.MeshBasicMaterial({color:TEAM_COL[team],transparent:true,opacity:.55})));
   ring.rotation.x=Math.PI/2; g.add(ring);
-  g.add(new THREE.Mesh(new THREE.CylinderGeometry(GOAL_R*.94,GOAL_R*.94,780,20,1,true),
-    teamMat(team,new THREE.MeshBasicMaterial({color:TEAM_COL[team],transparent:true,opacity:.09,
-      side:THREE.DoubleSide,depthWrite:false}))));
-  var portal=new THREE.Mesh(new THREE.PlaneGeometry(GOAL_R*2.8,GOAL_R*2.8),
-    new THREE.MeshBasicMaterial({map:portalSkin[team],
-      color:0xffffff,transparent:true,opacity:.78,blending:THREE.AdditiveBlending,
-      side:THREE.DoubleSide,depthWrite:false,fog:false}));
-  portal.rotation.x=-Math.PI/2;portal.position.y=3;g.add(portal);
-  goalVisuals.push(portal);
+  /* Do not fill the scoring volume with a transparent cylinder. From inside
+     or above it, the near faces cover half the viewport like a colored wall. */
+  /* A former square portal card became a kilometer-wide translucent box when
+     viewed from above. The torus is the goal silhouette from every angle and
+     the light cylinder supplies depth, so no camera-facing texture is needed. */
+  goalVisuals.push(ring);
   g.position.copy(GOALS[team]); scene.add(g); return g;
 }
 var goalGroups={blue:buildGoal('blue'),red:buildGoal('red')};
@@ -1965,20 +1963,13 @@ var SIDE_K=0.0022;
 var PITCH_RATE=1.60, ROLL_RATE=4.8, YAW_RATE=0.60, STAB=1.9;
 var AIL_BIAS=1.35;     // standing roll rate a wrecked aileron leaves behind
 
-/* ===================== the ceiling =====================
-   Height used to be free: one clamp at 2800 and nothing between the deck and
-   it, so the whole fight could be sat out from above. Air gets thin instead.
-   Lift, drag and thrust all scale with density, which means the climb dies on
-   its own — you run out of wing somewhere under 2000 and mush there rather
-   than bouncing off an invisible surface. The hard numbers below are only the
-   backstop for anyone who arrives with a lot of energy to trade.
-
-   CEIL_RHO0 sits above the cloud deck on purpose: the deck stays a place you
-   can work over the top of, and the ceiling closes the empty air above it. */
-var CEIL_RHO0=1000, CEIL_RHO_SPAN=1400, CEIL_RHO_MIN=0.22;
-/* the hard limit sits just over the sustainable ceiling so a zoom climb can
-   overshoot for a few seconds without being nagged at, but cannot loiter */
-var CEIL_HARD=2060, CEIL_MAX=2300;
+/* ===================== open atmosphere =====================
+   The previous 2,300-unit clamp made the sky another arena wall. Aircraft can
+   now use the full visible atmosphere. Density falls gradually at altitude,
+   preserving flight-model character without an invisible ceiling. CEIL_MAX
+   is only a far-beyond-gameplay numerical safety guard. */
+var CEIL_RHO0=6500, CEIL_RHO_SPAN=18000, CEIL_RHO_MIN=0.42;
+var CEIL_HARD=18000, CEIL_MAX=24000;
 function airDensity(y){return clamp(1-(y-CEIL_RHO0)/CEIL_RHO_SPAN,CEIL_RHO_MIN,1);}
 
 /* ===================== turn response =====================
@@ -3477,117 +3468,56 @@ var MARA_POS=new THREE.Vector3(10,0,-27);
   doorLight.position.set(0,10,40); hangarScene.add(doorLight,doorLight.target);
 })();
 
-/* ===================== articulated hangar characters =====================
-   The generated portraits are texture atlases, not the characters themselves.
-   Their detail is cropped over a real 3D skeleton, with every major limb
-   parented at an anatomical pivot for walking, running and idle motion. */
-function bodyAtlas(url){
-  var cuts={
-    head:[.34,.015,.32,.17],torso:[.24,.15,.52,.33],pelvis:[.28,.44,.44,.16],
-    armL:[.13,.18,.24,.34],armR:[.63,.18,.24,.34],
-    legL:[.24,.55,.25,.32],legR:[.51,.55,.25,.32],boot:[.24,.84,.52,.15]
-  },maps={};
-  Object.keys(cuts).forEach(function(k){
-    var c=cuts[k],t=new THREE.Texture();
-    t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;
-    t.repeat.set(c[2],c[3]);t.offset.set(c[0],1-c[1]-c[3]);
-    tuneTexture(t);maps[k]=t;
+/* ===================== skinned hangar characters =====================
+   This is a real skinned GLB: one continuous character mesh, a Mixamo-style
+   skeleton and embedded Idle/Walk/Run clips. Raster character concepts remain
+   art direction only; they are never cut into fake body geometry. */
+var playerAvatar=new THREE.Group(),maraAvatar=new THREE.Group();
+var playerMixer=null,maraMixer=null,playerActions={},maraActions={};
+var playerAction='',RIGGED_CHARACTER_READY=false;
+playerAvatar.position.set(0,0,26);playerAvatar.visible=false;hangarScene.add(playerAvatar);
+maraAvatar.position.copy(MARA_POS);maraAvatar.visible=false;hangarScene.add(maraAvatar);
+function characterActions(mixer,clips){
+  var out={};
+  clips.forEach(function(clip){out[clip.name]=mixer.clipAction(clip);});
+  return out;
+}
+function setCharacterAction(name){
+  if(!playerActions[name]||playerAction===name)return;
+  var old=playerActions[playerAction],next=playerActions[name];
+  if(old)old.fadeOut(.18);
+  next.reset().fadeIn(.18).play();
+  playerAction=name;
+}
+function prepareCharacter(root,accent){
+  root.traverse(function(o){
+    if(!o.isMesh)return;
+    o.castShadow=true;o.receiveShadow=true;
+    if(o.material){
+      o.material=o.material.clone();
+      if(o.material.color)o.material.color.lerp(new THREE.Color(accent),.10);
+      o.material.skinning=!!o.isSkinnedMesh;
+    }
   });
-  imageLoader.load(url,function(img){
-    Object.keys(maps).forEach(function(k){maps[k].image=img;maps[k].needsUpdate=true;});
-  });
-  return maps;
+  root.scale.setScalar(1.72);
 }
-function bodyMat(color){
-  return new THREE.MeshPhongMaterial({color:color,shininess:8});
-}
-function bodyDetail(map){
-  return new THREE.MeshPhongMaterial({map:map,color:0xffffff,shininess:6,
-    transparent:true,alphaTest:.08,depthWrite:false,polygonOffset:true,
-    polygonOffsetFactor:-2,side:THREE.DoubleSide});
-}
-function buildHumanoid(url,palette,frontImage){
-  var a=bodyAtlas(url),root=new THREE.Group();
-  palette=palette||{};
-  var mats={
-    head:bodyMat(palette.head||0x302b29),
-    torso:bodyMat(palette.torso||0x202b38),pelvis:bodyMat(palette.pelvis||0x1b2532),
-    armL:bodyMat(palette.suit||0x202b38),armR:bodyMat(palette.suit||0x202b38),
-    legL:bodyMat(palette.legs||0x18222f),legR:bodyMat(palette.legs||0x18222f),
-    boot:bodyMat(palette.boot||0x16191d)
-  };
-  function part(geo,mat,parent,x,y,z){
-    var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);parent.add(m);return m;
-  }
-  function limb(parent,x,y,z,len,radius,mat){
-    var j=new THREE.Group();j.position.set(x,y,z);parent.add(j);
-    var geo=new THREE.CylinderGeometry(radius*.82,radius,len,10);
-    geo.translate(0,-len*.5,0);
-    part(geo,mat,j,0,0,0);return j;
-  }
-  var pelvis=part(new THREE.BoxGeometry(.78,.42,.36),mats.pelvis,root,0,1.56,0);
-  var torso=part(new THREE.BoxGeometry(.98,1.02,.42),mats.torso,root,0,2.27,0);
-  var neck=part(new THREE.CylinderGeometry(.13,.15,.18,10),mats.head,root,0,2.86,0);
-  var head=part(new THREE.SphereGeometry(.29,16,12),mats.head,root,0,3.17,0);
-  head.scale.set(.86,1.14,.9);
-  function fittedPanel(parent,map,w,h,z){
-    var p=part(new THREE.PlaneGeometry(w,h),bodyDetail(map),parent,0,0,z);
-    if(frontImage)p.rotation.y=Math.PI;
-  }
-  fittedPanel(torso,a.torso,.84,.92,frontImage?-.216:.216);
-  fittedPanel(pelvis,a.pelvis,.68,.34,frontImage?-.186:.186);
-  fittedPanel(head,a.head,.46,.55,frontImage?-.272:.272);
-
-  var shoulderL=limb(root,-.61,2.68,0,.67,.17,mats.armL);
-  var shoulderR=limb(root, .61,2.68,0,.67,.17,mats.armR);
-  var elbowL=limb(shoulderL,0,-.67,0,.61,.145,mats.armL);
-  var elbowR=limb(shoulderR,0,-.67,0,.61,.145,mats.armR);
-  part(new THREE.SphereGeometry(.16,10,8),mats.armL,elbowL,0,-.63,0);
-  part(new THREE.SphereGeometry(.16,10,8),mats.armR,elbowR,0,-.63,0);
-
-  var hipL=limb(root,-.25,1.48,0,.73,.205,mats.legL);
-  var hipR=limb(root, .25,1.48,0,.73,.205,mats.legR);
-  var kneeL=limb(hipL,0,-.73,0,.70,.17,mats.legL);
-  var kneeR=limb(hipR,0,-.73,0,.70,.17,mats.legR);
-  var footL=part(new THREE.BoxGeometry(.34,.33,.55),mats.boot,kneeL,0,-.65,-.09);
-  var footR=part(new THREE.BoxGeometry(.34,.33,.55),mats.boot,kneeR,0,-.65,-.09);
-
-  root.userData.rig={pelvis:pelvis,torso:torso,neck:neck,head:head,
-    shoulderL:shoulderL,shoulderR:shoulderR,elbowL:elbowL,elbowR:elbowR,
-    hipL:hipL,hipR:hipR,kneeL:kneeL,kneeR:kneeR,footL:footL,footR:footR};
-  return root;
-}
-function poseHumanoid(model,phase,amount,idle){
-  var r=model.userData.rig,s=Math.sin(phase),c=Math.cos(phase),a=amount||0;
-  var liftL=Math.max(0,s),liftR=Math.max(0,-s);
-  /* The stance leg stays long while the recovery leg folds. This is what
-     creates a planted foot instead of two rigid pendulums skating together. */
-  r.hipL.rotation.x=s*.66*a;r.hipR.rotation.x=-s*.66*a;
-  r.kneeL.rotation.x=-liftL*.94*a;r.kneeR.rotation.x=-liftR*.94*a;
-  r.footL.rotation.x=(liftL*.36-c*.10)*a;
-  r.footR.rotation.x=(liftR*.36+c*.10)*a;
-  r.shoulderL.rotation.x=-s*.52*a;r.shoulderR.rotation.x=s*.52*a;
-  r.elbowL.rotation.x=-.12-Math.max(0,s)*.28*a;
-  r.elbowR.rotation.x=-.12-Math.max(0,-s)*.28*a;
-  r.pelvis.position.y=1.56+Math.abs(c)*.045*a;
-  r.pelvis.rotation.z=s*.035*a;
-  r.torso.position.y=2.27+Math.abs(c)*.035*a;
-  r.torso.rotation.y=s*.055*a;r.torso.rotation.z=-s*.022*a;
-  r.head.rotation.y=Math.sin(phase*.23)*.025*(idle?1:.3);
-}
-
-var playerAvatar=buildHumanoid('assets/independent-pilot-rear-diffusion-4k-v1.webp',
-  {head:0x2a2524,torso:0x253446,pelvis:0x1c2938,suit:0x223143,legs:0x1b2838,boot:0x161a20},false);
-playerAvatar.position.set(0,0,26);hangarScene.add(playerAvatar);
-var maraAvatar=buildHumanoid('assets/mara-switch-voss-diffusion-4k-v1.webp',
-  {head:0x9b684f,torso:0x393230,pelvis:0x302925,suit:0x3b3330,legs:0x292725,boot:0x181719},true);
-maraAvatar.position.copy(MARA_POS);maraAvatar.scale.setScalar(.96);hangarScene.add(maraAvatar);
-/* A segmented primitive is not a production character. Keep these prototypes
-   out of the rendered game until they are replaced by a skinned GLB with real
-   weights and animation clips. First-person free roam remains fully usable. */
-var RIGGED_CHARACTER_READY=false;
-playerAvatar.visible=RIGGED_CHARACTER_READY;
-maraAvatar.visible=RIGGED_CHARACTER_READY;
+var characterLoader=new THREE.GLTFLoader();
+characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
+  playerAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x294c72);
+  playerMixer=new THREE.AnimationMixer(gltf.scene);
+  playerActions=characterActions(playerMixer,gltf.animations);
+  RIGGED_CHARACTER_READY=!!(playerActions.Idle&&playerActions.Walk&&playerActions.Run);
+  playerAvatar.visible=RIGGED_CHARACTER_READY;
+  if(RIGGED_CHARACTER_READY)setCharacterAction('Idle');
+  else console.error('Pilot GLB is missing Idle, Walk or Run.');
+},undefined,function(err){console.error('Pilot GLB failed to load.',err);});
+characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
+  maraAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x6b3328);
+  maraMixer=new THREE.AnimationMixer(gltf.scene);
+  maraActions=characterActions(maraMixer,gltf.animations);
+  if(maraActions.Idle)maraActions.Idle.play();
+  maraAvatar.visible=!!maraActions.Idle;
+},undefined,function(err){console.error('Mara GLB failed to load.',err);});
 
 /* The two display airframes use the same physical, textured model as flight.
    buildPlane initially parents into the match scene; adding it here transfers
@@ -3698,12 +3628,15 @@ function hangarStep(dt){
   var view=hangarForward(),camBack=4.6;
   var stride=walk.moving*(1+walk.run*.22);
   if(RIGGED_CHARACTER_READY){
-    playerAvatar.position.set(walk.x,.07+Math.abs(Math.cos(walk.gait))*.035*stride,walk.z);
+    playerAvatar.position.set(walk.x,0,walk.z);
     playerAvatar.rotation.y=walk.face;
-    poseHumanoid(playerAvatar,walk.gait,stride,false);
+    setCharacterAction(walk.moving<.12?'Idle':(walk.run>.45?'Run':'Walk'));
+    if(playerActions.Walk)playerActions.Walk.timeScale=.92;
+    if(playerActions.Run)playerActions.Run.timeScale=.88;
+    if(playerMixer)playerMixer.update(dt);
     var mdx=walk.x-MARA_POS.x,mdz=walk.z-MARA_POS.z;
     maraAvatar.rotation.y=Math.atan2(-mdx,-mdz);
-    poseHumanoid(maraAvatar,performance.now()*.0018,.08,true);
+    if(maraMixer)maraMixer.update(dt);
     hangarCam.position.set(
       clamp(walk.x-view.x*camBack,-HW+.8,HW-.8),
       3.35+Math.sin(walk.bob)*.035,
@@ -4761,25 +4694,14 @@ function step(dt){
 
     var gh=ground(f.pos.x,f.pos.z);
     if(f.pos.y-gh<8){kill(f,null);continue;}
-    /* The ceiling is flown into, not teleported at. Thin air has already taken
-       most of the climb away by this height (see airDensity), so this is the
-       backstop for anyone who arrives with energy to spare: a warning, then a
-       bleed, then a hard stop well above where the aircraft can hold itself. */
+    /* Open sky: altitude changes aircraft performance through airDensity, but
+       does not inflict arbitrary damage. The final clamp is numerical safety
+       beyond the visible atmosphere, not a tactical boundary. */
     if(f.pos.y>CEIL_HARD)f.ceilT+=dt; else f.ceilT=0;
-    if(f.ceilT>4)hurt(f,20*dt,null);
     if(f.pos.y>CEIL_MAX){f.pos.y=CEIL_MAX;if(f.vel.y>0)f.vel.y=0;}
 
-    var dc=arenaDistance(f.pos.x,f.pos.z);
-    if(dc>ARENA_RADIUS){
-      f.boundT+=dt;
-      if(f.isPlayer){el.warn.textContent=f.boundT>8?'LEAVING THE FIGHT — TAKING DAMAGE':'RETURN TO COMBAT AREA';
-        el.warn.style.opacity=1;}
-      if(f.boundT>8)hurt(f,26*dt,null);
-    } else if(f.ceilT>0){
-      f.boundT=0;
-      if(f.isPlayer){el.warn.textContent=f.ceilT>4?'CEILING — TAKING DAMAGE':'SERVICE CEILING — DESCEND';
-        el.warn.style.opacity=1;}
-    } else {f.boundT=0; if(f.isPlayer)el.warn.style.opacity=0;}
+    f.boundT=0;
+    if(f.isPlayer)el.warn.style.opacity=0;
 
     var bea=f.mesh.userData.beacon;
     if(bea){
