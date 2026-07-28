@@ -74,7 +74,7 @@ def window_grid(parent, center, width, depth, height, rows, cols, material):
                  (width / 2, .045, height / rows * .22), material, parent, .015)
 
 
-def detailed_building(parent, name, loc, size, floors, shell, frame, glass, roof, kind=0):
+def detailed_building(parent, name, loc, size, floors, shell, frame, glass, roof, ident, kind=0):
     x, y, z = loc
     w, d, h = size
     base = cube(name + " structural shell", (x, y, z + h / 2), (w / 2, d / 2, h / 2),
@@ -86,6 +86,11 @@ def detailed_building(parent, name, loc, size, floors, shell, frame, glass, roof
              (.28, d / 2 + .12, h / 2 + .12), frame, parent, .05)
     cube(name + " roof parapet", (x, y, z + h + .35), (w / 2 + .25, d / 2 + .25, .35),
          roof, parent, .12)
+    # Physical identification bands break the gray mass at gameplay distance;
+    # they remain geometry at oblique angles rather than painted facade cards.
+    cube(name + " identification band",
+         (x, y - d / 2 - .08, z + h * .68),
+         (w * .34, .08, .42), ident, parent, .03)
     for unit in range(2 + kind):
         ux = x + (unit - (1 + kind) / 2) * 3.2
         cube(name + " rooftop HVAC", (ux, y, z + h + 1.15), (1.15, 1.5, .7),
@@ -133,21 +138,21 @@ for bay_x in (-17, 17):
 # A coherent authored central district matching the masterplan.
 district = root("Starter_Coast_Authored_District")
 detailed_building(district, "Operations block", (-520, -420, 0), (88, 66, 82), 5,
-                  concrete, dark, glass, steel, 0)
+                  concrete, dark, glass, steel, teal, 0)
 detailed_building(district, "Repair factory", (-350, -420, 0), (120, 78, 48), 3,
-                  steel, dark, glass, concrete, 1)
+                  steel, dark, glass, concrete, orange, 1)
 detailed_building(district, "Barracks A", (-520, 420, 0), (82, 58, 66), 4,
-                  concrete, teal, glass, steel, 0)
+                  concrete, teal, glass, steel, teal, 0)
 detailed_building(district, "Barracks B", (-365, 420, 0), (82, 58, 58), 4,
-                  concrete, teal, glass, steel, 0)
+                  concrete, teal, glass, steel, teal, 0)
 detailed_building(district, "Hardened bunker", (430, -420, 0), (92, 72, 30), 2,
-                  concrete, dark, glass, steel, 2)
+                  concrete, dark, glass, steel, orange, 2)
 detailed_building(district, "Radar utility", (500, 420, 0), (72, 58, 56), 3,
-                  steel, dark, glass, concrete, 1)
+                  steel, dark, glass, concrete, teal, 1)
 detailed_building(district, "League offices", (335, 420, 0), (78, 60, 78), 5,
-                  concrete, teal, glass, steel, 0)
+                  concrete, teal, glass, steel, teal, 0)
 detailed_building(district, "Harbor control", (0, 720, 0), (96, 64, 72), 4,
-                  steel, dark, glass, concrete, 0)
+                  steel, dark, glass, concrete, orange, 0)
 
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SOURCE_ROOT, "blender",
                                                   "breakwater-environment-authored-v1.blend"))

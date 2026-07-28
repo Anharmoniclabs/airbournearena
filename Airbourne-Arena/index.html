@@ -1078,7 +1078,12 @@ loadManager.onProgress=function(url,loaded,total){
   if(bootFill)bootFill.style.width=Math.round(loaded/total*100)+'%';
   if(bootNote)bootNote.textContent='WARMING THE FLIGHT DECK — '+loaded+' / '+total;
 };
-loadManager.onLoad=bootFinish;
+/* If the watchdog gave up first and the art then turns up anyway, take the
+   cover down rather than leaving a stale warning and a button to dismiss it. */
+loadManager.onLoad=function(){
+  if(assetsReady){ if(bootTimedOut&&!assetErrors.length)bootLift(); return; }
+  bootFinish();
+};
 loadManager.onError=function(url){
   assetErrors.push(url);
   if(window.console&&console.warn)console.warn('airbourne: asset failed to load',url);
@@ -1180,6 +1185,8 @@ var skywaySkin=gameTexture('assets/skyway-navigation-surface-diffusion-4k-v1.web
 var oceanSkin=gameTexture('assets/starter-coast-ocean-diffusion-4k-v1.webp',18,18);
 var airbaseDeckSkin=gameTexture('assets/airbase-deck-diffusion-4k-v1.webp',3,3);
 var aviationHardwareSkin=gameTexture('assets/aviation-hardware-diffusion-4k-v1.webp',2,2);
+var pilotAlbedoSkin=gameTexture('assets/starter-coast-pilot-albedo-diffusion-v2.png',1,1);
+pilotAlbedoSkin.flipY=false;
 var explosionVfxSkin=tuneTexture(assetLoader.load('assets/aviation-explosion-vfx-diffusion-4k-v1.webp'));
 var stormCloudVfxSkin=tuneTexture(assetLoader.load('assets/storm-cloud-vfx-diffusion-4k-v2.webp'));
 var independentPilotSkin=tuneTexture(assetLoader.load('assets/independent-pilot-rear-diffusion-4k-v1.webp'));
@@ -1798,7 +1805,7 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
     shininess:7,color:0xffffff});
   cityNightMats=[cityMat,officeMat,factoryMat,bunkerMat];
   var families=[[],[],[],[]],roofProps=[],upperTiers=[],windowBands=[];
-  var TONES=[0xd9d4c6,0xc7cbcb,0xe2dac6,0xbcbfb7,0xd0c7b6,0xb4b8bd];
+  var TONES=[0xc9b99d,0x9fb4bd,0xd2c4a8,0x96aaa3,0xb9a58e,0x929fac];
   for(var i=0;i<lots.length;i++){
     var L=lots[i],r1=hash(L[0]*.071,L[1]*.113),r2=hash(L[1]*.091,L[0]*.053);
     var type=r2<.48?0:(r2<.72?1:(r2<.90?2:3));
@@ -1879,22 +1886,60 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
    downtown blocks. The generated 4K atlases are reassigned by material role,
    so they wrap real beveled shells, glazing, piers and rooftop hardware rather
    than being displayed as flat scenery cards. */
+var architecturalTextureCache={};
 function calibrateAuthoredEnvironment(root,inside){
   root.traverse(function(o){
     if(!o.isMesh||!o.material)return;
     o.castShadow=!LOW;o.receiveShadow=true;o.material=o.material.clone();
-    var n=o.material.name||'';
+    var n=o.material.name||'',on=(o.name||'').toLowerCase(),surface=null;
+    /* Each authored module gets an independent texture transform. Reusing one
+       Texture object made a hangar beam, an 80 m office and an HVAC box share
+       the same repeat, producing either blur or postage-stamp noise. */
+    function scaledMap(source,metersX,metersY){
+      if(!source)return null;
+      if(architecturalTextureCache[source.uuid])return architecturalTextureCache[source.uuid];
+      if(!source.image){
+        setTimeout(function retryScaledMap(){
+          if(!source.image){setTimeout(retryScaledMap,120);return;}
+          o.material.map=scaledMap(source,metersX,metersY);
+          o.material.needsUpdate=true;
+        },120);
+        return source;
+      }
+      var t=source.clone();t.wrapS=t.wrapT=THREE.RepeatWrapping;
+      /* One GPU texture per surface family. Per-mesh clones of six 2048 maps
+         exhausted browser GPU memory and produced a white frame. */
+      t.repeat.set(2,2);
+      if('colorSpace' in t)t.colorSpace=THREE.SRGBColorSpace;
+      if('encoding' in t)t.encoding=THREE.sRGBEncoding;
+      t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+      t.needsUpdate=true;architecturalTextureCache[source.uuid]=t;return t;
+    }
+    if(o.geometry){
+      o.geometry.computeBoundingBox();
+      var bb=o.geometry.boundingBox,bs=new THREE.Vector3();
+      if(bb)bb.getSize(bs);
+      var sx=Math.max(bs.x,bs.z,4),sy=Math.max(bs.y,4);
+      if(on.indexOf('repair factory')>=0)surface=factorySkin;
+      else if(on.indexOf('barracks')>=0)surface=residentialSkin;
+      else if(on.indexOf('bunker')>=0)surface=bunkerSkin;
+      else if(on.indexOf('hvac')>=0||on.indexOf('parapet')>=0)surface=rooftopSkin;
+      else if(on.indexOf('operations')>=0||on.indexOf('offices')>=0||
+              on.indexOf('harbor')>=0||on.indexOf('radar')>=0)surface=cityFacadeSkin;
+      if(surface)o.material.map=scaledMap(surface,sx,sy);
+    }
     if(n.indexOf('galvanized')>=0){
-      o.material.map=inside?breakwaterSkin:factorySkin;
-      o.material.color.setHex(0xb9c1c2);o.material.metalness=.42;o.material.roughness=.48;
+      if(!surface)o.material.map=scaledMap(inside?breakwaterSkin:factorySkin,18,12);
+      o.material.color.setHex(0xd0d5d3);o.material.metalness=.42;o.material.roughness=.48;
     }else if(n.indexOf('Graphite')>=0){
-      o.material.map=aviationHardwareSkin;o.material.color.setHex(0x59636c);
+      o.material.map=scaledMap(aviationHardwareSkin,12,8);o.material.color.setHex(0x77838d);
       o.material.metalness=.58;o.material.roughness=.38;
     }else if(n.indexOf('concrete')>=0){
-      o.material.map=inside?hangarFloorSkin:bunkerSkin;o.material.color.setHex(0xb7b5aa);
+      if(!surface)o.material.map=scaledMap(inside?hangarFloorSkin:bunkerSkin,22,14);
+      o.material.color.setHex(0xe0ddd1);
       o.material.metalness=.04;o.material.roughness=.74;
     }else if(n.indexOf('teal')>=0){
-      o.material.map=breakwaterSkin;o.material.color.setHex(0x8bc0be);
+      o.material.map=scaledMap(breakwaterSkin,15,10);o.material.color.setHex(0x9dd3d0);
     }else if(n.indexOf('glazing')>=0){
       o.material.color.setHex(0x193849);o.material.emissive.setHex(0x071925);
       o.material.emissiveIntensity=.7;o.material.metalness=.12;o.material.roughness=.18;
@@ -3779,6 +3824,8 @@ var playerMixer=null,maraMixer=null,playerActions={},maraActions={};
 var playerAction='',RIGGED_CHARACTER_READY=false;
 playerAvatar.position.set(0,0,26);playerAvatar.visible=false;hangarScene.add(playerAvatar);
 maraAvatar.position.copy(MARA_POS);maraAvatar.visible=false;hangarScene.add(maraAvatar);
+var pilotFill=new THREE.PointLight(0x9fc8e6,.62,11);
+pilotFill.position.set(0,3.7,2.2);playerAvatar.add(pilotFill);
 function characterActions(mixer,clips){
   var out={};
   clips.forEach(function(clip){out[clip.name]=mixer.clipAction(clip);});
@@ -3803,12 +3850,10 @@ function prepareCharacter(root,accent){
           o.material.color.setHex(0x80d9e7);
           if(o.material.emissive){o.material.emissive.setHex(0x123c4b);o.material.emissiveIntensity=.55;}
         }else if(mn.indexOf('Body')>=0){
-          /* The embedded albedo was baked orange, so tint multiplication could
-             only turn it brown or black. The real skinned mesh, normal detail,
-             weights and clips remain; replace only that incorrect albedo with
-             the canon Starter Coast textile colour. */
-          o.material.map=null;
-          o.material.color.setHex(accent);
+          /* Preserve the GLB's authored multi-colour UV albedo: ceramic armour,
+             textile, graphite equipment and identification stripes. */
+          o.material.map=pilotAlbedoSkin;
+          o.material.color.setHex(0xffffff);
           o.material.roughness=.66;o.material.metalness=.08;
           if(o.material.emissive){o.material.emissive.setHex(0x101a27);o.material.emissiveIntensity=.08;}
         }else{
@@ -3824,7 +3869,7 @@ function prepareCharacter(root,accent){
 }
 var characterLoader=new THREE.GLTFLoader(loadManager);
 characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
-  playerAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x3b526e);
+  playerAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x5d83b4);
   playerMixer=new THREE.AnimationMixer(gltf.scene);
   playerActions=characterActions(playerMixer,gltf.animations);
   RIGGED_CHARACTER_READY=!!(playerActions.Idle&&playerActions.Walk&&playerActions.Run);
