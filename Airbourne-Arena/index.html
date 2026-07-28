@@ -1070,7 +1070,8 @@ var cityFacadeSkin=gameTexture('assets/city-facades-diffusion-v1.webp',1,1);
 var cityRoofSkin=gameTexture('assets/city-roofs-diffusion-v1.webp',1,1);
 var roadSkin=gameTexture('assets/road-surface-diffusion-v1.webp',1,1);
 var hangarSkin=gameTexture('assets/hangar-metal-diffusion-v1.webp',1,1);
-var foliageSkin=gameTexture('assets/conifer-foliage-diffusion-v1.webp',1,1);
+var foliageSkin=liftedTexture('assets/conifer-foliage-diffusion-v1.webp',1,1,
+  '#46513d','#91a978');
 var industrialSkin=gameTexture('assets/industrial-tank-diffusion-v1.webp',1,1);
 var residentialSkin=gameTexture('assets/residential-facade-diffusion-v1.webp',1,1);
 var factorySkin=gameTexture('assets/factory-facade-diffusion-v1.webp',1,1);
@@ -1134,7 +1135,7 @@ var SIZE=7000,SEG=LOW?62:104,STEP=SIZE/SEG;
 var tGeo=new THREE.PlaneGeometry(SIZE,SIZE,SEG,SEG); tGeo.rotateX(-Math.PI/2);
 tGeo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(tGeo.attributes.position.count*3),3));
 var terrain=new THREE.Mesh(tGeo,new THREE.MeshPhongMaterial({map:terrainSkin,vertexColors:true,
-  flatShading:true,shininess:0,color:0xdedacb}));
+  flatShading:false,shininess:1,color:0xdedacb}));
 scene.add(terrain);
 /* Dry, high-key country rather than the old dark volcanic palette: pale sand
    at the water line, sun-bleached scrub above it, light stone on the ridges. */
@@ -1163,6 +1164,11 @@ function updateTerrain(px,pz){
     c.setXYZ(i,tmpC.r+m,tmpC.g+m,tmpC.b+m);
   }
   p.needsUpdate=true;c.needsUpdate=true;
+  /* Lighting must follow the displaced landscape. Without refreshed normals,
+     hills retain the original flat-plane lighting and read like a texture
+     draped over cardboard. */
+  tGeo.computeVertexNormals();
+  tGeo.attributes.normal.needsUpdate=true;
 }
 var sea=new THREE.Mesh(new THREE.PlaneGeometry(40000,40000),
   new THREE.MeshPhongMaterial({map:oceanSkin,color:0x7f9ead,shininess:110,
@@ -1610,8 +1616,8 @@ function clearDrones(){
 })();
 
 /* --- 3D conifer belts ---
-   Opaque generated foliage wraps real cone geometry, so trees keep parallax
-   and silhouette while avoiding fragile transparent cutouts on mobile. */
+   Each tree has a trunk and three offset foliage masses. This keeps one-digit
+   draw calls through instancing but breaks the old single-cone silhouette. */
 (function buildForest(){
   var spots=[];
   for(var x=-3200;x<=3200;x+=125)for(var z=-1450;z<=1450;z+=125){
@@ -1624,17 +1630,28 @@ function clearDrones(){
     if(hash(tx*.031,tz*.037)<(LOW?.57:.34))continue;
     spots.push([tx,tz,h,18+hash(tx*.043,tz*.029)*24]);
   }
-  var geo=new THREE.ConeGeometry(1,1,9);geo.translate(0,.5,0);
-  var mat=new THREE.MeshPhongMaterial({map:foliageSkin,color:0xc3d1a4,shininess:0,flatShading:true});
-  var forest=new THREE.InstancedMesh(geo,mat,spots.length);
+  var geo=new THREE.DodecahedronGeometry(1,1);
+  var mat=new THREE.MeshPhongMaterial({map:foliageSkin,color:0xb7c99c,shininess:0,flatShading:false});
+  var forest=new THREE.InstancedMesh(geo,mat,spots.length*3);
+  var trunkGeo=new THREE.CylinderGeometry(1,1,1,7);trunkGeo.translate(0,.5,0);
+  var trunkMat=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,color:0x5d4b36,shininess:0});
+  var trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,spots.length);
   var m=new THREE.Matrix4(),q=new THREE.Quaternion(),pos=new THREE.Vector3(),scl=new THREE.Vector3();
   var up=new THREE.Vector3(0,1,0);
   for(var i=0;i<spots.length;i++){
-    var T=spots[i],r=T[3]*.44;pos.set(T[0],T[2]-2,T[1]);
-    q.setFromAxisAngle(up,hash(T[0],T[1])*6.283);
-    scl.set(r,T[3],r);m.compose(pos,q,scl);forest.setMatrixAt(i,m);
+    var T=spots[i],r=T[3]*.32,rot=hash(T[0],T[1])*6.283;
+    q.setFromAxisAngle(up,rot);
+    pos.set(T[0],T[2]-2,T[1]);scl.set(r*.18,T[3]*.72,r*.18);
+    m.compose(pos,q,scl);trunks.setMatrixAt(i,m);
+    for(var crown=0;crown<3;crown++){
+      var spread=1-crown*.20,side=(hash(T[0]+crown*13,T[1]-crown*17)-.5)*r*.22;
+      pos.set(T[0]+Math.cos(rot)*side,T[2]+T[3]*(.34+crown*.22),T[1]+Math.sin(rot)*side);
+      scl.set(r*spread,T[3]*(.25-crown*.025),r*spread);
+      m.compose(pos,q,scl);forest.setMatrixAt(i*3+crown,m);
+    }
   }
   forest.instanceMatrix.needsUpdate=true;forest.frustumCulled=false;scene.add(forest);
+  trunks.instanceMatrix.needsUpdate=true;trunks.frustumCulled=false;scene.add(trunks);
 })();
 
 /* --- the city on the valley floor ---
@@ -1680,7 +1697,7 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
   cityRoofMat=new THREE.MeshPhongMaterial({map:cityRoofSkin,flatShading:true,
     shininess:7,color:0xffffff});
   cityNightMats=[cityMat,officeMat,factoryMat,bunkerMat];
-  var families=[[],[],[],[]],roofProps=[];
+  var families=[[],[],[],[]],roofProps=[],upperTiers=[];
   var TONES=[0xd9d4c6,0xc7cbcb,0xe2dac6,0xbcbfb7,0xd0c7b6,0xb4b8bd];
   for(var i=0;i<lots.length;i++){
     var L=lots[i],r1=hash(L[0]*.071,L[1]*.113),r2=hash(L[1]*.091,L[0]*.053);
@@ -1690,6 +1707,9 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
     if(type===3){w*=1.15;d2*=1.15;h=Math.min(h,34);} /* bunkers stay low */
     var tone=TONES[(i*3+((r2*97)|0))%TONES.length];
     families[type].push([L[0],L[1],L[2]-5,w,h,d2,tone,.84+r1*.28]);
+    /* Taller office/residential blocks step inward instead of ending as one
+       giant box. The second mass creates real rooflines and changing parallax. */
+    if(type<2&&h>82)upperTiers.push([L[0],L[1],L[2]-5+h,w*.68,h*.28,d2*.68,tone,.92]);
     if(type!==3&&hash(L[0]*.13,L[1]*.17)>.72)
       roofProps.push([L[0]+(r2-.5)*w*.3,L[1]+(r1-.5)*d2*.3,L[2]-5+h,
         10+r1*15,4+r2*6,9+r2*13]);
@@ -1712,6 +1732,17 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
     if(city.instanceColor)city.instanceColor.needsUpdate=true;
     scene.add(city);
   }
+  var tierMats=[officeMat,officeMat,cityRoofMat,officeMat,officeMat,officeMat];
+  var tiers=new THREE.InstancedMesh(geo,tierMats,upperTiers.length);
+  tiers.frustumCulled=false;
+  for(var ti=0;ti<upperTiers.length;ti++){
+    var U=upperTiers[ti];pos.set(U[0],U[2],U[1]);scl.set(U[3],U[4],U[5]);
+    m.compose(pos,q,scl);tiers.setMatrixAt(ti,m);
+    col.setHex(U[6]).multiplyScalar(U[7]);tiers.setColorAt(ti,col);
+  }
+  tiers.instanceMatrix.needsUpdate=true;
+  if(tiers.instanceColor)tiers.instanceColor.needsUpdate=true;
+  scene.add(tiers);
   /* Rooftop HVAC/generator boxes are separate geometry and keep their own
      texel scale, so the equipment reads as hardware instead of painted roofs. */
   var propMat=new THREE.MeshPhongMaterial({map:rooftopSkin,color:0xffffff,shininess:25});
@@ -1864,19 +1895,23 @@ function buildPlane(team,isPlayer){
   cp.scale.set(1,.62,1.85);cp.position.set(0,.68,-1.65);g.add(cp);
 
   /* swept lifting surfaces: real silhouette from every view, not a rectangle */
-  function surface(points,mat,y){
+  function surface(points,mat,y,thickness){
     var sh=new THREE.Shape();
     sh.moveTo(points[0][0],points[0][1]);
     for(var si=1;si<points.length;si++)sh.lineTo(points[si][0],points[si][1]);
     sh.closePath();
-    var m=new THREE.Mesh(new THREE.ShapeGeometry(sh),mat);
+    thickness=thickness||.16;
+    var geo=new THREE.ExtrudeGeometry(sh,{depth:thickness,bevelEnabled:true,
+      bevelSegments:1,bevelSize:.045,bevelThickness:.045,curveSegments:2});
+    geo.translate(0,0,-thickness*.5);
+    var m=new THREE.Mesh(geo,mat);
     m.rotation.x=Math.PI/2;m.position.y=y;m.material.side=THREE.DoubleSide;g.add(m);return m;
   }
   surface([[-.45,-2.3],[-7.15,.15],[-6.15,1.55],[-1.0,1.05],
-           [1.0,1.05],[6.15,1.55],[7.15,.15],[.45,-2.3]],hull,.12);
+           [1.0,1.05],[6.15,1.55],[7.15,.15],[.45,-2.3]],hull,.12,.24);
   surface([[-.45,2.2],[-3.25,3.75],[-3.0,4.55],[0,3.85],
-           [3.0,4.55],[3.25,3.75],[.45,2.2]],hull,.18);
-  surface([[-6.7,.15],[-4.7,.78],[4.7,.78],[6.7,.15],[4.8,-.2],[-4.8,-.2]],trim,.19);
+           [3.0,4.55],[3.25,3.75],[.45,2.2]],hull,.18,.20);
+  surface([[-6.7,.15],[-4.7,.78],[4.7,.78],[6.7,.15],[4.8,-.2],[-4.8,-.2]],trim,.28,.10);
 
   /* twin engine nacelles, intakes and exhaust cans */
   [-2.05,2.05].forEach(function(x){
@@ -1899,6 +1934,20 @@ function buildPlane(team,isPlayer){
   });
   var gun=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,1.8,6),dark);
   gun.rotation.x=Math.PI/2;gun.position.set(.34,-.08,-5.35);g.add(gun);
+  /* Cockpit framing, dorsal avionics and paired under-wing stores add readable
+     scale in the hangar and a distinct silhouette during close passes. */
+  [-.72,.72].forEach(function(x){
+    var frame=new THREE.Mesh(new THREE.BoxGeometry(.055,.07,2.5),dark);
+    frame.position.set(x*.58,.94,-1.5);frame.rotation.x=-.08;g.add(frame);
+  });
+  var avionics=new THREE.Mesh(new THREE.BoxGeometry(.72,.28,1.35),dark);
+  avionics.position.set(0,.48,2.15);g.add(avionics);
+  [-3.2,3.2].forEach(function(x){
+    var store=new THREE.Mesh(new THREE.CylinderGeometry(.15,.20,2.2,8),dark);
+    store.rotation.x=Math.PI/2;store.position.set(x,-.34,.85);g.add(store);
+    var nose=new THREE.Mesh(new THREE.ConeGeometry(.15,.55,8),trim);
+    nose.rotation.x=-Math.PI/2;nose.position.set(x,-.34,-.52);g.add(nose);
+  });
   var exhausts=[];
   [-1.65,1.65].forEach(function(x){
     var ex=new THREE.Sprite(teamMat(team,new THREE.SpriteMaterial({
@@ -3354,21 +3403,39 @@ var MARA_POS=new THREE.Vector3(10,0,-27);
   var beam=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
     color:0x58616a,shininess:14,flatShading:true});
 
-  var floor=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HD*2),concrete);
-  floor.rotation.x=-Math.PI/2; hangarScene.add(floor);
-  var roof=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HD*2),roofPanel);
-  roof.rotation.x=Math.PI/2; roof.position.y=HH; hangarScene.add(roof);
-  var back=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HH),wallPanel);
-  back.position.set(0,HH/2,-HD); hangarScene.add(back);
+  var floor=new THREE.Mesh(new THREE.BoxGeometry(HW*2,.35,HD*2),concrete);
+  floor.position.y=-.18;hangarScene.add(floor);
+  var roof=new THREE.Mesh(new THREE.BoxGeometry(HW*2,.45,HD*2),roofPanel);
+  roof.position.y=HH+.2;hangarScene.add(roof);
+  var back=new THREE.Mesh(new THREE.BoxGeometry(HW*2,HH,.55),wallPanel);
+  back.position.set(0,HH/2,-HD);hangarScene.add(back);
   [-1,1].forEach(function(s){
-    var wall=new THREE.Mesh(new THREE.PlaneGeometry(HD*2,HH),sidePanel);
-    wall.rotation.y=-s*Math.PI/2; wall.position.set(s*HW,HH/2,0); hangarScene.add(wall);
+    var wall=new THREE.Mesh(new THREE.BoxGeometry(.55,HH,HD*2),sidePanel);
+    wall.position.set(s*HW,HH/2,0);hangarScene.add(wall);
   });
   /* roof trusses, which are what actually sell the size of the room */
   for(var t=-3;t<=3;t++){
     var tr=new THREE.Mesh(new THREE.BoxGeometry(HW*2,.7,.7),beam);
     tr.position.set(0,HH-.8,t*9); hangarScene.add(tr);
+    [-1,1].forEach(function(s){
+      var brace=new THREE.Mesh(new THREE.BoxGeometry(1.2,.42,13),beam);
+      brace.position.set(s*HW*.48,HH-3.7,t*9);brace.rotation.z=s*.72;
+      hangarScene.add(brace);
+    });
   }
+  /* Repeated wall ribs, service pipes and a raised maintenance catwalk turn
+     the shell into architecture with depth instead of a textured room box. */
+  for(var rz=-27;rz<=27;rz+=9)[-1,1].forEach(function(s){
+    var rib=new THREE.Mesh(new THREE.BoxGeometry(.9,HH,.85),beam);
+    rib.position.set(s*(HW-.7),HH/2,rz);hangarScene.add(rib);
+  });
+  var pipeMat=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,color:0x8a5a35,shininess:24});
+  [-1,1].forEach(function(s){
+    var pipe=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,HD*1.65,10),pipeMat);
+    pipe.rotation.x=Math.PI/2;pipe.position.set(s*(HW-1.1),11,0);hangarScene.add(pipe);
+    var walkDeck=new THREE.Mesh(new THREE.BoxGeometry(2.6,.22,HD*1.35),beam);
+    walkDeck.position.set(s*(HW-2.1),8.2,-3);hangarScene.add(walkDeck);
+  });
   /* bay markings and a lamp over each */
   ['blue','red'].forEach(function(tm){
     var b=hangarBays[tm];
