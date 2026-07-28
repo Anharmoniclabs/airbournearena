@@ -50,10 +50,15 @@ jobs:
       - name: Assemble the site
         run: |
           set -euo pipefail
-          mkdir -p _site
+          mkdir -p _site _site/Airbourne-Arena
           cp Airbourne-Arena/index.html _site/
           cp Airbourne-Arena/manifest.webmanifest _site/
           cp -r Airbourne-Arena/assets _site/assets
+          # Preserve the original public URL used by existing players and
+          # bookmarks while also serving the shorter project-root URL.
+          cp Airbourne-Arena/index.html _site/Airbourne-Arena/
+          cp Airbourne-Arena/manifest.webmanifest _site/Airbourne-Arena/
+          cp -r Airbourne-Arena/assets _site/Airbourne-Arena/assets
           # Without this, Jekyll processes the tree and silently drops anything
           # beginning with an underscore.
           touch _site/.nojekyll
