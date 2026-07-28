@@ -791,10 +791,16 @@ setTouchMode(IS_TOUCH);
 var LOW=IS_TOUCH;   /* trim the scene for phone GPUs */
 
 /* ===================== arena ===================== */
-var ARENA=3400, BASE_X=2500;
+/* A long capsule gives both teams room to circle behind a goal while keeping
+   the fight concentrated along the base-to-base axis. */
+var ARENA=3400, ARENA_RUN=2350, ARENA_RADIUS=1550, BASE_X=2500;
 var BASES={blue:new THREE.Vector3(-BASE_X,460,0), red:new THREE.Vector3(BASE_X,460,0)};
 var GOALS={blue:new THREE.Vector3(BASE_X,380,0), red:new THREE.Vector3(-BASE_X,380,0)};
-var GOAL_R=175, MATCH_TIME=300, TARGET_SCORE=3, RESPAWN=10;
+var GOAL_R=185, MATCH_TIME=300, TARGET_SCORE=3, RESPAWN=10;
+function arenaDistance(x,z){
+  var cx=clamp(x,-ARENA_RUN,ARENA_RUN);
+  return Math.hypot(x-cx,z);
+}
 
 var SN=0.00075;
 function terrainHeight(x,z){
@@ -803,7 +809,13 @@ function terrainHeight(x,z){
   var mask=fbm(x*SN*0.42+5.5,z*SN*0.42+9.1,3);
   var h=base*300+r*r*170*mask-30;
   var spine=Math.exp(-(x*x)/(560*560));
-  h+=spine*170*(0.45+0.55*fbm(z*0.0016+3.1,7.7,3));
+  /* Three cut passes turn the center ridge into tactical lanes: the center is
+     fast and exposed, while the north/south canyons hide a low approach. */
+  var pN=z+900,pC=z,pS=z-900,pass=Math.max(
+    Math.exp(-(pN*pN)/(165*165)),
+    Math.exp(-(pC*pC)/(165*165)),
+    Math.exp(-(pS*pS)/(165*165)));
+  h+=spine*(1-pass*.82)*170*(0.45+0.55*fbm(z*0.0016+3.1,7.7,3));
   for(var i=-1;i<=1;i+=2){
     var d=Math.sqrt((x-i*BASE_X)*(x-i*BASE_X)+z*z);
     h=h+(40-h)*(1-smooth(0,320,d-140));
@@ -831,43 +843,72 @@ scene.fog=new THREE.FogExp2(0x9ec7e8,0.00022);
 
 /* generated high-resolution material kit */
 var assetLoader=new THREE.TextureLoader();
-function gameTexture(url,repeatX,repeatY){
-  var t=assetLoader.load(url);
-  t.wrapS=t.wrapT=THREE.RepeatWrapping;
-  t.repeat.set(repeatX||1,repeatY||1);
+var imageLoader=new THREE.ImageLoader();
+function tuneTexture(t){
   t.anisotropy=LOW?1:Math.min(8,renderer.capabilities.getMaxAnisotropy());
   if('encoding' in t)t.encoding=THREE.sRGBEncoding;
   return t;
 }
-var terrainSkin=gameTexture('assets/volcanic-terrain-v2.webp',2.4,2.4);
-var teamAtlas=gameTexture('assets/team-skins-v2.webp',.5,1);
-var blueSkin=teamAtlas.clone();blueSkin.offset.set(0,0);blueSkin.needsUpdate=true;
-var redSkin=teamAtlas.clone();redSkin.offset.set(.5,0);redSkin.needsUpdate=true;
+function gameTexture(url,repeatX,repeatY){
+  var t=assetLoader.load(url);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(repeatX||1,repeatY||1);
+  return tuneTexture(t);
+}
+/* A pair of per-team skins packed into one image, blue on the left half and
+   red on the right, read back by two textures that differ only in offset.
+   Cloning the texture the loader returns does NOT work: TextureLoader attaches
+   the decoded image inside its own load callback, so a clone taken on this
+   line keeps image undefined for ever and the material renders untextured.
+   Decode once and hand the same image to both. */
+function atlasPair(url){
+  var pair={blue:new THREE.Texture(),red:new THREE.Texture()};
+  ['blue','red'].forEach(function(team,half){
+    var t=pair[team];
+    t.wrapS=t.wrapT=THREE.RepeatWrapping;
+    t.repeat.set(.5,1);
+    t.offset.set(half*.5,0);
+    tuneTexture(t);
+  });
+  imageLoader.load(url,function(img){
+    pair.blue.image=pair.red.image=img;
+    pair.blue.needsUpdate=pair.red.needsUpdate=true;
+  });
+  return pair;
+}
+/* One whole image per team rather than a shared atlas. */
+function teamTextures(blueUrl,redUrl){
+  return {blue:tuneTexture(assetLoader.load(blueUrl)),
+          red:tuneTexture(assetLoader.load(redUrl))};
+}
+/* The generated ground art is near-black volcanic rock. A material only ever
+   multiplies its map, and no multiplier lifts a black pixel, so the exposure
+   has to be fixed in the image itself: screen a grey over it to raise the
+   floor, then use a 'color' pass to carry the whole thing over to warm dry
+   stone. Every bit of the generated detail survives — only the light changes. */
+function liftedTexture(url,repeatX,repeatY,lift,tint){
+  var t=new THREE.Texture();
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(repeatX,repeatY);
+  tuneTexture(t);
+  imageLoader.load(url,function(img){
+    var c=document.createElement('canvas');
+    c.width=img.width; c.height=img.height;
+    var x=c.getContext('2d');
+    x.drawImage(img,0,0);
+    x.globalCompositeOperation='screen'; x.fillStyle=lift; x.fillRect(0,0,c.width,c.height);
+    x.globalCompositeOperation='color';  x.fillStyle=tint; x.fillRect(0,0,c.width,c.height);
+    t.image=c; t.needsUpdate=true;
+  });
+  return t;
+}
+var terrainSkin=liftedTexture('assets/volcanic-terrain-buildings-4k.webp',2.4,2.4,'#78787a','#c0ab86');
+var hullSkin=atlasPair('assets/team-skins-v2.webp');
 var caseSkin=gameTexture('assets/cemi-case-skin-v2.webp',1,1);
-var caseObjectiveSkin=assetLoader.load('assets/cemi-case-objective-v3.webp');
-caseObjectiveSkin.anisotropy=LOW?1:Math.min(8,renderer.capabilities.getMaxAnisotropy());
-if('encoding' in caseObjectiveSkin)caseObjectiveSkin.encoding=THREE.sRGBEncoding;
-var airstripSkin={
-  blue:assetLoader.load('assets/blue-airstrip-v1.webp'),
-  red:assetLoader.load('assets/red-airstrip-v1.webp')
-};
-Object.keys(airstripSkin).forEach(function(k){
-  var t=airstripSkin[k];
-  t.anisotropy=LOW?1:Math.min(8,renderer.capabilities.getMaxAnisotropy());
-  if('encoding' in t)t.encoding=THREE.sRGBEncoding;
-});
-var portalAtlas=gameTexture('assets/team-goal-portals-v2.webp',.5,1);
-var bluePortalSkin=portalAtlas.clone();bluePortalSkin.offset.set(0,0);bluePortalSkin.needsUpdate=true;
-var redPortalSkin=portalAtlas.clone();redPortalSkin.offset.set(.5,0);redPortalSkin.needsUpdate=true;
-var fighterSpriteSkin={
-  blue:assetLoader.load('assets/blue-fighter-v3.webp'),
-  red:assetLoader.load('assets/red-fighter-v3.webp')
-};
-Object.keys(fighterSpriteSkin).forEach(function(k){
-  var t=fighterSpriteSkin[k];
-  t.anisotropy=LOW?1:Math.min(8,renderer.capabilities.getMaxAnisotropy());
-  if('encoding' in t)t.encoding=THREE.sRGBEncoding;
-});
+var caseObjectiveSkin=tuneTexture(assetLoader.load('assets/cemi-case-objective-v3.webp'));
+var airstripSkin=teamTextures('assets/blue-airstrip-v1.webp','assets/red-airstrip-v1.webp');
+var portalSkin=atlasPair('assets/team-goal-portals-v2.webp');
+var fighterSpriteSkin=teamTextures('assets/blue-fighter-v3.webp','assets/red-fighter-v3.webp');
 
 var sunLight=new THREE.DirectionalLight(0xffffff,1.1); scene.add(sunLight,sunLight.target);
 var moonLight=new THREE.DirectionalLight(0x9fb8ff,0); scene.add(moonLight,moonLight.target);
@@ -902,14 +943,20 @@ var moon=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite('rgba(255,255
   transparent:true,depthWrite:false,fog:false,opacity:0})); moon.scale.set(900,900,1); scene.add(moon);
 
 /* terrain */
+/* How far the built-up area reaches from midfield. The terrain shading needs
+   it as much as the buildings do — the ground under the city is paved. */
+var CITY_REACH=1750,CITY_BLOCK=134,CITY_TOP=225;
 var SIZE=7000,SEG=LOW?62:104,STEP=SIZE/SEG;
 var tGeo=new THREE.PlaneGeometry(SIZE,SIZE,SEG,SEG); tGeo.rotateX(-Math.PI/2);
 tGeo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(tGeo.attributes.position.count*3),3));
 var terrain=new THREE.Mesh(tGeo,new THREE.MeshPhongMaterial({map:terrainSkin,vertexColors:true,
-  flatShading:true,shininess:0,color:0xb7c2aa}));
+  flatShading:true,shininess:0,color:0xdedacb}));
 scene.add(terrain);
-var SAND=new THREE.Color(0xcbb589),GRASS=new THREE.Color(0x4e7d3c),PINE=new THREE.Color(0x2d5530),
-    ROCK=new THREE.Color(0x6d675d),SNOW=new THREE.Color(0xe9eff4);
+/* Dry, high-key country rather than the old dark volcanic palette: pale sand
+   at the water line, sun-bleached scrub above it, light stone on the ridges. */
+var SAND=new THREE.Color(0xe6d6ae),GRASS=new THREE.Color(0xa8b681),PINE=new THREE.Color(0x7d9163),
+    ROCK=new THREE.Color(0xb5ad9c),SNOW=new THREE.Color(0xf3f7fa),
+    TARMAC=new THREE.Color(0x9d9a92);
 var tmpC=new THREE.Color(),lastOx=1e9,lastOz=1e9;
 function updateTerrain(px,pz){
   var ox=Math.round(px/STEP)*STEP,oz=Math.round(pz/STEP)*STEP;
@@ -924,6 +971,11 @@ function updateTerrain(px,pz){
     else if(h<70)tmpC.copy(GRASS).lerp(PINE,Math.min(1,h/70));
     else if(h<190)tmpC.copy(PINE).lerp(ROCK,(h-70)/120);
     else tmpC.copy(ROCK).lerp(SNOW,Math.min(1,(h-190)/95));
+    /* the ground the city stands on is paved, not scrub */
+    if(h>=4){
+      var urban=1-smooth(CITY_REACH*.5,CITY_REACH*1.08,Math.sqrt(wx2*wx2+wz2*wz2));
+      if(urban>0)tmpC.lerp(TARMAC,urban*.7);
+    }
     c.setXYZ(i,tmpC.r+m,tmpC.g+m,tmpC.b+m);
   }
   p.needsUpdate=true;c.needsUpdate=true;
@@ -998,7 +1050,7 @@ function buildGoal(team){
     teamMat(team,new THREE.MeshBasicMaterial({color:TEAM_COL[team],transparent:true,opacity:.09,
       side:THREE.DoubleSide,depthWrite:false}))));
   var portal=new THREE.Mesh(new THREE.PlaneGeometry(GOAL_R*2.8,GOAL_R*2.8),
-    new THREE.MeshBasicMaterial({map:team==='blue'?bluePortalSkin:redPortalSkin,
+    new THREE.MeshBasicMaterial({map:portalSkin[team],
       color:0xffffff,transparent:true,opacity:.78,blending:THREE.AdditiveBlending,
       side:THREE.DoubleSide,depthWrite:false,fog:false}));
   portal.rotation.x=-Math.PI/2;portal.position.y=3;g.add(portal);
@@ -1016,15 +1068,16 @@ function buildBase(team){
   function put(mesh,x,y,z){mesh.position.set(p.x+x,gy+y,p.z+z);scene.add(mesh);return mesh;}
 
   put(new THREE.Mesh(new THREE.CylinderGeometry(215,240,10,32),deck),0,5,0);
-  var pad=new THREE.Mesh(new THREE.PlaneGeometry(430,430),
+  /* The airstrip art is a circular pad drawn inside a square image, and the
+     deck it lands on is 215 across, so read back the inscribed circle: a
+     square plane of the same half-width would hang its corners 64 out past
+     the rim with nothing under them. The runway runs the full diameter along
+     the image's horizontal, which is the base-to-midfield axis. */
+  var pad=new THREE.Mesh(new THREE.CircleGeometry(215,48),
     new THREE.MeshBasicMaterial({map:airstripSkin[team],
       color:0xffffff,side:THREE.DoubleSide}));
   pad.rotation.x=-Math.PI/2;
   put(pad,0,10.7,0);
-  /* apron stripe pointing at midfield */
-  for(var i=0;i<7;i++)
-    put(new THREE.Mesh(new THREE.BoxGeometry(26,.6,4),new THREE.MeshBasicMaterial({color:0xd8dde2})),
-        side*(-150+i*50),10.4,0);
   /* two hangars */
   [-118,118].forEach(function(dz){
     put(new THREE.Mesh(new THREE.BoxGeometry(46,20,30),wall),side*-60,20,dz);
@@ -1042,6 +1095,56 @@ function buildBase(team){
   halo.scale.set(120,120,1); put(halo,0,310,0);
 }
 buildBase('blue'); buildBase('red');
+
+/* --- the city on the valley floor ---
+   The ground between the two airbases is a built-up grid: dense downtown over
+   midfield, thinning to low-rise out toward each base, streets running along
+   the run so the skyline reads as depth while you are lining a pass up.
+
+   The whole thing is one InstancedMesh — a few hundred buildings for a single
+   draw call, which is what keeps it affordable on a phone. Nothing here is a
+   collision volume. At combat altitude you are well over the roofs, and
+   hanging hard bodies on several hundred boxes would turn every low pass into
+   a coin flip; the terrain underneath is still the thing that kills you. */
+var cityMat=null;
+(function buildCity(){
+  var lots=[],span=Math.round(CITY_REACH/CITY_BLOCK);
+  for(var ix=-span;ix<=span;ix++){
+    for(var iz=-span;iz<=span;iz++){
+      if(ix%5===0||iz%5===0)continue;              /* every fifth line is an avenue */
+      if(LOW&&((ix+iz)&1))continue;                /* half the density on a phone */
+      var x=ix*CITY_BLOCK+(hash(ix*1.7,iz*2.3)-.5)*36,
+          z=iz*CITY_BLOCK+(hash(ix*3.1,iz*1.9)-.5)*36,
+          d=Math.sqrt(x*x+z*z);
+      if(d>CITY_REACH)continue;
+      var gy=terrainHeight(x,z);
+      if(gy<8)continue;                            /* below the water line */
+      /* nothing gets built on ground it could not stand on */
+      if(Math.max(Math.abs(terrainHeight(x+58,z)-gy),Math.abs(terrainHeight(x,z+58)-gy))>30)continue;
+      lots.push([x,z,gy,1-smooth(280,CITY_REACH,d)]);
+    }
+  }
+  var geo=new THREE.BoxGeometry(1,1,1);
+  geo.translate(0,.5,0);                           /* stand the box on the ground */
+  cityMat=new THREE.MeshPhongMaterial({flatShading:true,shininess:6,color:0xffffff});
+  var city=new THREE.InstancedMesh(geo,cityMat,lots.length);
+  city.frustumCulled=false;                        /* bounds are the unit box, not the city */
+  var TONES=[0xd9d4c6,0xc7cbcb,0xe2dac6,0xbcbfb7,0xd0c7b6,0xb4b8bd];
+  var m=new THREE.Matrix4(),q=new THREE.Quaternion(),
+      pos=new THREE.Vector3(),scl=new THREE.Vector3(),col=new THREE.Color();
+  for(var i=0;i<lots.length;i++){
+    var L=lots[i],r1=hash(L[0]*.071,L[1]*.113),r2=hash(L[1]*.091,L[0]*.053);
+    scl.set(50+r2*46,24+L[3]*CITY_TOP*(.28+.72*r1*r1),50+r1*46);
+    pos.set(L[0],L[2]-5,L[1]);                     /* sunk slightly so it never floats */
+    m.compose(pos,q,scl);
+    city.setMatrixAt(i,m);
+    col.setHex(TONES[(i*3+((r2*97)|0))%TONES.length]).multiplyScalar(.84+r1*.28);
+    city.setColorAt(i,col);
+  }
+  city.instanceMatrix.needsUpdate=true;
+  if(city.instanceColor)city.instanceColor.needsUpdate=true;
+  scene.add(city);
+})();
 
 var coreGroup=new THREE.Group(); scene.add(coreGroup);
 /* the objective: a hardshell case with the cemi element sealed inside */
@@ -1082,8 +1185,9 @@ coreGlow.scale.set(48,48,1); coreGroup.add(coreGlow);
 var coreBeam=new THREE.Mesh(new THREE.CylinderGeometry(9,9,1600,10,1,true),
   new THREE.MeshBasicMaterial({color:0xffb347,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false}));
 coreGroup.add(coreBeam);
-var CASE_GRAB=46;
-var core={pos:new THREE.Vector3(0,600,0),vel:new THREE.Vector3(),carrier:null,lockout:null,lockT:0};
+var CASE_GRAB=85;
+var core={pos:new THREE.Vector3(0,600,0),vel:new THREE.Vector3(),carrier:null,
+  lockout:null,lockT:0,charge:100};
 
 /* ===================== fighters ===================== */
 var NAMES={blue:['YOU','ARAWAK','GUABIN','MABI'],red:['YAGUANA','CIBAO','HIGUEY','MAGUA']};
@@ -1113,7 +1217,7 @@ function aiSkill(f){
 
 function buildPlane(team,isPlayer){
   var g=new THREE.Group();
-  var hull=new THREE.MeshPhongMaterial({map:team==='blue'?blueSkin:redSkin,
+  var hull=new THREE.MeshPhongMaterial({map:hullSkin[team],
     color:isPlayer?0xffffff:0xe9edf0,shininess:60,flatShading:true});
   var trim=teamMat(team,new THREE.MeshPhongMaterial({color:TEAM_COL[team],shininess:40,flatShading:true}));
   var dark=new THREE.MeshPhongMaterial({color:0x2b3038,shininess:20,flatShading:true});
@@ -1158,7 +1262,7 @@ function makeFighter(team,idx,isPlayer){
     vel:new THREE.Vector3(),speed:0,alpha:0,gLoad:1,stalled:false,
     hp:100,alive:true,respawnT:0,invuln:3,throttle:.8,cannonCd:0,
     kills:0,caps:0,carrying:false,aiJink:0,boundT:0,spread:.0105,
-    roll:{t:0,dir:0,cd:0},evade:0};
+    roll:{t:0,dir:0,cd:0},evade:0,lastSeen:null,lastSeenT:0};
   f.pos=f.mesh.position; f.quat=f.mesh.quaternion;
   respawnFighter(f,true); fighters.push(f); return f;
 }
@@ -1226,6 +1330,7 @@ function stepFlight(f,ctl,dt){
   var m=f.mesh;
   axes(f);
   var speed=f.vel.length();
+  var carry=f.carrying?1:0;
   /* control authority falls off with airspeed — mushy when slow */
   var auth=clamp((speed-16)/125,0.10,1.0);
   /* soft angle-of-attack limiter: you can still force a departure by holding
@@ -1233,8 +1338,8 @@ function stepFlight(f,ctl,dt){
   var lim=1;
   var over=(Math.abs(f.alpha)-A_CRIT*0.72)/(A_CRIT*0.55);
   if(over>0&&ctl.pitch*(f.alpha>=0?1:-1)>0)lim=1-clamp(over,0,1)*0.70;
-  m.rotateX(ctl.pitch*PITCH_RATE*auth*lim*dt);
-  m.rotateZ(ctl.roll*ROLL_RATE*(ctl.rollMul||1)*auth*dt);
+  m.rotateX(ctl.pitch*PITCH_RATE*(carry?.82:1)*auth*lim*dt);
+  m.rotateZ(ctl.roll*ROLL_RATE*(ctl.rollMul||1)*(carry?.82:1)*auth*dt);
   m.rotateY(-ctl.yaw*YAW_RATE*auth*dt);
   axes(f);
 
@@ -1249,12 +1354,13 @@ function stepFlight(f,ctl,dt){
   _ld.crossVectors(_r,_vd);
   if(_ld.lengthSq()>1e-6)_ld.normalize(); else _ld.copy(_u);
 
-  var liftA=clamp(LIFT_K*q2*cl,-G_LIMIT*G,G_LIMIT*G);
-  var cd=1+CDI*cl*cl+(stalled?0.9:0);
+  var activeGLimit=carry?6.5:G_LIMIT;
+  var liftA=clamp(LIFT_K*q2*cl,-activeGLimit*G,activeGLimit*G);
+  var cd=1+CDI*(carry?1.25:1)*cl*cl+(stalled?0.9:0);
   if(speed>280)cd+=(speed-280)/140;          /* compressibility wall */
 
   _ac.set(0,0,0);
-  _ac.addScaledVector(_f,THRUST*ctl.throttle);
+  _ac.addScaledVector(_f,THRUST*(carry?.85:1)*ctl.throttle);
   _ac.addScaledVector(_ld,liftA);
   _ac.addScaledVector(_vd,-DRAG_K*q2*cd);
   _ac.addScaledVector(_r,-SIDE_K*q2*beta);
@@ -1391,7 +1497,7 @@ bGeo.setAttribute('position',new THREE.BufferAttribute(bPos,3));
 var bulletMesh=new THREE.LineSegments(bGeo,new THREE.LineBasicMaterial(
   {color:0xffd9a0,transparent:true,opacity:.95,fog:false,depthWrite:false}));
 bulletMesh.frustumCulled=false; scene.add(bulletMesh);
-var MUZZLE=780,BULLET_DMG=10;
+var MUZZLE=780,BULLET_DMG=14,HIT_RADIUS=14;
 
 function fire(f){
   if(f.cannonCd>0||!f.alive)return;
@@ -1399,6 +1505,14 @@ function fire(f){
   var fwd=new THREE.Vector3(0,0,-1).applyQuaternion(f.quat);
   var spread=f.isPlayer?.0032:f.spread;
   var d=fwd.clone();
+  /* A small, earned aim assist helps a near-correct burst connect without
+     turning the cannon into a lock-on weapon. The nose still has to be within
+     roughly three degrees of the real intercept solution. */
+  if(f.isPlayer&&lockOn.target&&lockOn.target.alive){
+    var at=interceptTime(f,lockOn.target);
+    interceptAim(f,lockOn.target,at,_aimV);
+    if(_aimV.dot(fwd)>.9986)d.lerp(_aimV,.24).normalize();
+  }
   d.x+=rnd(-spread,spread);d.y+=rnd(-spread,spread);d.z+=rnd(-spread,spread);
   d.normalize();
   bullets.push({p:f.pos.clone().addScaledVector(fwd,6.4),
@@ -1519,7 +1633,7 @@ function grabCore(f){
 function scoreCap(f){
   if(f.team==='blue')st.scoreB++; else st.scoreR++;
   f.caps++; core.carrier=null; f.carrying=false;
-  core.pos.set(0,600,rnd(-260,260)); core.vel.set(0,0,0); core.lockout=null;
+  core.pos.set(0,600,rnd(-260,260)); core.vel.set(0,0,0); core.lockout=null; core.charge=100;
   boom(GOALS[f.team],280);
   feed(tag(f)+' <span style="color:#ffb347">SCORED</span>');
   if(f.isPlayer)sortie.scores++;
@@ -1534,20 +1648,31 @@ function stepCore(dt){
     var c=core.carrier;
     if(!c.alive)core.carrier=null;
     else{
+      core.charge=Math.max(0,core.charge-dt*2);
+      if(core.charge<=0){
+        banner('CASE DISCHARGED — DROPPED',1.2);
+        dropCore(c);
+        core.charge=35;
+        return;
+      }
       /* The generated case is a small hover pickup: carry it above the
          aircraft's local spine instead of towing a full-size box behind it. */
       var above=tmpV.set(0,1,0).applyQuaternion(c.quat);
       core.pos.copy(c.pos).addScaledVector(above,5.4);
       var g=GOALS[c.team];
-      if(Math.hypot(core.pos.x-g.x,core.pos.z-g.z)<GOAL_R&&Math.abs(core.pos.y-g.y)<430)scoreCap(c);
+      axes(c);
+      var bank=Math.abs(Math.atan2(-_r.y,_u.y));
+      if(Math.hypot(core.pos.x-g.x,core.pos.z-g.z)<GOAL_R&&
+         Math.abs(core.pos.y-g.y)<260&&c.speed<290&&bank<.78)scoreCap(c);
     }
   } else {
+    core.charge=Math.min(100,core.charge+dt*8);
     core.pos.addScaledVector(core.vel,dt);
     core.vel.multiplyScalar(1-Math.min(1,dt*1.3));
     core.vel.y-=24*dt;
     /* magnet: a loose case pulls toward the closest aircraft, so you don't
        have to thread a needle at 200 units per second */
-    var near=null,nd=260;
+    var near=null,nd=420;
     for(var mi=0;mi<fighters.length;mi++){
       var mf=fighters[mi];
       if(!mf.alive||mf===core.lockout)continue;
@@ -1555,7 +1680,7 @@ function stepCore(dt){
       if(md<nd){nd=md;near=mf;}
     }
     if(near)core.pos.addScaledVector(tmpV.copy(near.pos).sub(core.pos).normalize(),
-      Math.min(70,(1-nd/260)*120)*dt);
+      Math.min(120,(1-nd/420)*190)*dt);
     var gh=ground(core.pos.x,core.pos.z)+130;
     if(core.pos.y<gh){core.pos.y+=(gh-core.pos.y)*Math.min(1,dt*2.2);core.vel.y*=.4;}
     if(core.pos.y>1600)core.pos.y=1600;
@@ -1576,6 +1701,15 @@ function stepCore(dt){
   coreCaseSprite.position.y=Math.sin(performance.now()*.0022)*(carried?.35:.8);
   coreGlow.scale.set(glowSize*pulse,glowSize*pulse,1);
   coreGlow.material.opacity=carried?.34:.78;
+  /* The destination itself reacts to possession: the correct ring flares and
+     breathes as the carrier closes, so the objective is readable in the world
+     rather than through another instruction panel. */
+  for(var gi=0;gi<goalVisuals.length;gi++){
+    var active=core.carrier&&gi===(core.carrier.team==='blue'?0:1);
+    var gs=active?1.08+Math.sin(performance.now()*.007)*.09:1;
+    goalVisuals[gi].scale.set(gs,gs,gs);
+    goalVisuals[gi].material.opacity=active?.98:.58;
+  }
   coreBeam.visible=!core.carrier;
 }
 
@@ -1640,7 +1774,7 @@ function aiFor(f,dt){
   var gh=ground(ahead.x,ahead.z);
   if(ahead.y<gh+120)aimPt=f.pos.clone().addScaledVector(_f,420).setY(gh+340);
   if(f.pos.y<260)aimPt=aimPt.clone().setY(Math.max(aimPt.y,600));
-  if(Math.hypot(f.pos.x,f.pos.z)>ARENA-320)aimPt=new THREE.Vector3(0,650,0);
+  if(arenaDistance(f.pos.x,f.pos.z)>ARENA_RADIUS-320)aimPt=new THREE.Vector3(0,650,0);
 
   var dir=aimPt.clone().sub(f.pos);
   var dist2=dir.length(); dir.normalize();
@@ -1657,7 +1791,17 @@ function aiFor(f,dt){
   }
   ctl=applyRoll(f,ctl,dt);
   if(f.aiJink>0&&f.roll.t<=0)ctl.roll=clamp(ctl.roll+Math.sin(performance.now()*.006)*.85,-1,1);
+  /* Extend instead of forcing a slow merge when the opponent owns the energy
+     advantage. Difficulty still changes reaction/aim, never aircraft stats. */
+  var ownE=f.pos.y+f.speed*f.speed/(2*G);
+  var foeE=engage?engage.pos.y+engage.speed*engage.speed/(2*G):ownE;
   ctl.throttle=1;
+  if(engage&&foeE>ownE+420&&holder!==f){
+    var away=f.pos.clone().sub(engage.pos).normalize();
+    aimPt=f.pos.clone().addScaledVector(away,700); aimPt.y+=260;
+    ctl=steerTo(f,aimPt.sub(f.pos).normalize(),1.35);
+    ctl.throttle=1;
+  }
   if(engage&&dist2<230&&holder!==f)ctl.throttle=.7;
   stepFlight(f,ctl,dt);
 
@@ -1928,7 +2072,7 @@ function resetMatch(){
   fx.length=0;
   for(var a=dmgArcs.length-1;a>=0;a--)dmgDirEl.removeChild(dmgArcs[a].node);
   dmgArcs.length=0;
-  core.carrier=null; core.lockout=null; core.lockT=0;
+  core.carrier=null; core.lockout=null; core.lockT=0; core.charge=100;
   core.pos.set(0,600,rnd(-260,260)); core.vel.set(0,0,0);
   for(var j=0;j<fighters.length;j++){
     var f=fighters[j];
@@ -2056,6 +2200,24 @@ function drawMap(){
   mctx.strokeStyle='#ffe0a8';mctx.lineWidth=1;mctx.strokeRect(c.x-cs,c.y-cs*.72,cs*2,cs*1.44);
   for(var i=0;i<fighters.length;i++){
     var f=fighters[i]; if(!f.alive)continue;
+    var enemy=f.team!==player.team,now=performance.now()*.001;
+    if(enemy){
+      var range=f.pos.distanceTo(player.pos);
+      var pf=tmpV.set(0,0,-1).applyQuaternion(player.quat);
+      var bearing=tmpV2.copy(f.pos).sub(player.pos).normalize();
+      var inCloud=f.pos.y>820&&f.pos.y<1260;
+      var seen=f.carrying||range<(inCloud?430:900)||(!inCloud&&range<1600&&bearing.dot(pf)>.72);
+      if(seen){f.lastSeen={x:f.pos.x,z:f.pos.z};f.lastSeenT=now;}
+      else {
+        if(!f.lastSeen||now-f.lastSeenT>8)continue;
+        var ghost=w2m(f.lastSeen.x,f.lastSeen.z);
+        mctx.globalAlpha=Math.max(.12,1-(now-f.lastSeenT)/8)*.42;
+        mctx.strokeStyle=teamHex(f.team);mctx.lineWidth=1.5;
+        mctx.beginPath();mctx.arc(ghost.x,ghost.y,4.5,0,7);mctx.stroke();
+        mctx.globalAlpha=1;
+        continue;
+      }
+    }
     var p=w2m(f.pos.x,f.pos.z);
     if(f.isPlayer){
       var fwd=tmpV.set(0,0,-1).applyQuaternion(f.quat);
@@ -2351,6 +2513,9 @@ function env(dt){
   sunLight.color.copy(cSun); sunLight.intensity=(.15+dayF*1.05)*shade+st.flash*2.2;
   moonLight.intensity=(1-dayF)*.28;
   hemi.color.copy(cBot); hemi.intensity=.18+dayF*.42*shade+st.flash;
+  /* the city keeps its lights on after dark, which is also the only thing
+     that stops a night match reading as an empty black valley */
+  if(cityMat){var lit=(1-dayF)*.34;cityMat.emissive.setRGB(lit,lit*.82,lit*.5);}
   stars.material.opacity=(1-dayF)*(1-wx.cover*.85);
   moon.material.opacity=(1-dayF)*.9*(1-wx.cover*.8);
   sea.material.color.copy(cBot).multiplyScalar(.42).lerp(new THREE.Color(0x14405f),.55);
@@ -2513,8 +2678,8 @@ function step(dt){
     if(f.pos.y-gh<8){kill(f,null);continue;}
     if(f.pos.y>2800){f.pos.y=2800;if(f.vel.y>0)f.vel.y=0;}
 
-    var dc=Math.hypot(f.pos.x,f.pos.z);
-    if(dc>ARENA){
+    var dc=arenaDistance(f.pos.x,f.pos.z);
+    if(dc>ARENA_RADIUS){
       f.boundT+=dt;
       if(f.isPlayer){el.warn.textContent=f.boundT>8?'LEAVING THE FIGHT — TAKING DAMAGE':'RETURN TO COMBAT AREA';
         el.warn.style.opacity=1;}
@@ -2554,7 +2719,7 @@ function stepBullets(dt){
         var t=clamp(tmpV3.copy(f.pos).sub(prev).dot(seg)/L2,0,1);
         var cx=prev.x+seg.x*t,cy=prev.y+seg.y*t,cz=prev.z+seg.z*t;
         var dx=cx-f.pos.x,dy=cy-f.pos.y,dz=cz-f.pos.z;
-        if(dx*dx+dy*dy+dz*dz<64){
+        if(dx*dx+dy*dy+dz*dz<HIT_RADIUS*HIT_RADIUS){
           hurt(f,BULLET_DMG,b.owner);
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
           boom(new THREE.Vector3(cx,cy,cz),18); dead=true; break;
@@ -2656,7 +2821,8 @@ function hudWork(dt){
     var g=GOALS[h.team];
     el.coreLine.textContent=(h===player?'YOU HAVE THE CASE':
       (h.team===player.team?'ALLY CARRIER — ':'ENEMY CARRIER — ')+h.name)+
-      ' · '+(Math.hypot(h.pos.x-g.x,h.pos.z-g.z)/1000).toFixed(2)+' KM TO THE RING';
+      ' · '+Math.round(core.charge)+'% CHARGE · '+
+      (Math.hypot(h.pos.x-g.x,h.pos.z-g.z)/1000).toFixed(2)+' KM TO THE RING';
   } else {
     el.coreLine.textContent='CASE LOOSE · '+
       (Math.hypot(core.pos.x-player.pos.x,core.pos.z-player.pos.z)/1000).toFixed(2)+' KM';
@@ -2787,10 +2953,10 @@ function targetHud(alive){
     (closure>=0?'+':'')+Math.round(closure*1.1)+'kt';
 
   /* Firing cue: is the required aim direction inside the cone the gun can
-     actually cover at this range? Target radius is the 8-unit hit sphere. */
+     actually cover at this range? */
   interceptAim(player,tgt,t,_aimV);
   var err=Math.acos(clamp(_aimV.dot(_f),-1,1));
-  var solved=range<900&&err<(8/Math.max(range,1))+0.0055;
+  var solved=range<1050&&err<(HIT_RADIUS/Math.max(range,1))+0.008;
   el.pip.classList.toggle('hot',solved);
   tgtBox.classList.toggle('solved',solved);
   if(solved&&!lockOn.cue&&lockOn.cueT<=0){lockOn.cueT=0.6;tone(1650,.05,.10,'square');}
