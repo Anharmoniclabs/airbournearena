@@ -493,14 +493,15 @@
 <div id="hangarUI">
   <div id="hangarTitle">
     <h2>BREAKWATER FIELD</h2>
-    <p><b>MARA "SWITCH" VOSS:</b> Two league flights are running an open trial
-    off my strip, and both of them are short a pilot. Take the <b>Arena Core</b>
-    to their ring, keep your carrier alive, and put their masts down. Walk up to
-    whichever airframe you want and I'll sign the paperwork.</p>
+    <p><b>MARA "SWITCH" VOSS:</b> Your Kestrel is patched, fueled, and still
+    yours. Vanguard and Inferno are running an <b>Arena League open trial</b>
+    off Starter Coast, and each needs one independent pilot. Pick the flight
+    you will support today, move the <b>Arena Core</b>, and bring my aircraft
+    home in one piece. This is a trial assignment—not your final allegiance.</p>
   </div>
   <div id="hangarSign">
-    <span>SIGNED WITH</span>
-    <b id="hangarTeam">UNSIGNED</b>
+    <span>OPEN-TRIAL FLIGHT</span>
+    <b id="hangarTeam">INDEPENDENT</b>
     <span id="hangarCall"></span>
   </div>
   <div id="hangarPrompt"></div>
@@ -513,7 +514,7 @@
 <div id="fitCard">
   <div class="setCard">
     <h2>FIT OUT</h2>
-    <div class="setRow"><label>CONTRACT</label>
+    <div class="setRow"><label>TRIAL SIDE</label>
       <div class="fitTeam">
         <button class="seg blue" id="fitBlue" data-team="blue">VANGUARD</button>
         <button class="seg red" id="fitRed" data-team="red">INFERNO</button>
@@ -532,8 +533,9 @@
       <input type="range" id="fitTrim" min="-1" max="1" step=".25">
       <output id="fitTrimOut">EVEN</output>
     </div>
-    <div class="setNote">Trim trades a tenth of thrust against a tenth of pitch and
-      roll rate. Livery is paint only. Both are saved to this device.</div>
+    <div class="setNote">This is still your Kestrel Mk I. Trim trades a tenth of
+      thrust against a tenth of pitch and roll rate. Trial side, paint, and setup
+      are saved to this device; the campaign faction decision comes later.</div>
     <div class="btnRow">
       <button class="actionBtn" id="fitDone">BACK TO THE HANGAR</button>
       <button class="actionBtn" id="fitLaunch">TO THE FLIGHT LINE</button>
@@ -1151,7 +1153,10 @@ rain.frustumCulled=false; scene.add(rain);
 var FACTION={blue:'VANGUARD',red:'INFERNO'};
 function factionName(team){return FACTION[team]||String(team).toUpperCase();}
 var TEAM_BASE={blue:0x4fc3ff,red:0xff6b5e},TEAM_CB={blue:0x4aa8ff,red:0xffa32e};
-var TEAM_COL={blue:0x4fc3ff,red:0xff6b5e};
+/* blackwing is not a league side and never repaints with the palette, but it
+   has to be in here: a drone that kills you goes through tag(), which reads
+   this map to colour the name in the feed. */
+var TEAM_COL={blue:0x4fc3ff,red:0xff6b5e,blackwing:0xb98cff};
 var teamMats={blue:[],red:[]};
 function teamMat(team,mat){teamMats[team].push(mat);return mat;}
 function teamHex(team){return '#'+('00000'+TEAM_COL[team].toString(16)).slice(-6);}
@@ -1359,6 +1364,143 @@ function stepStructs(dt){
     if(!tgt)continue;
     if(s.cd<=0){s.cd=tgt.carrying?0.60:1.00; aaFire(s,tgt);}
   }
+}
+
+/* ===================== the blackout =====================
+   STORY-BIBLE section 11, Mission 10. Late in a Core Run the arena loses
+   power, the masts go dark, and unmarked aircraft come in under sensor
+   masking. They belong to nobody: their rounds hurt both league flights, both
+   sets of guns, and the masts.
+
+   Drones are deliberately NOT fighters. Everything in `fighters` assumes two
+   sides — scoring, rosters, bases, goals, palette — and a third entry there
+   would have to be special-cased in a dozen places. A separate list with its
+   own step and its own collision costs less and breaks nothing.
+
+   Mechanically the raid is built out of parts that already exist: it drops
+   every mast, which is exactly the fog-of-war penalty the radar rule already
+   models, so the sky goes quiet without a single new rule to explain.      */
+var drones=[],raid={on:false,fired:false,t:0};
+var DRONE_HP=46,DRONE_SPEED=118,DRONE_RANGE=620,DRONE_DMG=7,RAID_N=4,RAID_TIME=45;
+var _drV=new THREE.Vector3(),_drV2=new THREE.Vector3();
+
+function buildDrone(){
+  var g=new THREE.Group();
+  var body=new THREE.Mesh(new THREE.ConeGeometry(2.6,11,4),
+    new THREE.MeshPhongMaterial({map:blackWingSkin,color:0x5b5f6b,shininess:44,flatShading:true}));
+  body.rotation.x=-Math.PI/2; g.add(body);
+  var wing=new THREE.Mesh(new THREE.BoxGeometry(15,.3,2.2),
+    new THREE.MeshPhongMaterial({map:blackWingSkin,color:0x4a4e58,shininess:30,flatShading:true}));
+  wing.position.z=1.2; g.add(wing);
+  /* the only thing you can actually see coming in the dark */
+  var eye=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:softSprite('rgba(190,150,255,.95)','rgba(140,90,230,0)'),
+    color:0xb98cff,transparent:true,depthWrite:false,fog:false,
+    blending:THREE.AdditiveBlending}));
+  eye.scale.set(20,20,1); eye.position.z=-5; g.add(eye);
+  scene.add(g);
+  return g;
+}
+function startRaid(){
+  if(raid.on||raid.fired||st.over)return;
+  raid.on=raid.fired=true; raid.t=0;
+  /* arena systems shut down: every mast drops at once, which is the blackout
+     the player actually feels — the map empties */
+  for(var i=0;i<structs.length;i++){
+    var s=structs[i];
+    if(s.kind!=='radar'||!s.alive)continue;
+    s.alive=false; s.mesh.visible=false; s.respawnT=s.respawn*1.6;
+    boom(s.pos,180);
+  }
+  for(var d=0;d<RAID_N;d++){
+    var ang=Math.PI*2*d/RAID_N+0.7;
+    var g=buildDrone();
+    g.position.set(Math.cos(ang)*2100,rnd(900,1250),Math.sin(ang)*1500);
+    drones.push({mesh:g,pos:g.position,vel:new THREE.Vector3(),hp:DRONE_HP,
+      alive:true,cd:rnd(.4,1.6),team:'blackwing',name:'BLACK WING',kills:0});
+  }
+  banner('ARENA POWER LOST',2.2);
+  feed('<span style="color:#b98cff">UNIDENTIFIED AIRCRAFT — SENSOR MASKED</span>');
+  tone(70,1.6,.26,'sawtooth',44);
+}
+function killDrone(dr){
+  if(!dr.alive)return;
+  dr.alive=false; dr.mesh.visible=false;
+  boom(dr.pos,140);
+  feed('<span style="color:#b98cff">BLACK WING DRONE DOWN</span>');
+}
+function stepDrones(dt){
+  /* the raid arrives once a match, on the clock or at match point */
+  if(!raid.fired&&st.started&&!st.over&&
+     (st.time<70||st.scoreB>=TARGET_SCORE-1||st.scoreR>=TARGET_SCORE-1))startRaid();
+  if(!drones.length)return;
+  /* The raid is an event, not a new permanent state. It withdraws on its own
+     clock — which is also what stops a drone nobody manages to shoot from
+     harassing the arena for the rest of the match. */
+  if(raid.on){
+    raid.t+=dt;
+    if(raid.t>RAID_TIME){
+      for(var w=0;w<drones.length;w++)if(drones[w].alive){drones[w].alive=false;drones[w].mesh.visible=false;}
+    }
+  }
+  var live=0;
+  for(var i=0;i<drones.length;i++){
+    var dr=drones[i];
+    if(!dr.alive)continue;
+    live++;
+    /* the carrier first, then anyone flying, then the guns */
+    var tgt=null,bd=1e9;
+    for(var j=0;j<fighters.length;j++){
+      var f=fighters[j];
+      if(!f.alive||f.invuln>0)continue;
+      var d=f.pos.distanceTo(dr.pos);
+      if(f.carrying)d*=0.5;
+      if(d<bd){bd=d;tgt=f;}
+    }
+    if(!tgt){
+      for(var k=0;k<structs.length;k++){
+        var s=structs[k];
+        if(!s.alive)continue;
+        var ds=s.pos.distanceTo(dr.pos);
+        if(ds<bd){bd=ds;tgt=s;}
+      }
+    }
+    if(tgt){
+      _drV.copy(tgt.pos).sub(dr.pos);
+      if(tgt.pos.y<400)_drV.y+=180;          /* do not chase anyone into a hill */
+      var dist=_drV.length();
+      if(dist>1e-3)_drV.multiplyScalar(1/dist);
+      /* hold off rather than ram, so they circle and shoot */
+      var want=dist<300?-0.5:1;
+      dr.vel.lerp(_drV2.copy(_drV).multiplyScalar(DRONE_SPEED*want),Math.min(1,dt*1.1));
+      dr.cd-=dt;
+      if(dist<DRONE_RANGE&&dr.cd<=0){
+        dr.cd=rnd(.7,1.25);
+        var aim=_drV2.copy(tgt.pos).addScaledVector(tgt.vel||_drV2.set(0,0,0),
+          dist/MUZZLE).sub(dr.pos).normalize();
+        var sp=.026;
+        aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
+        bullets.push({p:dr.pos.clone().addScaledVector(aim,7),
+          v:aim.clone().multiplyScalar(MUZZLE*.82),life:1.7,
+          team:'blackwing',owner:dr,dmg:DRONE_DMG});
+        gunSfx(earGain(dr.pos)*.42);
+      }
+    }
+    dr.pos.addScaledVector(dr.vel,dt);
+    var gh=ground(dr.pos.x,dr.pos.z)+60;
+    if(dr.pos.y<gh){dr.pos.y=gh;if(dr.vel.y<0)dr.vel.y=0;}
+    if(dr.pos.y>CEIL_MAX)dr.pos.y=CEIL_MAX;
+    if(dr.vel.lengthSq()>1e-4)dr.mesh.lookAt(_drV.copy(dr.pos).add(dr.vel));
+  }
+  if(raid.on&&live===0){
+    raid.on=false;
+    banner('AIRSPACE CLEAR',1.8);
+    feed('<span style="color:#b98cff">RAID BROKEN — THEY GOT WHAT THEY CAME FOR</span>');
+  }
+}
+function clearDrones(){
+  for(var i=0;i<drones.length;i++)scene.remove(drones[i].mesh);
+  drones.length=0; raid.on=false; raid.fired=false; raid.t=0;
 }
 
 /* --- textured road network ---
@@ -1628,7 +1770,10 @@ function buildPlane(team,isPlayer){
     color:isPlayer?0xffffff:0xe9edf0,shininess:68,flatShading:true});
   var trim=teamMat(team,new THREE.MeshPhongMaterial({
     map:isPlayer?kestrelSkin:factionSurface,color:TEAM_COL[team],shininess:52,flatShading:true}));
-  var dark=new THREE.MeshPhongMaterial({map:blackWingSkin,color:0x343b43,shininess:28,flatShading:true});
+  /* Black Wing's generated surface is reserved for its own later drone family;
+     using it for every landing rail and intake leaked the antagonist identity
+     into the player's starting Kestrel. */
+  var dark=new THREE.MeshPhongMaterial({color:0x343b43,shininess:28,flatShading:true});
   var glass=new THREE.MeshPhongMaterial({color:0x70c7ea,emissive:0x071b29,
     shininess:145,transparent:true,opacity:.72});
 
@@ -1691,6 +1836,7 @@ function buildPlane(team,isPlayer){
   /* kept so fit-out repaints this exact shared material across every physical
      hull panel without changing the faction texture or any other aircraft */
   g.userData.hull=hull; g.userData.trim=trim;
+  g.userData.factionSurface=factionSurface;
   scene.add(g); return g;
 }
 function makeFighter(team,idx,isPlayer){
@@ -2301,6 +2447,19 @@ function aiFor(f,dt){
     }
   }
   if(!engage&&!f.strike)engage=nearestFoe(f,620);
+  /* An unmarked aircraft shooting at the arena is everyone's problem. Without
+     this the league pilots fly through the raid as if it were weather, and a
+     drone nobody engages is a drone only the player can answer. */
+  if(raid.on){
+    var nearD=null,nearDD=760;
+    for(var di=0;di<drones.length;di++){
+      var dq=drones[di];
+      if(!dq.alive)continue;
+      var dqd=dq.pos.distanceTo(f.pos);
+      if(dqd<nearDD){nearDD=dqd;nearD=dq;}
+    }
+    if(nearD&&(!engage||nearDD<f.pos.distanceTo(engage.pos))){engage=nearD;f.strike=null;}
+  }
 
   var aimPt=goal;
   if(engage&&holder!==f){
@@ -2360,9 +2519,12 @@ function aiFor(f,dt){
     axes(f);
     var toE=tmpV.copy(engage.pos).sub(f.pos);
     var dE=toE.length(); toE.normalize();
-    /* a rolling target is hard to track; a sharper pilot stays on it longer */
-    var need=0.952+engage.evade*0.016-(sk.aggro-1)*0.010;
-    if(dE<800&&toE.dot(_f)>need&&Math.random()>engage.evade*0.45)fire(f);
+    /* a rolling target is hard to track; a sharper pilot stays on it longer.
+       Drones have no evade of their own, hence the guards — an undefined here
+       made `need` NaN and silently stopped the pilot ever firing. */
+    var evade=engage.evade||0;
+    var need=0.952+evade*0.016-(sk.aggro-1)*0.010;
+    if(dE<800&&toE.dot(_f)>need&&Math.random()>evade*0.45)fire(f);
     if(dE<300&&Math.random()<dt*.4*sk.react)f.aiJink=1.2;
   }
   /* a mast does not manoeuvre, so the gate is tighter and the range shorter */
@@ -2629,6 +2791,7 @@ function resetMatch(){
     var sc=structs[s];
     sc.alive=true; sc.hp=sc.maxHp; sc.respawnT=0; sc.cd=0; sc.mesh.visible=true;
   }
+  clearDrones();
   stepGoalRings(0);
   for(var i=fx.length-1;i>=0;i--)scene.remove(fx[i].s);
   fx.length=0;
@@ -3222,8 +3385,18 @@ function paintHangarPlane(){
   if(!g)return;
   ['blue','red'].forEach(function(tm){
     var o=hangarPlanes[tm];
-    if(o&&o.userData.hull)o.userData.hull.color.setHex(tm===PILOT.team?livery(PILOT.livery).hull:0xe9edf0);
-    if(o&&o.userData.trim)o.userData.trim.color.setHex(tm===PILOT.team?ACCENTS[PILOT.accent]:TEAM_COL[tm]);
+    if(!o)return;
+    var active=tm===PILOT.team;
+    if(o.userData.hull){
+      o.userData.hull.map=active?kestrelSkin:o.userData.factionSurface;
+      o.userData.hull.color.setHex(active?livery(PILOT.livery).hull:0xe9edf0);
+      o.userData.hull.needsUpdate=true;
+    }
+    if(o.userData.trim){
+      o.userData.trim.map=active?kestrelSkin:o.userData.factionSurface;
+      o.userData.trim.color.setHex(active?ACCENTS[PILOT.accent]:TEAM_COL[tm]);
+      o.userData.trim.needsUpdate=true;
+    }
   });
 }
 
@@ -3281,8 +3454,8 @@ function hangarStep(dt){
   hangarNear=IS_TOUCH?null:nearestBay();
   var board=Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11&&!IS_TOUCH;
   var msg='';
-  if(hangarNear)msg=(hangarNear===PILOT.team&&PILOT.signed?'[E]  FIT OUT YOUR ':'[E]  SIGN WITH ')+
-    factionName(hangarNear)+(hangarNear===PILOT.team&&PILOT.signed?' AIRFRAME':'');
+  if(hangarNear)msg=(hangarNear===PILOT.team&&PILOT.signed?'[E]  FIT OUT KESTREL — ':'[E]  JOIN ')+
+    factionName(hangarNear)+(hangarNear===PILOT.team&&PILOT.signed?' TRIAL FLIGHT':' FOR THIS TRIAL');
   else if(board)msg='[E]  READ THE BOARD';
   hEl.hangarPrompt.textContent=msg;
   hEl.hangarPrompt.classList.toggle('on',!!msg);
@@ -3292,7 +3465,7 @@ function hangarInteract(){
     if(!PILOT.signed||PILOT.team!==hangarNear){
       PILOT.team=hangarNear; PILOT.signed=true;
       savePilot(); syncFit(); paintHangarPlane(); updateSignPanel();
-      toast('SIGNED WITH '+factionName(hangarNear),2.2);
+      toast('TRIAL ASSIGNMENT — '+factionName(hangarNear),2.2);
     }
     openFit();
     return;
@@ -3301,7 +3474,7 @@ function hangarInteract(){
     toast('MOVE THE CORE. KILL THE MASTS. DO NOT RUN IT ALONE.',3.4);
 }
 function updateSignPanel(){
-  hEl.hangarTeam.textContent=PILOT.signed?factionName(PILOT.team):'UNSIGNED';
+  hEl.hangarTeam.textContent=PILOT.signed?factionName(PILOT.team):'INDEPENDENT';
   hEl.hangarTeam.className=PILOT.signed?PILOT.team:'';
   hEl.hangarCall.textContent=PILOT.signed?PILOT.callsign:'';
 }
@@ -3632,6 +3805,7 @@ function step(dt){
 
   stepBullets(dt);
   stepStructs(dt);
+  stepDrones(dt);
   stepGoalRings(dt);
   stepCore(dt);
   stepLock(dt);
@@ -3675,6 +3849,21 @@ function stepBullets(dt){
           hurtStruct(sc,b.dmg||BULLET_DMG,b.owner);
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
           boom(b.p,16); dead=true; break;
+        }
+      }
+    }
+    /* raid drones: hit by everyone except their own rounds */
+    if(!dead&&b.team!=='blackwing'){
+      for(var d2=0;d2<drones.length;d2++){
+        var dr=drones[d2];
+        if(!dr.alive)continue;
+        var ddx=b.p.x-dr.pos.x,ddy=b.p.y-dr.pos.y,ddz=b.p.z-dr.pos.z;
+        if(ddx*ddx+ddy*ddy+ddz*ddz<HIT_RADIUS*HIT_RADIUS){
+          dr.hp-=b.dmg||BULLET_DMG;
+          if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
+          if(dr.hp<=0){killDrone(dr); if(b.owner===player)sortie.kills++;}
+          else boom(b.p,14);
+          dead=true; break;
         }
       }
     }
