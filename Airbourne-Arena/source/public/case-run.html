@@ -1089,7 +1089,9 @@ var oceanSkin=gameTexture('assets/starter-coast-ocean-diffusion-4k-v1.webp',18,1
 var airbaseDeckSkin=gameTexture('assets/airbase-deck-diffusion-4k-v1.webp',3,3);
 var aviationHardwareSkin=gameTexture('assets/aviation-hardware-diffusion-4k-v1.webp',2,2);
 var explosionVfxSkin=tuneTexture(assetLoader.load('assets/aviation-explosion-vfx-diffusion-4k-v1.webp'));
-var stormCloudVfxSkin=tuneTexture(assetLoader.load('assets/storm-cloud-vfx-diffusion-4k-v1.webp'));
+var stormCloudVfxSkin=tuneTexture(assetLoader.load('assets/storm-cloud-vfx-diffusion-4k-v2.webp'));
+var independentPilotSkin=tuneTexture(assetLoader.load('assets/independent-pilot-rear-diffusion-4k-v1.webp'));
+var maraVossSkin=tuneTexture(assetLoader.load('assets/mara-switch-voss-diffusion-4k-v1.webp'));
 
 var sunLight=new THREE.DirectionalLight(0xffffff,1.1); scene.add(sunLight,sunLight.target);
 var moonLight=new THREE.DirectionalLight(0x9fb8ff,0); scene.add(moonLight,moonLight.target);
@@ -1187,7 +1189,8 @@ var puffTex=(function(){
 var CLOUD_N=LOW?44:170,SPAN=5400,clouds=[];
 for(var ci=0;ci<CLOUD_N;ci++){
   var cspr=new THREE.Sprite(new THREE.SpriteMaterial({map:stormCloudVfxSkin,
-    transparent:true,depthWrite:false,opacity:.32,blending:THREE.AdditiveBlending}));
+    transparent:true,alphaTest:.012,depthWrite:false,opacity:.46,
+    blending:THREE.NormalBlending}));
   var sc=340+Math.random()*640; cspr.scale.set(sc,sc*.55,1);
   cspr.material.rotation=rnd(-.08,.08);
   cspr.position.set(rnd(-SPAN/2,SPAN/2),rnd(450,1250),rnd(-SPAN/2,SPAN/2));
@@ -3339,6 +3342,7 @@ var hangarCam=new THREE.PerspectiveCamera(IS_TOUCH?65:58,innerWidth/innerHeight,
 var HW=46,HD=34,HH=15;                        /* half width, half depth, height */
 var hangarBays={blue:new THREE.Vector3(-17,0,-9),red:new THREE.Vector3(17,0,-9)};
 var BOARD_POS=new THREE.Vector3(0,7.1,-33.2);
+var MARA_POS=new THREE.Vector3(10,0,-27);
 
 (function buildHangar(){
   var concrete=new THREE.MeshPhongMaterial({
@@ -3470,6 +3474,23 @@ var BOARD_POS=new THREE.Vector3(0,7.1,-33.2);
   doorLight.position.set(0,10,40); hangarScene.add(doorLight,doorLight.target);
 })();
 
+/* Generated people live inside the same 3D hangar as the aircraft. The player
+   sprite is a strict rear view for the trailing camera; Mara faces the player
+   from beside the briefing wall. Both use real alpha, never colored rectangles. */
+var playerAvatar=new THREE.Sprite(new THREE.SpriteMaterial({
+  map:independentPilotSkin,transparent:true,alphaTest:.025,depthWrite:true}));
+playerAvatar.scale.set(1.95,3.7,1);
+playerAvatar.position.set(0,1.85,26);
+playerAvatar.renderOrder=3;
+hangarScene.add(playerAvatar);
+
+var maraAvatar=new THREE.Sprite(new THREE.SpriteMaterial({
+  map:maraVossSkin,transparent:true,alphaTest:.025,depthWrite:true}));
+maraAvatar.scale.set(2.05,3.9,1);
+maraAvatar.position.set(MARA_POS.x,1.95,MARA_POS.z);
+maraAvatar.renderOrder=2;
+hangarScene.add(maraAvatar);
+
 /* The two display airframes use the same physical, textured model as flight.
    buildPlane initially parents into the match scene; adding it here transfers
    it to this scene without maintaining a divergent showroom-only model. */
@@ -3562,14 +3583,24 @@ function hangarStep(dt){
       if(d<8.4&&d>1e-3){walk.x=b.x+dx/d*8.4; walk.z=b.z+dz/d*8.4;}
     });
   }
-  hangarCam.position.set(walk.x,1.72+Math.sin(walk.bob)*.05,walk.z);
+  /* Third-person free roam. `walk` remains the collision body; the camera
+     trails it, so aircraft and walls still block the character rather than an
+     invisible first-person eye. Clamp the camera as well to keep it indoors. */
+  var view=hangarForward(),camBack=4.6;
+  playerAvatar.position.set(walk.x,1.85+Math.sin(walk.bob)*.035,walk.z);
+  hangarCam.position.set(
+    clamp(walk.x-view.x*camBack,-HW+.8,HW-.8),
+    3.35+Math.sin(walk.bob)*.035,
+    clamp(walk.z-view.z*camBack,-HD+.8,HD-.8));
   hangarCam.rotation.set(walk.pitch,walk.yaw,0,'YXZ');
 
   hangarNear=IS_TOUCH?null:nearestBay();
   var board=Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11&&!IS_TOUCH;
+  var mara=Math.hypot(walk.x-MARA_POS.x,walk.z-MARA_POS.z)<5.5&&!IS_TOUCH;
   var msg='';
   if(hangarNear)msg=(hangarNear===PILOT.team&&PILOT.signed?'[E]  FIT OUT KESTREL — ':'[E]  JOIN ')+
     factionName(hangarNear)+(hangarNear===PILOT.team&&PILOT.signed?' TRIAL FLIGHT':' FOR THIS TRIAL');
+  else if(mara)msg='[E]  TALK TO MARA "SWITCH" VOSS';
   else if(board)msg=missionDone('ch1_m10')?'[E]  FLY A FREE CORE RUN':
     ('[E]  '+(SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+
      ((CH1[SAVE.mission]||CH1.ch1_m1).title));
@@ -3584,6 +3615,11 @@ function hangarInteract(){
       toast('TRIAL ASSIGNMENT — '+factionName(hangarNear),2.2);
     }
     openFit();
+    return;
+  }
+  if(Math.hypot(walk.x-MARA_POS.x,walk.z-MARA_POS.z)<5.5){
+    toast('SWITCH: YOUR KESTREL IS READY. LET’S SEE WHAT YOU CAN DO.',3.4);
+    startCampaign();
     return;
   }
   if(Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11)
