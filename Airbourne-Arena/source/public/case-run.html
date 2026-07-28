@@ -458,6 +458,32 @@
   .swatch{width:22px;height:22px;border:1px solid rgba(223,243,255,.25);cursor:pointer;padding:0}
   .swatch.on{outline:2px solid var(--teal);outline-offset:2px}
 
+  /* ===================== campaign ===================== */
+  #radio{position:fixed;left:18px;bottom:96px;z-index:6;max-width:min(430px,60vw);
+    border-left:2px solid var(--teal);background:rgba(6,14,20,.82);padding:9px 14px;
+    opacity:0;transition:opacity .18s;pointer-events:none}
+  #radio.on{opacity:1}
+  #radioWho{font-size:9px;letter-spacing:.24em;color:var(--teal)}
+  #radioText{font-size:11.5px;line-height:1.7;color:rgba(223,243,255,.86);margin-top:4px}
+  #objPanel{position:fixed;right:18px;top:96px;z-index:6;width:min(280px,44vw);
+    border:1px solid var(--line);background:rgba(6,14,20,.7);padding:11px 13px;
+    opacity:0;transition:opacity .2s;pointer-events:none}
+  #objPanel.on{opacity:1}
+  #objTitle{font-size:9px;letter-spacing:.24em;color:var(--amber);margin-bottom:7px}
+  .obj{font-size:10px;letter-spacing:.1em;line-height:1.6;color:rgba(223,243,255,.4);
+    padding:3px 0 3px 14px;position:relative}
+  .obj:before{content:"○";position:absolute;left:0;color:rgba(223,243,255,.3)}
+  .obj.now{color:var(--ink)} .obj.now:before{content:"▸";color:var(--teal)}
+  .obj.done{color:rgba(223,243,255,.28);text-decoration:line-through}
+  .obj.done:before{content:"✓";color:var(--teal)}
+  #debrief,#choiceCard{position:fixed;inset:0;display:grid;place-items:center;z-index:11;
+    background:rgba(2,5,9,.9);opacity:0;pointer-events:none;transition:opacity .2s}
+  #debrief.on,#choiceCard.on{opacity:1;pointer-events:auto}
+  #debrief *,#choiceCard *{touch-action:auto}
+  #debriefStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:9px;
+    margin:18px 0 0}
+  #campaignRow{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+
   /* ===================== end screen ===================== */
   #endStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px;
     margin:22px auto 0;max-width:420px}
@@ -533,13 +559,44 @@
       <input type="range" id="fitTrim" min="-1" max="1" step=".25">
       <output id="fitTrimOut">EVEN</output>
     </div>
-    <div class="setNote">This is still your Kestrel Mk I. Trim trades a tenth of
-      thrust against a tenth of pitch and roll rate. Trial side, paint, and setup
-      are saved to this device; the campaign faction decision comes later.</div>
+    <div class="setRow"><label>ENGINE</label><div class="segRow" id="fitEngine"></div></div>
+    <div class="setRow"><label>WINGS</label><div class="segRow" id="fitWings"></div></div>
+    <div class="setRow"><label>ARMOR</label><div class="segRow" id="fitArmor"></div></div>
+    <div class="setRow"><label>PRIMARY</label><div class="segRow" id="fitPrimary"></div></div>
+    <div class="setNote" id="fitTrade"></div>
+    <div class="setNote">This is still your Kestrel Mk I. Nothing here is free &mdash;
+      every part states its cost beside its benefit. Trial side, paint, and setup
+      are saved to this device.</div>
     <div class="btnRow">
       <button class="actionBtn" id="fitDone">BACK TO THE HANGAR</button>
       <button class="actionBtn" id="fitLaunch">TO THE FLIGHT LINE</button>
     </div>
+  </div>
+</div>
+
+<div id="radio"><div id="radioWho"></div><div id="radioText"></div></div>
+
+<div id="objPanel"><div id="objTitle"></div><div id="objList"></div></div>
+
+<div id="debrief">
+  <div class="setCard">
+    <h2 id="debriefT">DEBRIEF</h2>
+    <p style="font-size:11.5px;line-height:1.9;color:rgba(223,243,255,.72);margin:14px 0 0"
+       id="debriefB"></p>
+    <div id="debriefStats"></div>
+    <div id="campaignRow">
+      <button class="actionBtn" id="debriefNext">CONTINUE</button>
+      <button class="actionBtn" id="debriefHangar">BREAKWATER HANGAR</button>
+    </div>
+  </div>
+</div>
+
+<div id="choiceCard">
+  <div class="setCard">
+    <h2 id="choiceT"></h2>
+    <p style="font-size:11.5px;line-height:1.9;color:rgba(223,243,255,.72);margin:14px 0 0"
+       id="choiceB"></p>
+    <div id="campaignRow" class="btnRow"><span id="choiceOpts"></span></div>
   </div>
 </div>
 
@@ -1025,6 +1082,11 @@ var blackWingSkin=gameTexture('assets/black-wing-surface-diffusion-4k-v1.webp',1
 var kestrelSkin=gameTexture('assets/kestrel-mk1-surface-diffusion-4k-v1.webp',1,1);
 var breakwaterSkin=gameTexture('assets/breakwater-field-surface-diffusion-4k-v1.webp',1,1);
 var skywaySkin=gameTexture('assets/skyway-navigation-surface-diffusion-4k-v1.webp',1,1);
+var oceanSkin=gameTexture('assets/starter-coast-ocean-diffusion-4k-v1.webp',18,18);
+var airbaseDeckSkin=gameTexture('assets/airbase-deck-diffusion-4k-v1.webp',3,3);
+var aviationHardwareSkin=gameTexture('assets/aviation-hardware-diffusion-4k-v1.webp',2,2);
+var explosionVfxSkin=tuneTexture(assetLoader.load('assets/aviation-explosion-vfx-diffusion-4k-v1.webp'));
+var stormCloudVfxSkin=tuneTexture(assetLoader.load('assets/storm-cloud-vfx-diffusion-4k-v1.webp'));
 
 var sunLight=new THREE.DirectionalLight(0xffffff,1.1); scene.add(sunLight,sunLight.target);
 var moonLight=new THREE.DirectionalLight(0x9fb8ff,0); scene.add(moonLight,moonLight.target);
@@ -1097,7 +1159,8 @@ function updateTerrain(px,pz){
   p.needsUpdate=true;c.needsUpdate=true;
 }
 var sea=new THREE.Mesh(new THREE.PlaneGeometry(40000,40000),
-  new THREE.MeshPhongMaterial({color:0x1d4a6b,shininess:110,transparent:true,opacity:.92}));
+  new THREE.MeshPhongMaterial({map:oceanSkin,color:0x7f9ead,shininess:110,
+    transparent:true,opacity:.94}));
 sea.rotation.x=-Math.PI/2; scene.add(sea);
 
 /* ===================== weather ===================== */
@@ -1120,8 +1183,10 @@ var puffTex=(function(){
 })();
 var CLOUD_N=LOW?44:170,SPAN=5400,clouds=[];
 for(var ci=0;ci<CLOUD_N;ci++){
-  var cspr=new THREE.Sprite(new THREE.SpriteMaterial({map:puffTex,transparent:true,depthWrite:false,opacity:.5}));
+  var cspr=new THREE.Sprite(new THREE.SpriteMaterial({map:stormCloudVfxSkin,
+    transparent:true,depthWrite:false,opacity:.32,blending:THREE.AdditiveBlending}));
   var sc=340+Math.random()*640; cspr.scale.set(sc,sc*.55,1);
+  cspr.material.rotation=rnd(-.08,.08);
   cspr.position.set(rnd(-SPAN/2,SPAN/2),rnd(450,1250),rnd(-SPAN/2,SPAN/2));
   scene.add(cspr); clouds.push(cspr);
 }
@@ -1207,11 +1272,13 @@ function stepGoalRings(dt){
 /* --- home bases: four aircraft launch from each, facing midfield --- */
 function buildBase(team){
   var p=BASES[team], gy=ground(p.x,p.z), side=(team==='blue'?1:-1);
-  var deck=new THREE.MeshPhongMaterial({color:team==='blue'?0x24485e:0x5e2f28,shininess:8,flatShading:true});
+  var deck=new THREE.MeshPhongMaterial({map:airbaseDeckSkin,
+    color:team==='blue'?0xa6c7d5:0xd2aaa3,shininess:8,flatShading:true});
   var wall=new THREE.MeshPhongMaterial({map:hangarSkin,color:0xb8bec0,shininess:10,flatShading:true});
   var roof=new THREE.MeshPhongMaterial({map:cityRoofSkin,
     color:team==='blue'?0xa9c6d8:0xd0aaa6,shininess:12,flatShading:true});
-  var dark=new THREE.MeshPhongMaterial({color:0x2b3038,shininess:20,flatShading:true});
+  var dark=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
+    color:0x7f8993,shininess:20,flatShading:true});
   var tankMat=new THREE.MeshPhongMaterial({map:industrialSkin,color:0xffffff,shininess:24});
   function put(mesh,x,y,z){mesh.position.set(p.x+x,gy+y,p.z+z);scene.add(mesh);return mesh;}
 
@@ -1263,7 +1330,8 @@ buildBase('blue'); buildBase('red');
    strafing them buys a window rather than deleting the defence for good.   */
 var structs=[],TOWER_HP=260,AA_HP=140,AA_RANGE=780,AA_MUZZLE=560,AA_DMG=9;
 var _stV=new THREE.Vector3(),_stV2=new THREE.Vector3();
-var steelMat=new THREE.MeshPhongMaterial({map:skywaySkin,color:0xe0e2df,shininess:18,flatShading:true});
+var steelMat=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
+  color:0xd2d7d7,shininess:24,flatShading:true});
 
 function addStruct(o){
   o.hp=o.maxHp; o.alive=true; o.respawnT=0; o.cd=0; o.kills=0;
@@ -1290,7 +1358,8 @@ function buildAA(team,x,z){
   var g=new THREE.Group(); g.position.set(x,ground(x,z),z);
   g.add(new THREE.Mesh(new THREE.CylinderGeometry(15,19,13,10),steelMat));
   var turret=new THREE.Mesh(new THREE.BoxGeometry(15,10,15),
-    teamMat(team,new THREE.MeshPhongMaterial({color:TEAM_COL[team],shininess:24,flatShading:true})));
+    teamMat(team,new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
+      color:TEAM_COL[team],shininess:24,flatShading:true})));
   turret.position.y=17; g.add(turret);
   var barrel=new THREE.Mesh(new THREE.CylinderGeometry(1.9,2.4,30,7),steelMat);
   barrel.position.set(0,12,0); barrel.rotation.x=-0.9; turret.add(barrel);
@@ -1652,7 +1721,8 @@ var coreGroup=new THREE.Group(); scene.add(coreGroup);
 var coreMesh=(function buildCase(){
   var g=new THREE.Group();
   var shell=new THREE.MeshPhongMaterial({map:caseSkin,color:0xffffff,shininess:40,flatShading:true});
-  var steel=new THREE.MeshPhongMaterial({color:0xb9c1c7,shininess:110,flatShading:true});
+  var steel=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
+    color:0xe0e5e6,shininess:110,flatShading:true});
   var glow=new THREE.MeshPhongMaterial({color:0xffb347,emissive:0xff8a1e,
     emissiveIntensity:1.6,shininess:80,flatShading:true});
   g.add(new THREE.Mesh(new THREE.BoxGeometry(17,12,5.4),shell));
@@ -1773,7 +1843,8 @@ function buildPlane(team,isPlayer){
   /* Black Wing's generated surface is reserved for its own later drone family;
      using it for every landing rail and intake leaked the antagonist identity
      into the player's starting Kestrel. */
-  var dark=new THREE.MeshPhongMaterial({color:0x343b43,shininess:28,flatShading:true});
+  var dark=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
+    color:0x69727b,shininess:28,flatShading:true});
   var glass=new THREE.MeshPhongMaterial({color:0x70c7ea,emissive:0x071b29,
     shininess:145,transparent:true,opacity:.72});
 
@@ -2136,7 +2207,7 @@ function fire(f){
 }
 
 /* ===================== fx ===================== */
-var fxTex=softSprite('rgba(255,240,200,1)','rgba(255,130,40,.55)'),fx=[],shake=0;
+var fxTex=explosionVfxSkin,fx=[],shake=0;
 function boom(pos,scale){
   var s=new THREE.Sprite(new THREE.SpriteMaterial({map:fxTex,transparent:true,depthWrite:false,
     fog:false,blending:THREE.AdditiveBlending}));
@@ -2157,7 +2228,9 @@ function stepFx(dt){
 /* ===================== state ===================== */
 var st={scoreB:0,scoreR:0,time:MATCH_TIME,over:false,hours:9.4,timeSpeed:1,
   camMode:0,flash:0,hitmark:0,dmgFlash:0,mapBig:false,invertY:cfg.invert?-1:1,
-  started:false,locked:false,mouseSeen:false,padSeen:false,paused:false,ringWarned:false};
+  started:false,locked:false,mouseSeen:false,padSeen:false,paused:false,ringWarned:false,
+  /* 'arena' is a free Core Run; 'campaign' hands pacing to the mission runtime */
+  phase:'hangar',mode:'arena'};
 var keys={},mouseDown=false;
 var WORLD_UP=new THREE.Vector3(0,1,0);
 var tmpV=new THREE.Vector3(),tmpV2=new THREE.Vector3(),tmpV3=new THREE.Vector3();
@@ -3246,7 +3319,8 @@ var BOARD_POS=new THREE.Vector3(0,4.2,-33.2);
 (function buildHangar(){
   var concrete=new THREE.MeshPhongMaterial({map:hangarFloorSkin,color:0xffffff,shininess:4,flatShading:true});
   var panel=new THREE.MeshPhongMaterial({map:breakwaterSkin,color:0x8e9699,shininess:8,flatShading:true});
-  var beam=new THREE.MeshPhongMaterial({color:0x1d232b,shininess:14,flatShading:true});
+  var beam=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
+    color:0x58616a,shininess:14,flatShading:true});
 
   var floor=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HD*2),concrete);
   floor.rotation.x=-Math.PI/2; hangarScene.add(floor);
@@ -3371,7 +3445,8 @@ var hangarPlanes={};
   if(g.userData.beacon)g.userData.beacon.visible=false;
   (g.userData.exhausts||[]).forEach(function(ex){ex.visible=false;});
   /* parked aircraft need something to stand on, or they read as hovering */
-  var strut=new THREE.MeshPhongMaterial({color:0x22272e,shininess:20,flatShading:true});
+  var strut=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,
+    color:0x59616a,shininess:20,flatShading:true});
   [[0,-3.4],[-3.2,1.2],[3.2,1.2]].forEach(function(o){
     var leg=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1.9,6),strut);
     leg.position.set(o[0],-1.0,o[1]); g.add(leg);
@@ -3405,7 +3480,8 @@ var walk={x:0,z:26,yaw:0,pitch:0,bob:0,orbit:0};
 var hangarNear=null;
 var hEl={};['hangarUI','hangarPrompt','hangarTeam','hangarCall','hangarHint',
   'fitCard','fitCall','fitLivery','fitAccent','fitTrim','fitTrimOut','fitBlue','fitRed',
-  'fitDone','fitLaunch'].forEach(function(id){hEl[id]=document.getElementById(id);});
+  'fitDone','fitLaunch','fitEngine','fitWings','fitArmor','fitPrimary','fitTrade'
+  ].forEach(function(id){hEl[id]=document.getElementById(id);});
 
 function hangarForward(){return {x:-Math.sin(walk.yaw),z:-Math.cos(walk.yaw)};}
 function nearestBay(){
@@ -3456,7 +3532,9 @@ function hangarStep(dt){
   var msg='';
   if(hangarNear)msg=(hangarNear===PILOT.team&&PILOT.signed?'[E]  FIT OUT KESTREL — ':'[E]  JOIN ')+
     factionName(hangarNear)+(hangarNear===PILOT.team&&PILOT.signed?' TRIAL FLIGHT':' FOR THIS TRIAL');
-  else if(board)msg='[E]  READ THE BOARD';
+  else if(board)msg=missionDone('ch1_m10')?'[E]  FLY A FREE CORE RUN':
+    ('[E]  '+(SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+
+     ((CH1[SAVE.mission]||CH1.ch1_m1).title));
   hEl.hangarPrompt.textContent=msg;
   hEl.hangarPrompt.classList.toggle('on',!!msg);
 }
@@ -3471,7 +3549,7 @@ function hangarInteract(){
     return;
   }
   if(Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11)
-    toast('MOVE THE CORE. KILL THE MASTS. DO NOT RUN IT ALONE.',3.4);
+    startCampaign();
 }
 function updateSignPanel(){
   hEl.hangarTeam.textContent=PILOT.signed?factionName(PILOT.team):'INDEPENDENT';
@@ -3506,6 +3584,41 @@ function syncFit(){
   hEl.fitTrim.value=PILOT.trim;
   hEl.fitTrimOut.textContent=PILOT.trim===0?'EVEN':
     (PILOT.trim>0?'+'+Math.round(PILOT.trim*10)+' SPEED':Math.round(-PILOT.trim*10)+' TURN');
+  syncSlots();
+}
+/* ---------- loadout slots (STORY-BIBLE 13.2) ---------- */
+var SLOT_EL={engine:'fitEngine',wings:'fitWings',armor:'fitArmor',primary:'fitPrimary'};
+function buildSlots(){
+  Object.keys(SLOT_EL).forEach(function(slot){
+    var host=hEl[SLOT_EL[slot]];
+    if(!host)return;
+    host.innerHTML='';
+    PARTS[slot].forEach(function(pt){
+      var b=document.createElement('button');
+      b.className='seg'; b.dataset.pid=pt.id; b.textContent=pt.name.split(' ')[0];
+      b.title=pt.name;
+      b.addEventListener('click',function(){
+        SAVE.loadout[slot]=pt.id; saveGame(); applyLoadout(); syncFit();
+      });
+      host.appendChild(b);
+    });
+  });
+}
+/* Section 13.3: the hangar must show the trade, not just the benefit. */
+function syncSlots(){
+  Object.keys(SLOT_EL).forEach(function(slot){
+    var host=hEl[SLOT_EL[slot]];
+    if(!host)return;
+    [].forEach.call(host.children,function(b){
+      b.classList.toggle('on',b.dataset.pid===SAVE.loadout[slot]);});
+  });
+  if(!hEl.fitTrade||!player)return;
+  applyLoadout();
+  var pct=function(v){return (v>=1?'+':'')+Math.round((v-1)*100)+'%';};
+  hEl.fitTrade.textContent=
+    'THRUST '+pct(player.trimThrust)+'  ·  AGILITY '+pct(player.trimAgile)+
+    '  ·  ARMOR '+pct(player.armorMul)+'  ·  GUN '+pct(player.gunDmg)+
+    ' at '+pct(player.gunRate)+' rate';
 }
 /* One place where a change becomes real: the profile, the parked airframe, the
    aircraft you will actually fly, and the disk. */
@@ -3546,6 +3659,15 @@ function leaveHangar(){
   st.phase='brief';
   document.body.classList.remove('hangar');
   if(document.exitPointerLock)document.exitPointerLock();
+  /* Missions 7 and 8 are fought on foot. Walking out of the hangar during one
+     puts the player straight back in the air rather than at the brief card. */
+  if(mission.running){
+    st.started=true;
+    el.brief.classList.add('gone'); el.hud.classList.add('live');
+    document.body.classList.add('playing');
+    audioInit(); audioResume(); applyLoadout();
+    if(!IS_TOUCH)lock();
+  }
 }
 enterHangar();
 
@@ -3559,6 +3681,665 @@ addEventListener('keydown',function(e){
   if(e.code==='KeyF'){openFit();e.preventDefault();}
   if(e.code==='Enter'){leaveHangar();e.preventDefault();}
 });
+
+/* ===================== PHASE 1 — FOUNDATION =====================
+   STORY-BIBLE section 23. Everything narrative hangs off four structures kept
+   deliberately separate from the flight code: a versioned save, a reputation
+   ledger, an aircraft loadout, and a mission state machine. The bible asks for
+   this separation even though we ship one HTML file, and it is what lets
+   Missions 1 to 10 be data rather than ten bespoke code paths.            */
+var SAVE_KEY='airbourne:save', SAVE_VERSION=1;
+
+/* --- reputation (section 17.1) --- */
+var REP_KEYS=['vanguard','tempest','inferno','independent','civilian','blackwing'];
+
+/* --- loadout parts (section 13.4). Every part states its cost as plainly as
+   its benefit, because section 2.4 forbids a straight path to one perfect
+   aircraft and section 13.3 requires the hangar to show the trade. --- */
+var PARTS={
+  engine:[
+    {id:'turbine', name:'BALANCED TURBINE', thrust:1.00, agile:1.00, mass:1.00, heat:1.00},
+    {id:'booster', name:'HIGH-OUTPUT BOOSTER', thrust:1.18, agile:0.92, mass:1.05, heat:1.30},
+    {id:'longrange',name:'LONG-RANGE ENGINE', thrust:0.92, agile:1.02, mass:0.95, heat:0.80},
+    {id:'heavy',   name:'HEAVY-LOAD PLANT', thrust:1.10, agile:0.86, mass:1.18, heat:1.10}],
+  wings:[
+    {id:'stable',  name:'STABLE CONTROL', agile:1.00, mass:1.00},
+    {id:'highturn',name:'HIGH-TURN', agile:1.16, mass:0.98, armor:0.92},
+    {id:'swept',   name:'SWEPT HIGH-SPEED', agile:0.90, thrust:1.08, mass:1.00},
+    {id:'armored', name:'ARMORED WINGS', agile:0.88, armor:1.15, mass:1.10}],
+  armor:[
+    {id:'light',   name:'LIGHT COMPOSITE', armor:1.00, mass:1.00},
+    {id:'plate',   name:'REINFORCED PLATE', armor:1.30, mass:1.14, agile:0.93},
+    {id:'reactive',name:'REACTIVE ARMOR', armor:1.18, mass:1.08, agile:0.96},
+    {id:'lattice', name:'SELF-REPAIR LATTICE',armor:1.05, mass:1.06, regen:1.6}],
+  primary:[
+    {id:'machine', name:'MACHINE CANNON', dmg:1.00, rate:1.00, heat:1.00},
+    {id:'heavy',   name:'HEAVY CANNON', dmg:1.55, rate:0.62, heat:1.35},
+    {id:'burst',   name:'BURST LASER', dmg:0.78, rate:1.45, heat:1.20},
+    {id:'scatter', name:'SCATTER CANNON', dmg:1.20, rate:0.85, heat:1.10, spread:2.4}]
+};
+function part(slot,id){
+  var list=PARTS[slot];
+  for(var i=0;i<list.length;i++)if(list[i].id===id)return list[i];
+  return list[0];
+}
+
+/* --- active powers (section 14). Declared here so the trials can preview one
+   and team selection can grant one; the arena reads only `id`. --- */
+var POWERS={
+  guardian:{name:'GUARDIAN FIELD', team:'blue',  blurb:'Shields you and nearby allies.'},
+  velocity:{name:'VELOCITY BURST', team:'tempest',blurb:'Extreme controlled speed.'},
+  overdrive:{name:'WEAPONS OVERDRIVE', team:'red',blurb:'More damage, rate and heat headroom.'}
+};
+
+function freshSave(){
+  var rep={};
+  for(var i=0;i<REP_KEYS.length;i++)rep[REP_KEYS[i]]=0;
+  return {version:SAVE_VERSION, chapter:1, mission:'ch1_m1', completed:[], flags:{},
+    rep:rep, credits:0, trials:{},
+    loadout:{engine:'turbine',wings:'stable',armor:'light',primary:'machine',power:null}};
+}
+var SAVE=freshSave();
+function loadSave(){
+  try{
+    var raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return;
+    var s=JSON.parse(raw);
+    /* a save from a future or unknown version is discarded rather than
+       half-read; a broken campaign is worse than a restarted one */
+    if(!s||s.version!==SAVE_VERSION)return;
+    var f=freshSave();
+    SAVE=Object.assign(f,s);
+    SAVE.rep=Object.assign(f.rep,s.rep||{});
+    SAVE.loadout=Object.assign(f.loadout,s.loadout||{});
+    SAVE.flags=s.flags||{};
+    SAVE.completed=s.completed||[];
+  }catch(err){SAVE=freshSave();}
+}
+function saveGame(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVE));}catch(err){}
+}
+loadSave();
+function addRep(key,amount){
+  if(!(key in SAVE.rep))return;
+  SAVE.rep[key]=clamp(SAVE.rep[key]+amount,-100,100);
+}
+function missionDone(id){return SAVE.completed.indexOf(id)>=0;}
+
+/* Loadout to flight model. The arena already reads trimThrust and trimAgile,
+   so a build lands on the aircraft through the same two numbers the fit-out
+   slider uses — no second path into stepFlight. */
+function applyLoadout(){
+  if(!player)return;
+  var e=part('engine',SAVE.loadout.engine), w=part('wings',SAVE.loadout.wings),
+      a=part('armor',SAVE.loadout.armor),   g=part('primary',SAVE.loadout.primary);
+  var mass=(e.mass||1)*(w.mass||1)*(a.mass||1);
+  player.trimThrust=(1+PILOT.trim*0.10)*(e.thrust||1)*(w.thrust||1)/mass;
+  player.trimAgile =(1-PILOT.trim*0.10)*(e.agile||1)*(w.agile||1)*(a.agile||1);
+  player.armorMul=(a.armor||1)*(w.armor||1);
+  player.regenMul=a.regen||0;
+  player.gunDmg=g.dmg||1; player.gunRate=g.rate||1; player.gunSpread=g.spread||1;
+  player.maxHp=Math.round(100*player.armorMul);
+}
+
+/* ===================== radio (section 20) =====================
+   Dialogue supports flying rather than competing with it: one short line at a
+   time, queued, self-clearing, and never blocking control. */
+var radio={q:[],cur:null,t:0};
+function say(who,text,secs){radio.q.push({who:who,text:text,t:secs||3.4});}
+function sayNow(who,text,secs){radio.q.length=0;radio.cur=null;say(who,text,secs);}
+function clearRadio(){radio.q.length=0;radio.cur=null;radio.t=0;}
+function stepRadio(dt){
+  if(!radio.cur){
+    if(!radio.q.length){if(rEl.radio)rEl.radio.classList.remove('on');return;}
+    radio.cur=radio.q.shift(); radio.t=radio.cur.t;
+    if(rEl.radio){
+      rEl.radioWho.textContent=radio.cur.who;
+      rEl.radioText.textContent=radio.cur.text;
+      rEl.radio.classList.add('on');
+    }
+    tone(520,.05,.05,'square');
+  }
+  radio.t-=dt;
+  if(radio.t<=0)radio.cur=null;
+}
+function radioBusy(){return !!(radio.cur||radio.q.length);}
+
+/* ===================== mission entities =====================
+   Two primitives cover every Chapter 1 objective: a ring you fly through, and
+   a simple aircraft that is either hostile, passive cargo, or a rival. They
+   reuse the drone entity already built for the Blackout rather than adding a
+   third kind of flying thing. */
+var gates=[],convoy=[];
+function makeGate(x,y,z,r){
+  var g=new THREE.Mesh(new THREE.TorusGeometry(r||60,3.2,8,32),
+    new THREE.MeshBasicMaterial({color:0x6fe3d0,transparent:true,opacity:.55}));
+  g.position.set(x,y,z); scene.add(g);
+  var glow=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:softSprite('rgba(111,227,208,.9)','rgba(111,227,208,0)'),
+    transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
+  glow.scale.set((r||60)*2.6,(r||60)*2.6,1); g.add(glow);
+  var o={mesh:g,pos:g.position,r:r||60,passed:false};
+  gates.push(o); return o;
+}
+function clearGates(){for(var i=0;i<gates.length;i++)scene.remove(gates[i].mesh);gates.length=0;}
+function stepGates(dt){
+  for(var i=0;i<gates.length;i++){
+    var g=gates[i];
+    g.mesh.rotation.z+=dt*.5;
+    var live=(i===0||gates[i-1].passed)&&!g.passed;
+    g.mesh.material.opacity=g.passed?.12:(live?.55+Math.sin(performance.now()*.006)*.2:.2);
+    if(live&&player.alive&&player.pos.distanceTo(g.pos)<g.r){
+      g.passed=true; stingSfx([880,1170],.10);
+    }
+  }
+}
+function gatesLeft(){var n=0;for(var i=0;i<gates.length;i++)if(!gates[i].passed)n++;return n;}
+
+/* Cargo, transports and rivals all fly the same waypoint mover. */
+function spawnFlier(opts){
+  var g=new THREE.Group();
+  var col=opts.hostile?0x5b5f6b:(opts.tint||0x9fb4c4);
+  var body=new THREE.Mesh(new THREE.CylinderGeometry(opts.big?3.4:1.8,opts.big?4.2:2.4,opts.big?18:10,7),
+    new THREE.MeshPhongMaterial({map:opts.hostile?blackWingSkin:kestrelSkin,
+      color:col,shininess:36,flatShading:true}));
+  body.rotation.x=Math.PI/2; g.add(body);
+  var wing=new THREE.Mesh(new THREE.BoxGeometry(opts.big?26:15,.4,opts.big?4:2.4),
+    new THREE.MeshPhongMaterial({color:col,shininess:24,flatShading:true}));
+  g.add(wing);
+  var bea=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:softSprite('rgba(255,255,255,.9)','rgba(255,255,255,0)'),
+    color:opts.hostile?0xb98cff:0x8fe6ff,transparent:true,depthWrite:false,
+    fog:false,blending:THREE.AdditiveBlending}));
+  bea.scale.set(34,34,1); g.add(bea);
+  scene.add(g);
+  var o={mesh:g,pos:g.position,vel:new THREE.Vector3(),hp:opts.hp||120,maxHp:opts.hp||120,
+    alive:true,speed:opts.speed||95,path:opts.path||[],leg:0,name:opts.name||'CONTACT',
+    hostile:!!opts.hostile,passive:!opts.hostile,team:opts.hostile?'blackwing':'civil',
+    kills:0,cd:rnd(.5,1.8),arrived:false};
+  o.pos.copy(opts.at);
+  convoy.push(o); return o;
+}
+function clearConvoy(){for(var i=0;i<convoy.length;i++)scene.remove(convoy[i].mesh);convoy.length=0;}
+function stepConvoy(dt){
+  for(var i=0;i<convoy.length;i++){
+    var c=convoy[i];
+    if(!c.alive)continue;
+    var tgt=null;
+    if(c.hostile){
+      /* hostiles chase the player; everything else follows its route */
+      if(player.alive)tgt=player.pos;
+    } else if(c.leg<c.path.length){
+      tgt=c.path[c.leg];
+      if(c.pos.distanceTo(tgt)<110){c.leg++; if(c.leg>=c.path.length)c.arrived=true;}
+    }
+    if(tgt){
+      _drV.copy(tgt).sub(c.pos);
+      var d=_drV.length(); if(d>1e-3)_drV.multiplyScalar(1/d);
+      var want=(c.hostile&&d<260)?-0.4:1;
+      c.vel.lerp(_drV2.copy(_drV).multiplyScalar(c.speed*want),Math.min(1,dt*1.0));
+    }
+    c.pos.addScaledVector(c.vel,dt);
+    var gh=ground(c.pos.x,c.pos.z)+70;
+    if(c.pos.y<gh){c.pos.y=gh;if(c.vel.y<0)c.vel.y=0;}
+    if(c.vel.lengthSq()>1e-4)c.mesh.lookAt(_drV.copy(c.pos).add(c.vel));
+    if(c.hostile&&player.alive){
+      c.cd-=dt;
+      var dp=c.pos.distanceTo(player.pos);
+      if(dp<620&&c.cd<=0){
+        c.cd=rnd(.8,1.4);
+        var aim=_drV2.copy(player.pos).sub(c.pos).normalize();
+        var sp=.03;
+        aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
+        bullets.push({p:c.pos.clone().addScaledVector(aim,9),v:aim.clone().multiplyScalar(MUZZLE*.8),
+          life:1.7,team:'blackwing',owner:c,dmg:7});
+        gunSfx(earGain(c.pos)*.4);
+      }
+    }
+  }
+}
+function convoyAlive(){var n=0;for(var i=0;i<convoy.length;i++)if(convoy[i].alive&&convoy[i].passive)n++;return n;}
+function hostilesLeft(){var n=0;for(var i=0;i<convoy.length;i++)if(convoy[i].alive&&convoy[i].hostile)n++;return n;}
+function convoyArrived(){
+  for(var i=0;i<convoy.length;i++)if(convoy[i].passive&&convoy[i].alive&&!convoy[i].arrived)return false;
+  return true;
+}
+
+/* ===================== mission state machine =====================
+   A mission is a list of objectives. Each objective declares how it sets up,
+   how it reports progress, and what counts as done. The runtime never knows
+   what a mission is about — that lives entirely in the CH1 table below. */
+var mission={def:null,i:0,obj:null,t:0,running:false,failed:false,choice:null};
+
+function objText(){
+  if(!mission.obj)return '';
+  return typeof mission.obj.text==='function'?mission.obj.text():mission.obj.text;
+}
+function startMission(id){
+  var def=CH1[id];
+  if(!def)return false;
+  clearGates(); clearConvoy(); clearRadio();
+  mission.def=def; mission.i=-1; mission.obj=null; mission.t=0;
+  mission.running=true; mission.failed=false; mission.choice=null;
+  SAVE.mission=id; saveGame();
+  st.mode='campaign'; st.over=false; st.paused=false;
+  parkArena(true);
+  respawnFighter(player,true);
+  player.pos.copy(BREAKWATER); player.pos.y=520;
+  if(def.intro)def.intro();
+  nextObjective();
+  return true;
+}
+function nextObjective(){
+  mission.i++;
+  if(mission.i>=mission.def.objectives.length){finishMission();return;}
+  mission.obj=mission.def.objectives[mission.i];
+  mission.t=0;
+  if(mission.obj.setup)mission.obj.setup();
+  renderObjective();
+}
+function failMission(why){
+  if(!mission.running||mission.failed)return;
+  mission.failed=true; mission.running=false;
+  sayNow('BREAKWATER',why||'Sortie lost. Come back around.',4);
+  banner('MISSION FAILED',2.2);
+  if(rEl.objPanel)rEl.objPanel.classList.remove('on');
+  setTimeout(function(){ if(st.mode==='campaign')startMission(SAVE.mission); },3600);
+}
+function finishMission(){
+  mission.running=false;
+  var def=mission.def;
+  if(def.reward)def.reward();
+  if(SAVE.completed.indexOf(def.id)<0)SAVE.completed.push(def.id);
+  SAVE.mission=def.next||def.id;
+  saveGame();
+  banner('MISSION COMPLETE',2.2);
+  if(rEl.objPanel)rEl.objPanel.classList.remove('on');
+  clearGates(); clearConvoy();
+  showDebrief(def);
+}
+function stepMission(dt){
+  stepGates(dt); stepConvoy(dt); stepRadio(dt);
+  if(!mission.running||!mission.obj)return;
+  mission.t+=dt;
+  var o=mission.obj;
+  if(o.fail&&o.fail()){failMission(o.failText);return;}
+  if(o.step)o.step(dt);
+  renderObjective();
+  if(o.done&&o.done())nextObjective();
+}
+/* The eight arena pilots and the Core sit out every campaign mission. Parking
+   them beats a second world: the terrain, bases, masts and guns all stay. */
+function parkArena(on){
+  for(var i=0;i<fighters.length;i++){
+    var f=fighters[i];
+    if(f.isPlayer)continue;
+    f.alive=!on; f.mesh.visible=!on; f.carrying=false;
+    if(on)f.respawnT=1e9;
+  }
+  if(typeof coreGroup!=='undefined')coreGroup.visible=!on;
+  if(on){core.carrier=null;}
+}
+var BREAKWATER=new THREE.Vector3(-BASE_X,460,0);
+
+/* ===================== PHASES 2-6 — CHAPTER 1 =====================
+   Ten missions, section 11, written as data on the runtime above.        */
+var CH1={};
+function M(def){CH1[def.id]=def;return def;}
+
+/* --- Phase 2: First Flight --- */
+M({id:'ch1_m1', title:'FIRST FLIGHT', next:'ch1_m2',
+  brief:'Take the Kestrel up, run the navigation gates, and put rounds on the practice drones.',
+  intro:function(){
+    say('MARA','Kestrel is fuelled. Take her up and stay off my roof.',3.6);
+    say('MARA','Gates first. They are lit teal — fly through the live one.',4);
+  },
+  objectives:[
+    {text:'FLY THE NAVIGATION GATES',
+     setup:function(){
+       var pts=[[-1900,620,-260],[-1400,700,260],[-900,780,-200],[-500,720,240],[-150,660,0]];
+       for(var i=0;i<pts.length;i++)makeGate(pts[i][0],pts[i][1],pts[i][2],70);
+     },
+     text2:'', done:function(){return gatesLeft()===0;},
+     step:function(){}},
+    {text:'DESTROY THE PRACTICE DRONES',
+     setup:function(){
+       say('MARA','Good. Now the drones — they shoot back, but softly.',3.6);
+       for(var i=0;i<3;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-900,-300),rnd(600,820),rnd(-500,500)),
+           hostile:true,hp:40,speed:88,name:'DRONE'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:'RETURN TO BREAKWATER FIELD',
+     setup:function(){say('MARA','That will do. Bring her home.',3.2);},
+     done:function(){return player.pos.distanceTo(BREAKWATER)<420;}}
+  ],
+  reward:function(){addRep('independent',6);addRep('civilian',3);SAVE.credits+=250;
+    say('MARA','Not bad for a first sortie.',3.2);}});
+
+/* --- Phase 3: Distress Call --- */
+M({id:'ch1_m2', title:'DISTRESS CALL', next:'ch1_m3',
+  brief:'A cargo aircraft is under attack. Drive off the drones, recover the dropped Flight Core, and walk it home.',
+  intro:function(){
+    say('MARA','Mayday on the open channel. Cargo hauler, east of you.',3.8);
+    say('CARGO','We are hit — they came out of the cloud deck!',3.4);
+  },
+  objectives:[
+    {text:'DRIVE OFF THE ATTACKING DRONES',
+     setup:function(){
+       spawnFlier({at:new THREE.Vector3(400,760,300),big:true,hp:220,speed:74,name:'HAULER',
+         path:[new THREE.Vector3(-600,700,120),new THREE.Vector3(-1600,600,40),BREAKWATER.clone()]});
+       for(var i=0;i<3;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(500,900),rnd(700,900),rnd(-300,600)),
+           hostile:true,hp:52,speed:100,name:'RAIDER'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'The hauler is down. We needed that crew.',
+     done:function(){return hostilesLeft()===0;}},
+    {text:'RECOVER THE FLIGHT CORE',
+     setup:function(){
+       say('CARGO','We dumped the Flight Core when the hull went. It is below you.',4);
+       coreGroup.visible=true;
+       core.carrier=null; core.lockout=null; core.charge=100;
+       core.pos.set(player.pos.x+rnd(-200,200),700,player.pos.z+rnd(-200,200));
+       core.vel.set(0,0,0);
+       wxKey='rain'; wxTimer=200;   /* the storm front closes in (section 11) */
+       say('MARA','Storm front is closing. Move.',3.2);
+     },
+     step:function(){stepCore(1/60);},
+     done:function(){return core.carrier===player;}},
+    {text:'ESCORT THE HAULER TO BREAKWATER',
+     setup:function(){say('CARGO','Staying on your wing. Take us in.',3.2);},
+     step:function(){stepCore(1/60);},
+     fail:function(){return convoyAlive()===0;},
+     failText:'The hauler is down. We needed that crew.',
+     done:function(){return convoyArrived();}}
+  ],
+  reward:function(){addRep('civilian',14);addRep('independent',8);SAVE.credits+=900;
+    SAVE.flags.rescuedHauler=true;
+    say('MARA','That recording is already on three team channels. Brace yourself.',4.2);}});
+
+/* --- Mission 3: Recognition --- */
+M({id:'ch1_m3', title:'RECOGNITION', next:'ch1_m4',
+  brief:'All three teams have seen the rescue. Hear them out.',
+  intro:function(){
+    say('MARA','Three calls in an hour. That is a record for my strip.',3.6);
+    say('VALE','Vanguard. You held station over a civilian hull. That is our work.',4.4);
+    say('KADE','Tempest. You flew a storm front in a museum piece. I like you already.',4.4);
+    say('CALDER','Inferno. You did not run. Come see what real guns feel like.',4.2);
+    say('MARA','Fly all three trials before you sign anything. Understood?',4);
+  },
+  objectives:[
+    {text:'LISTEN TO ALL THREE OFFERS', done:function(){return !radioBusy();}}
+  ],
+  reward:function(){SAVE.flags.invited=true;}});
+
+/* --- Phase 4: the three trials --- */
+M({id:'ch1_m4', title:'VANGUARD TRIAL — HOLD THE LINE', next:'ch1_m5',
+  brief:'Escort three transports. You are scored on survivors, not kills.',
+  intro:function(){
+    say('ARAS','Aras. Bulwark. Stay with the transports and we will get along.',4);
+  },
+  objectives:[
+    {text:function(){return 'PROTECT THE TRANSPORTS ('+convoyAlive()+'/3 ALIVE)';},
+     setup:function(){
+       var dest=new THREE.Vector3(1500,640,0);
+       for(var i=0;i<3;i++)
+         spawnFlier({at:new THREE.Vector3(-1500,660+i*40,(i-1)*130),big:true,hp:150,speed:80,
+           name:'TRANSPORT',path:[new THREE.Vector3(-300,660,(i-1)*130),dest.clone().setZ((i-1)*130)]});
+       for(var k=0;k<4;k++)
+         spawnFlier({at:new THREE.Vector3(rnd(600,1300),rnd(700,900),rnd(-600,600)),
+           hostile:true,hp:48,speed:104,name:'RAIDER'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'All three transports lost. That is the one score that matters.',
+     done:function(){return convoyArrived();}}
+  ],
+  reward:function(){
+    var kept=convoyAlive();
+    SAVE.trials.vanguard=kept;
+    addRep('vanguard',6+kept*3); addRep('civilian',kept*2);
+    say('ARAS',kept>=3?'All three home. Textbook.':'You brought some of them back. Some.',4);
+    say('VALE','Guardian Field is what we would put on your aircraft. Think on it.',4.2);}});
+
+M({id:'ch1_m5', title:'TEMPEST TRIAL — CUT THE STORM', next:'ch1_m6',
+  brief:'Race the canyon line. Kai Mercer is already out there.',
+  intro:function(){
+    say('MERCER','Mercer. Crosswind. Try not to redecorate the ridge.',3.8);
+    wxKey='overcast'; wxTimer=200;
+  },
+  objectives:[
+    {text:function(){return 'RACE THE CANYON GATES ('+(gates.length-gatesLeft())+'/'+gates.length+')';},
+     setup:function(){
+       /* the three cut passes through the spine are the race line */
+       var pts=[[-1200,560,900],[-600,520,900],[0,480,900],[600,520,0],
+                [0,500,-900],[-600,540,-900],[-1300,620,-300]];
+       for(var i=0;i<pts.length;i++)makeGate(pts[i][0],pts[i][1],pts[i][2],62);
+       spawnFlier({at:new THREE.Vector3(-1250,600,880),hp:400,speed:118,name:'MERCER',tint:0x6fe3d0,
+         path:[new THREE.Vector3(-600,520,900),new THREE.Vector3(0,480,900),
+               new THREE.Vector3(600,520,0),new THREE.Vector3(0,500,-900),
+               new THREE.Vector3(-1300,620,-300)]});
+     },
+     step:function(){
+       if(mission.t>14&&!mission.obj._nag){mission.obj._nag=true;
+         say('MERCER','You are flying it like a checklist. Move!',3.4);}
+     },
+     done:function(){return gatesLeft()===0;}}
+  ],
+  reward:function(){
+    var t=Math.round(mission.t);
+    SAVE.trials.tempest=t;
+    addRep('tempest',12);
+    say('MERCER',t<70?'Alright. That was actually flying.':'You finished. Slowly.',3.8);
+    say('KADE','Velocity Burst would suit you. Come and take it.',3.8);}});
+
+M({id:'ch1_m6', title:'INFERNO TRIAL — TRIAL BY FIRE', next:'ch1_m7',
+  brief:'Two waves, then Serrano. Manage your heat.',
+  intro:function(){
+    say('CALDER','Calder. Targets first, then my champion. No cease signal games.',4.2);
+    wxKey='fair'; wxTimer=200;
+  },
+  objectives:[
+    {text:function(){return 'DESTROY THE COMBAT WAVE ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       for(var i=0;i<5;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(900,1600),rnd(600,900),rnd(-700,700)),
+           hostile:true,hp:56,speed:98,name:'TARGET'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:'DUEL NIKO "CINDER" SERRANO',
+     setup:function(){
+       say('SERRANO','Serrano. Let us see what the coast taught you.',3.6);
+       spawnFlier({at:new THREE.Vector3(1400,780,0),hostile:true,hp:260,speed:112,name:'SERRANO'});
+     },
+     done:function(){return hostilesLeft()===0;}}
+  ],
+  reward:function(){
+    SAVE.trials.inferno=Math.round(player.hp);
+    addRep('inferno',14);
+    say('SERRANO','You did not flinch. That buys you a conversation.',3.8);
+    say('CALDER','Weapons Overdrive. It is yours if you sign.',3.6);}});
+
+/* --- Phase 5: identity --- */
+M({id:'ch1_m7', title:'CHOOSE YOUR WINGS', next:'ch1_m8',
+  brief:'Return to Breakwater Field and sign with a team.',
+  intro:function(){say('MARA','Three offers on my table. Land, and choose your own way.',4.2);},
+  objectives:[
+    {text:'LAND AT BREAKWATER FIELD',
+     done:function(){return player.pos.distanceTo(BREAKWATER)<420;}},
+    {text:'SIGN WITH A TEAM IN THE HANGAR',
+     setup:function(){
+       say('MARA','Walk the hangar. Whichever airframe you stand at is the one you fly.',4.4);
+       toCampaignHangar();
+     },
+     done:function(){return !!PILOT.signed&&st.phase!=='hangar';}}
+  ],
+  reward:function(){
+    addRep(PILOT.team==='blue'?'vanguard':'inferno',12);
+    SAVE.loadout.power=PILOT.team==='blue'?'guardian':'overdrive';
+    SAVE.flags.signed=PILOT.team; saveGame();}});
+
+M({id:'ch1_m8', title:'BUILT, NOT GIVEN', next:'ch1_m9',
+  brief:'Fit the aircraft out. Every choice costs something.',
+  intro:function(){say('MARA','Now build it. Nothing here is free — read the trade.',4);},
+  objectives:[
+    {text:'CONFIGURE YOUR AIRCRAFT IN THE HANGAR',
+     setup:function(){toCampaignHangar();},
+     done:function(){return st.phase!=='hangar';}}
+  ],
+  reward:function(){applyLoadout();say('MARA','She is yours now. Go and prove it.',3.6);}});
+
+/* --- Phase 6: arena and attack --- */
+M({id:'ch1_m9', title:'FIRST ARENA CORE MATCH', next:'ch1_m10',
+  brief:'Your league debut. Deliver the Arena Core.',
+  intro:function(){say('ANNOUNCER','New name on the card tonight. Let us see it fly.',4);},
+  objectives:[
+    {text:'WIN THE ARENA CORE MATCH',
+     setup:function(){
+       parkArena(false);
+       st.mode='arena';
+       resetMatch();
+     },
+     done:function(){return st.over;}}
+  ],
+  reward:function(){
+    var won=(player.team==='blue'?st.scoreB>st.scoreR:st.scoreR>st.scoreB);
+    addRep(player.team==='blue'?'vanguard':'inferno',won?10:4);
+    SAVE.flags.debut=won?'win':'loss';}});
+
+M({id:'ch1_m10', title:'BLACKOUT', next:null,
+  brief:'The arena has lost power. Something is in the airspace that should not be.',
+  intro:function(){
+    say('ANNOUNCER','We have lost the arena feed — stand by —',2.8);
+    say('MARA','That is not a fault. Get airborne.',3);
+  },
+  objectives:[
+    {text:'ENGAGE THE UNMARKED AIRCRAFT',
+     setup:function(){
+       for(var i=0;i<4;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-800,800),rnd(900,1200),rnd(-900,900)),
+           hostile:true,hp:60,speed:112,name:'BLACK WING'});
+       say('NYX','You are not the one I came for.',3.4);
+     },
+     done:function(){return hostilesLeft()<=1;}},
+    {text:'CHOOSE — PURSUE NYX, OR COVER THE SHUTTLE',
+     setup:function(){
+       say('MARA','Civilian shuttle is holed and dropping. Nyx is running for the storm.',4.4);
+       spawnFlier({at:new THREE.Vector3(300,700,600),big:true,hp:90,speed:66,name:'SHUTTLE',
+         path:[BREAKWATER.clone()]});
+       openChoice('THE SHUTTLE IS FALLING',
+         'Nyx escapes either way. Only one of these you can still change.',
+         [{k:'shuttle',label:'COVER THE SHUTTLE'},{k:'pursue',label:'PURSUE NYX'}]);
+     },
+     done:function(){return !!mission.choice;}},
+    {text:function(){return mission.choice==='shuttle'?'ESCORT THE SHUTTLE HOME':'RUN NYX DOWN';},
+     setup:function(){
+       if(mission.choice==='shuttle'){
+         say('MARA','Good. Let the ace go.',3.2);
+         SAVE.flags.savedShuttle=true; addRep('civilian',16); addRep('independent',8);
+       } else {
+         say('NYX','Brave. Pointless.',3);
+         SAVE.flags.savedShuttle=false; addRep('blackwing',10);
+         for(var i=0;i<convoy.length;i++)if(convoy[i].passive)convoy[i].alive=false;
+       }
+       wxKey='storm'; wxTimer=240;
+     },
+     done:function(){
+       if(mission.choice==='shuttle')return convoyArrived()||convoyAlive()===0;
+       return mission.t>16;
+     }}
+  ],
+  reward:function(){
+    SAVE.flags.chapter1=true; SAVE.chapter=2;
+    say('NYX','Tell them it was one of their own.',3.6);
+    say('MARA','That attack was not meant to win. It was meant to make all three teams '+
+      'look at each other instead of the sky.',6.5);}});
+
+/* ===================== campaign UI ===================== */
+var rEl={};['radio','radioWho','radioText','objPanel','objTitle','objList','debrief',
+  'debriefT','debriefB','debriefStats','debriefNext','choiceCard','choiceT','choiceB',
+  'choiceOpts'].forEach(function(id){rEl[id]=document.getElementById(id);});
+
+function renderObjective(){
+  if(!rEl.objPanel||!mission.def)return;
+  rEl.objTitle.textContent=mission.def.title;
+  var html='';
+  for(var i=0;i<mission.def.objectives.length;i++){
+    var o=mission.def.objectives[i];
+    var cls=i<mission.i?'done':(i===mission.i?'now':'');
+    var t=(i===mission.i)?objText():(typeof o.text==='function'?'—':o.text);
+    html+='<div class="obj '+cls+'">'+t+'</div>';
+  }
+  rEl.objList.innerHTML=html;
+  rEl.objPanel.classList.add('on');
+}
+function openChoice(title,body,opts){
+  if(!rEl.choiceCard)return;
+  rEl.choiceT.textContent=title; rEl.choiceB.textContent=body;
+  rEl.choiceOpts.innerHTML='';
+  opts.forEach(function(o){
+    var b=document.createElement('button');
+    b.className='actionBtn'; b.textContent=o.label;
+    b.addEventListener('click',function(){
+      mission.choice=o.k; rEl.choiceCard.classList.remove('on');
+      if(!IS_TOUCH)lock();
+    });
+    rEl.choiceOpts.appendChild(b);
+  });
+  rEl.choiceCard.classList.add('on');
+  if(document.exitPointerLock)document.exitPointerLock();
+}
+function showDebrief(def){
+  if(!rEl.debrief)return;
+  rEl.debriefT.textContent=def.title+' — COMPLETE';
+  var rows=[['CREDITS',SAVE.credits],['CIVILIAN',SAVE.rep.civilian],
+            ['VANGUARD',SAVE.rep.vanguard],['TEMPEST',SAVE.rep.tempest],
+            ['INFERNO',SAVE.rep.inferno],['INDEPENDENT',SAVE.rep.independent]];
+  var h='';
+  for(var i=0;i<rows.length;i++)
+    h+='<div class="endStat"><b>'+rows[i][1]+'</b><span>'+rows[i][0]+'</span></div>';
+  rEl.debriefStats.innerHTML=h;
+  var nx=def.next&&CH1[def.next];
+  rEl.debriefB.textContent=nx?nx.brief:'Chapter 1 complete. The Open Skies is next.';
+  rEl.debriefNext.textContent=nx?'FLY '+nx.title:'RETURN TO BREAKWATER';
+  rEl.debrief.classList.add('on');
+  if(document.exitPointerLock)document.exitPointerLock();
+}
+function advanceCampaign(){
+  if(rEl.debrief)rEl.debrief.classList.remove('on');
+  var nextId=SAVE.mission;
+  if(nextId&&CH1[nextId]&&!missionDone(nextId)){
+    startMission(nextId);
+    if(!IS_TOUCH)lock();
+  } else {
+    st.mode='arena'; parkArena(false); enterHangar();
+  }
+}
+/* Missions 7 and 8 happen on foot, so they hand control back to the hangar and
+   pick up again the moment the player walks out. */
+function toCampaignHangar(){enterHangar();}
+
+buildSlots();
+if(rEl.debriefNext)rEl.debriefNext.addEventListener('click',advanceCampaign);
+if(rEl.debrief){
+  var dh=document.getElementById('debriefHangar');
+  if(dh)dh.addEventListener('click',function(){
+    rEl.debrief.classList.remove('on');
+    mission.running=false; st.mode='arena'; parkArena(false); enterHangar();
+  });
+}
+function startCampaign(){
+  var id=SAVE.mission&&CH1[SAVE.mission]?SAVE.mission:'ch1_m1';
+  leaveHangar();
+  st.started=true;
+  el.brief.classList.add('gone');
+  el.hud.classList.add('live');
+  document.body.classList.add('playing');
+  audioInit(); audioResume();
+  applyLoadout();
+  startMission(id);
+  if(!IS_TOUCH)lock();
+}
 
 /* ===================== loop ===================== */
 var prevT=performance.now();
@@ -3581,6 +4362,10 @@ requestAnimationFrame(function loop(now){
 
 function env(dt){
   st.hours=(st.hours+dt*st.timeSpeed*24/300)%24;
+  /* Two very slow UV drifts keep the generated water alive without replacing
+     the real reflective plane with a flat animated billboard. */
+  oceanSkin.offset.x=(oceanSkin.offset.x+dt*.0017)%1;
+  oceanSkin.offset.y=(oceanSkin.offset.y+dt*.0011)%1;
   var ang=(st.hours/24)*6.283-1.5708;
   sunDir.set(Math.cos(ang),Math.sin(ang),-.38).normalize();
   var dayF=smooth(-.14,.20,sunDir.y),warm=clamp(1-Math.abs(sunDir.y)/.30,0,1);
@@ -3759,7 +4544,9 @@ function playerControl(dt){
 
 function step(dt){
   env(dt);
-  if(!st.over){st.time-=dt; if(st.time<=0){st.time=0;endMatch();}}
+  /* the match clock, the Core and the rings belong to an Arena match; a
+     campaign mission owns its own pacing (STORY-BIBLE section 15). */
+  if(st.mode==='arena'&&!st.over){st.time-=dt; if(st.time<=0){st.time=0;endMatch();}}
 
   if(player.alive&&!st.over)playerControl(dt);
 
@@ -3806,8 +4593,8 @@ function step(dt){
   stepBullets(dt);
   stepStructs(dt);
   stepDrones(dt);
-  stepGoalRings(dt);
-  stepCore(dt);
+  if(st.mode==='arena'){stepGoalRings(dt);stepCore(dt);}
+  if(mission.running)stepMission(dt);
   stepLock(dt);
   gpwsCheck(dt);
   camWork(dt);
@@ -3849,6 +4636,27 @@ function stepBullets(dt){
           hurtStruct(sc,b.dmg||BULLET_DMG,b.owner);
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
           boom(b.p,16); dead=true; break;
+        }
+      }
+    }
+    /* mission traffic — cargo, transports, raiders, rivals. Passive aircraft
+       are hit only by hostile fire; hostiles are hit only by league fire. */
+    if(!dead){
+      for(var c2=0;c2<convoy.length;c2++){
+        var cv=convoy[c2];
+        if(!cv.alive)continue;
+        if(cv.hostile===(b.team==='blackwing'))continue;
+        var cdx=b.p.x-cv.pos.x,cdy=b.p.y-cv.pos.y,cdz=b.p.z-cv.pos.z;
+        var cr=cv.maxHp>150?26:HIT_RADIUS;
+        if(cdx*cdx+cdy*cdy+cdz*cdz<cr*cr){
+          cv.hp-=b.dmg||BULLET_DMG;
+          if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
+          if(cv.hp<=0){
+            cv.alive=false; cv.mesh.visible=false; boom(cv.pos,cv.maxHp>150?220:130);
+            feed('<span style="color:'+(cv.hostile?'#b98cff':'#ffb347')+'">'+cv.name+
+              (cv.hostile?' DOWN':' LOST')+'</span>');
+          } else boom(b.p,14);
+          dead=true; break;
         }
       }
     }
