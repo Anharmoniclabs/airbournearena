@@ -902,13 +902,18 @@ function liftedTexture(url,repeatX,repeatY,lift,tint){
   });
   return t;
 }
-var terrainSkin=liftedTexture('assets/volcanic-terrain-buildings-4k.webp',2.4,2.4,'#78787a','#c0ab86');
+/* Terrain art must not contain baked structures: the ground repeats as the
+   player flies, so painted buildings would duplicate and slide underneath the
+   actual 3D city. All architecture now lives on real geometry below. */
+var terrainSkin=liftedTexture('assets/volcanic-terrain-v2.webp',2.4,2.4,'#78787a','#c0ab86');
 var hullSkin=atlasPair('assets/team-skins-v2.webp');
 var caseSkin=gameTexture('assets/cemi-case-skin-v2.webp',1,1);
 var caseObjectiveSkin=tuneTexture(assetLoader.load('assets/cemi-case-objective-v3.webp'));
 var airstripSkin=teamTextures('assets/blue-airstrip-v1.webp','assets/red-airstrip-v1.webp');
 var portalSkin=atlasPair('assets/team-goal-portals-v2.webp');
 var fighterSpriteSkin=teamTextures('assets/blue-fighter-v3.webp','assets/red-fighter-v3.webp');
+var cityFacadeSkin=gameTexture('assets/city-facades-diffusion-v1.webp',1,1);
+var cityRoofSkin=gameTexture('assets/city-roofs-diffusion-v1.webp',1,1);
 
 var sunLight=new THREE.DirectionalLight(0xffffff,1.1); scene.add(sunLight,sunLight.target);
 var moonLight=new THREE.DirectionalLight(0x9fb8ff,0); scene.add(moonLight,moonLight.target);
@@ -1106,7 +1111,7 @@ buildBase('blue'); buildBase('red');
    collision volume. At combat altitude you are well over the roofs, and
    hanging hard bodies on several hundred boxes would turn every low pass into
    a coin flip; the terrain underneath is still the thing that kills you. */
-var cityMat=null;
+var cityMat=null,cityRoofMat=null;
 (function buildCity(){
   var lots=[],span=Math.round(CITY_REACH/CITY_BLOCK);
   for(var ix=-span;ix<=span;ix++){
@@ -1126,8 +1131,14 @@ var cityMat=null;
   }
   var geo=new THREE.BoxGeometry(1,1,1);
   geo.translate(0,.5,0);                           /* stand the box on the ground */
-  cityMat=new THREE.MeshPhongMaterial({flatShading:true,shininess:6,color:0xffffff});
-  var city=new THREE.InstancedMesh(geo,cityMat,lots.length);
+  cityMat=new THREE.MeshPhongMaterial({map:cityFacadeSkin,flatShading:true,
+    shininess:10,color:0xffffff});
+  cityRoofMat=new THREE.MeshPhongMaterial({map:cityRoofSkin,flatShading:true,
+    shininess:7,color:0xffffff});
+  /* BoxGeometry face order: right, left, top, bottom, front, back. Roof art is
+     confined to the upward face; facade art wraps only the vertical walls. */
+  var cityMats=[cityMat,cityMat,cityRoofMat,cityMat,cityMat,cityMat];
+  var city=new THREE.InstancedMesh(geo,cityMats,lots.length);
   city.frustumCulled=false;                        /* bounds are the unit box, not the city */
   var TONES=[0xd9d4c6,0xc7cbcb,0xe2dac6,0xbcbfb7,0xd0c7b6,0xb4b8bd];
   var m=new THREE.Matrix4(),q=new THREE.Quaternion(),
@@ -2515,7 +2526,11 @@ function env(dt){
   hemi.color.copy(cBot); hemi.intensity=.18+dayF*.42*shade+st.flash;
   /* the city keeps its lights on after dark, which is also the only thing
      that stops a night match reading as an empty black valley */
-  if(cityMat){var lit=(1-dayF)*.34;cityMat.emissive.setRGB(lit,lit*.82,lit*.5);}
+  if(cityMat){
+    var lit=(1-dayF)*.34;
+    cityMat.emissive.setRGB(lit,lit*.82,lit*.5);
+    if(cityRoofMat)cityRoofMat.emissive.setRGB(lit*.24,lit*.2,lit*.15);
+  }
   stars.material.opacity=(1-dayF)*(1-wx.cover*.85);
   moon.material.opacity=(1-dayF)*.9*(1-wx.cover*.8);
   sea.material.color.copy(cBot).multiplyScalar(.42).lerp(new THREE.Color(0x14405f),.55);
