@@ -428,6 +428,8 @@
     transition:opacity .25s;font-size:10px;letter-spacing:.16em}
   body.hangar #hangarUI{opacity:1}
   body.hangar #brief{opacity:0;pointer-events:none}
+  /* on-foot missions: flight furniture has no business over the hangar */
+  body.hangar #objPanel,body.hangar #radio{opacity:0}
   #hangarTitle{position:absolute;left:34px;top:30px;max-width:340px}
   #hangarTitle h2{font-size:20px;letter-spacing:.3em;color:var(--teal);margin-bottom:10px}
   #hangarTitle p{font-size:10px;line-height:2.1;color:rgba(223,243,255,.5)}
@@ -3923,6 +3925,8 @@ function objText(){
 function startMission(id){
   var def=CH1[id];
   if(!def)return false;
+  if(rEl.debrief)rEl.debrief.classList.remove('on');
+  if(rEl.choiceCard)rEl.choiceCard.classList.remove('on');
   clearGates(); clearConvoy(); clearRadio();
   mission.def=def; mission.i=-1; mission.obj=null; mission.t=0;
   mission.running=true; mission.failed=false; mission.choice=null;

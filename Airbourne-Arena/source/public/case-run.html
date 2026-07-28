@@ -428,6 +428,8 @@
     transition:opacity .25s;font-size:10px;letter-spacing:.16em}
   body.hangar #hangarUI{opacity:1}
   body.hangar #brief{opacity:0;pointer-events:none}
+  /* on-foot missions: flight furniture has no business over the hangar */
+  body.hangar #objPanel,body.hangar #radio{opacity:0}
   #hangarTitle{position:absolute;left:34px;top:30px;max-width:340px}
   #hangarTitle h2{font-size:20px;letter-spacing:.3em;color:var(--teal);margin-bottom:10px}
   #hangarTitle p{font-size:10px;line-height:2.1;color:rgba(223,243,255,.5)}
@@ -2185,9 +2187,9 @@ var MUZZLE=780,BULLET_DMG=14,HIT_RADIUS=14;
 
 function fire(f){
   if(f.cannonCd>0||!f.alive)return;
-  f.cannonCd=.085;
+  f.cannonCd=.085/(f.gunRate||1);
   var fwd=new THREE.Vector3(0,0,-1).applyQuaternion(f.quat);
-  var spread=f.isPlayer?.0032:f.spread;
+  var spread=(f.isPlayer?.0032:f.spread)*(f.gunSpread||1);
   var d=fwd.clone();
   /* A small, earned aim assist helps a near-correct burst connect without
      turning the cannon into a lock-on weapon. The nose still has to be within
@@ -2201,7 +2203,7 @@ function fire(f){
   d.normalize();
   bullets.push({p:f.pos.clone().addScaledVector(fwd,6.4),
     v:d.multiplyScalar(MUZZLE).add(f.vel),   /* rounds carry the aircraft's velocity */
-    life:1.6,team:f.team,owner:f});
+    life:1.6,team:f.team,owner:f,dmg:BULLET_DMG*(f.gunDmg||1)});
   gunSfx(f.isPlayer?1:earGain(f.pos)*.75);
   if(f.isPlayer){shake=Math.min(0.5,shake+0.05);sortie.shots++;}
 }
@@ -2304,6 +2306,8 @@ function systemHit(f,by){
 }
 function hurt(f,dmg,by){
   if(!f.alive||f.invuln>0)return;
+  /* the armour slot is a divisor on everything that reaches you */
+  if(f.armorMul&&f.armorMul!==1)dmg/=f.armorMul;
   f.hp-=dmg;
   /* `by` is null for the out-of-bounds bleed; only aimed fire breaks things */
   if(by&&f.hp>0&&Math.random()<0.26)systemHit(f,by);
@@ -3606,6 +3610,9 @@ function buildSlots(){
 }
 /* Section 13.3: the hangar must show the trade, not just the benefit. */
 function syncSlots(){
+  /* enterHangar() runs during module load, before the campaign block below has
+     initialised SAVE. Nothing to sync yet, and reading it here would throw. */
+  if(typeof SAVE==='undefined'||!SAVE)return;
   Object.keys(SLOT_EL).forEach(function(slot){
     var host=hEl[SLOT_EL[slot]];
     if(!host)return;
@@ -3770,7 +3777,7 @@ function missionDone(id){return SAVE.completed.indexOf(id)>=0;}
    so a build lands on the aircraft through the same two numbers the fit-out
    slider uses — no second path into stepFlight. */
 function applyLoadout(){
-  if(!player)return;
+  if(!player||typeof SAVE==='undefined'||!SAVE)return;
   var e=part('engine',SAVE.loadout.engine), w=part('wings',SAVE.loadout.wings),
       a=part('armor',SAVE.loadout.armor),   g=part('primary',SAVE.loadout.primary);
   var mass=(e.mass||1)*(w.mass||1)*(a.mass||1);
@@ -3918,6 +3925,8 @@ function objText(){
 function startMission(id){
   var def=CH1[id];
   if(!def)return false;
+  if(rEl.debrief)rEl.debrief.classList.remove('on');
+  if(rEl.choiceCard)rEl.choiceCard.classList.remove('on');
   clearGates(); clearConvoy(); clearRadio();
   mission.def=def; mission.i=-1; mission.obj=null; mission.t=0;
   mission.running=true; mission.failed=false; mission.choice=null;
