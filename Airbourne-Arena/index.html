@@ -3474,22 +3474,88 @@ var MARA_POS=new THREE.Vector3(10,0,-27);
   doorLight.position.set(0,10,40); hangarScene.add(doorLight,doorLight.target);
 })();
 
-/* Generated people live inside the same 3D hangar as the aircraft. The player
-   sprite is a strict rear view for the trailing camera; Mara faces the player
-   from beside the briefing wall. Both use real alpha, never colored rectangles. */
-var playerAvatar=new THREE.Sprite(new THREE.SpriteMaterial({
-  map:independentPilotSkin,transparent:true,alphaTest:.025,depthWrite:true}));
-playerAvatar.scale.set(1.95,3.7,1);
-playerAvatar.position.set(0,1.85,26);
-playerAvatar.renderOrder=3;
-hangarScene.add(playerAvatar);
+/* ===================== articulated hangar characters =====================
+   The generated portraits are texture atlases, not the characters themselves.
+   Their detail is cropped over a real 3D skeleton, with every major limb
+   parented at an anatomical pivot for walking, running and idle motion. */
+function bodyAtlas(url){
+  var cuts={
+    head:[.34,.015,.32,.17],torso:[.24,.15,.52,.33],pelvis:[.28,.44,.44,.16],
+    armL:[.13,.18,.24,.34],armR:[.63,.18,.24,.34],
+    legL:[.24,.55,.25,.32],legR:[.51,.55,.25,.32],boot:[.24,.84,.52,.15]
+  },maps={};
+  Object.keys(cuts).forEach(function(k){
+    var c=cuts[k],t=new THREE.Texture();
+    t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;
+    t.repeat.set(c[2],c[3]);t.offset.set(c[0],1-c[1]-c[3]);
+    tuneTexture(t);maps[k]=t;
+  });
+  imageLoader.load(url,function(img){
+    Object.keys(maps).forEach(function(k){maps[k].image=img;maps[k].needsUpdate=true;});
+  });
+  return maps;
+}
+function bodyMat(map,tint){
+  return new THREE.MeshPhongMaterial({map:map,color:tint||0xffffff,shininess:10,
+    transparent:true,alphaTest:.02,depthWrite:true});
+}
+function buildHumanoid(url,tint){
+  var a=bodyAtlas(url),root=new THREE.Group();
+  var mats={
+    head:bodyMat(a.head,tint),torso:bodyMat(a.torso,tint),pelvis:bodyMat(a.pelvis,tint),
+    armL:bodyMat(a.armL,tint),armR:bodyMat(a.armR,tint),
+    legL:bodyMat(a.legL,tint),legR:bodyMat(a.legR,tint),boot:bodyMat(a.boot,tint)
+  };
+  function part(geo,mat,parent,x,y,z){
+    var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);parent.add(m);return m;
+  }
+  function limb(parent,x,y,z,len,radius,mat){
+    var j=new THREE.Group();j.position.set(x,y,z);parent.add(j);
+    var geo=new THREE.CylinderGeometry(radius*.82,radius,len,10);
+    geo.translate(0,-len*.5,0);
+    part(geo,mat,j,0,0,0);return j;
+  }
+  part(new THREE.BoxGeometry(.78,.42,.36),mats.pelvis,root,0,1.56,0);
+  var torso=part(new THREE.BoxGeometry(.98,1.02,.42),mats.torso,root,0,2.27,0);
+  var neck=part(new THREE.CylinderGeometry(.13,.15,.18,10),mats.head,root,0,2.86,0);
+  var head=part(new THREE.SphereGeometry(.29,16,12),mats.head,root,0,3.17,0);
+  head.scale.set(.86,1.14,.9);
 
-var maraAvatar=new THREE.Sprite(new THREE.SpriteMaterial({
-  map:maraVossSkin,transparent:true,alphaTest:.025,depthWrite:true}));
-maraAvatar.scale.set(2.05,3.9,1);
-maraAvatar.position.set(MARA_POS.x,1.95,MARA_POS.z);
-maraAvatar.renderOrder=2;
-hangarScene.add(maraAvatar);
+  var shoulderL=limb(root,-.61,2.68,0,.67,.17,mats.armL);
+  var shoulderR=limb(root, .61,2.68,0,.67,.17,mats.armR);
+  var elbowL=limb(shoulderL,0,-.67,0,.61,.145,mats.armL);
+  var elbowR=limb(shoulderR,0,-.67,0,.61,.145,mats.armR);
+  part(new THREE.SphereGeometry(.16,10,8),mats.armL,elbowL,0,-.63,0);
+  part(new THREE.SphereGeometry(.16,10,8),mats.armR,elbowR,0,-.63,0);
+
+  var hipL=limb(root,-.25,1.48,0,.73,.205,mats.legL);
+  var hipR=limb(root, .25,1.48,0,.73,.205,mats.legR);
+  var kneeL=limb(hipL,0,-.73,0,.70,.17,mats.legL);
+  var kneeR=limb(hipR,0,-.73,0,.70,.17,mats.legR);
+  part(new THREE.BoxGeometry(.34,.33,.55),mats.boot,kneeL,0,-.77,-.09);
+  part(new THREE.BoxGeometry(.34,.33,.55),mats.boot,kneeR,0,-.77,-.09);
+
+  root.userData.rig={torso:torso,neck:neck,head:head,
+    shoulderL:shoulderL,shoulderR:shoulderR,elbowL:elbowL,elbowR:elbowR,
+    hipL:hipL,hipR:hipR,kneeL:kneeL,kneeR:kneeR};
+  return root;
+}
+function poseHumanoid(model,phase,amount,idle){
+  var r=model.userData.rig,s=Math.sin(phase),c=Math.cos(phase),a=amount||0;
+  r.hipL.rotation.x=s*.72*a;r.hipR.rotation.x=-s*.72*a;
+  r.kneeL.rotation.x=Math.max(0,-s)*.72*a;
+  r.kneeR.rotation.x=Math.max(0,s)*.72*a;
+  r.shoulderL.rotation.x=-s*.58*a;r.shoulderR.rotation.x=s*.58*a;
+  r.elbowL.rotation.x=-.08-Math.max(0,s)*.32*a;
+  r.elbowR.rotation.x=-.08-Math.max(0,-s)*.32*a;
+  r.torso.rotation.y=s*.055*a;r.torso.rotation.z=c*.018*a;
+  r.head.rotation.y=Math.sin(phase*.23)*.025*(idle?1:.3);
+}
+
+var playerAvatar=buildHumanoid('assets/independent-pilot-rear-diffusion-4k-v1.webp',0xffffff);
+playerAvatar.position.set(0,0,26);hangarScene.add(playerAvatar);
+var maraAvatar=buildHumanoid('assets/mara-switch-voss-diffusion-4k-v1.webp',0xffffff);
+maraAvatar.position.copy(MARA_POS);maraAvatar.scale.setScalar(.96);hangarScene.add(maraAvatar);
 
 /* The two display airframes use the same physical, textured model as flight.
    buildPlane initially parents into the match scene; adding it here transfers
@@ -3535,7 +3601,7 @@ function paintHangarPlane(){
 }
 
 /* ---------- walking ---------- */
-var walk={x:0,z:26,yaw:0,pitch:0,bob:0,orbit:0};
+var walk={x:0,z:26,yaw:0,pitch:0,bob:0,orbit:0,face:0,moving:0,run:0};
 var hangarNear=null;
 var hEl={};['hangarUI','hangarPrompt','hangarTeam','hangarCall','hangarHint',
   'fitCard','fitCall','fitLivery','fitAccent','fitTrim','fitTrimOut','fitBlue','fitRed',
@@ -3561,8 +3627,9 @@ function hangarStep(dt){
     walk.z=14+Math.cos(walk.orbit*.7)*8;
     var look=hangarBays[PILOT.team];
     walk.yaw=Math.atan2(-(look.x-walk.x),-(look.z-walk.z));
+    walk.face=walk.yaw;walk.moving=.22;walk.run=0;
   } else {
-    var sp=(keys.ShiftLeft||keys.ShiftRight)?17:9;
+    var running=!!(keys.ShiftLeft||keys.ShiftRight),sp=running?17:9;
     var f=hangarForward();
     var rt={x:-f.z,z:f.x};
     var mx=0,mz=0;
@@ -3574,7 +3641,12 @@ function hangarStep(dt){
     if(ml>1e-4){
       walk.x+=mx/ml*sp*dt; walk.z+=mz/ml*sp*dt;
       walk.bob+=dt*sp*.9;
+      var desired=Math.atan2(-mx/ml,-mz/ml);
+      var da=Math.atan2(Math.sin(desired-walk.face),Math.cos(desired-walk.face));
+      walk.face+=da*Math.min(1,dt*12);
     }
+    walk.moving+=( (ml>1e-4?1:0)-walk.moving)*Math.min(1,dt*14);
+    walk.run+=( (ml>1e-4&&running?1:0)-walk.run)*Math.min(1,dt*10);
     /* walls, then the aircraft themselves, so you cannot stand inside a wing */
     walk.x=clamp(walk.x,-HW+2.4,HW-2.4);
     walk.z=clamp(walk.z,-HD+2.4,HD-3);
@@ -3587,7 +3659,15 @@ function hangarStep(dt){
      trails it, so aircraft and walls still block the character rather than an
      invisible first-person eye. Clamp the camera as well to keep it indoors. */
   var view=hangarForward(),camBack=4.6;
-  playerAvatar.position.set(walk.x,1.85+Math.sin(walk.bob)*.035,walk.z);
+  var stride=walk.moving*(1+walk.run*.28);
+  playerAvatar.position.set(walk.x,Math.abs(Math.sin(walk.bob*2))*.045*stride,walk.z);
+  playerAvatar.rotation.y=walk.face;
+  poseHumanoid(playerAvatar,walk.bob,stride,false);
+  /* Mara is a full rig too: she tracks the player with her body and breathes
+     through a restrained idle pose rather than remaining a frozen cutout. */
+  var mdx=walk.x-MARA_POS.x,mdz=walk.z-MARA_POS.z;
+  maraAvatar.rotation.y=Math.atan2(-mdx,-mdz);
+  poseHumanoid(maraAvatar,performance.now()*.0018,.08,true);
   hangarCam.position.set(
     clamp(walk.x-view.x*camBack,-HW+.8,HW-.8),
     3.35+Math.sin(walk.bob)*.035,
