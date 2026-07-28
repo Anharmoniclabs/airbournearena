@@ -535,6 +535,7 @@
   <div id="hangarPrompt"></div>
   <div id="hangarHint">
     <b>W A S D</b> WALK &nbsp;·&nbsp; <b>MOUSE</b> LOOK &nbsp;·&nbsp;
+    <b>CLICK</b> CAPTURE &nbsp;·&nbsp; <b>ESC</b> RELEASE &nbsp;·&nbsp;
     <b>SHIFT</b> RUN &nbsp;·&nbsp; <b>E</b> INTERACT &nbsp;·&nbsp; <b>F</b> FIT OUT
   </div>
 </div>
@@ -3094,6 +3095,14 @@ function launch(){
 el.brief.addEventListener('pointerdown',launch);
 renderer.domElement.addEventListener('pointerdown',function(e){
   if(IS_TOUCH){launch();return;}
+  /* The hangar is already running before the match is "started". Previously
+     this path called launch(), which intentionally returns during the hangar,
+     so the mouse was never captured and free-look could never receive relative
+     movement. A click in free roam now captures the camera directly. */
+  if(st.phase==='hangar'){
+    if(!hEl.fitCard||!hEl.fitCard.classList.contains('on'))lock();
+    return;
+  }
   if(!st.started){launch();return;}
   /* An embedded frame is allowed to refuse pointer lock, and this used to
      return early on every click when it did — so inside the iframe build the
@@ -3170,6 +3179,14 @@ document.addEventListener('pointerlockchange',function(){
 })();
 addEventListener('mousemove',function(e){
   st.mouseSeen=true;
+  if(st.phase==='hangar'&&!IS_TOUCH){
+    if(st.locked&&(!hEl.fitCard||!hEl.fitCard.classList.contains('on'))){
+      var hs=clamp(cfg.sens,20,120)/18000;
+      walk.yaw-=e.movementX*hs;
+      walk.pitch=clamp(walk.pitch-e.movementY*hs,-1.35,1.35);
+    }
+    return;
+  }
   if(st.locked){
     /* captured: relative deltas, infinite travel */
     aim.x+=e.movementX*mouseSens();
