@@ -3582,6 +3582,12 @@ playerAvatar.position.set(0,0,26);hangarScene.add(playerAvatar);
 var maraAvatar=buildHumanoid('assets/mara-switch-voss-diffusion-4k-v1.webp',
   {head:0x9b684f,torso:0x393230,pelvis:0x302925,suit:0x3b3330,legs:0x292725,boot:0x181719},true);
 maraAvatar.position.copy(MARA_POS);maraAvatar.scale.setScalar(.96);hangarScene.add(maraAvatar);
+/* A segmented primitive is not a production character. Keep these prototypes
+   out of the rendered game until they are replaced by a skinned GLB with real
+   weights and animation clips. First-person free roam remains fully usable. */
+var RIGGED_CHARACTER_READY=false;
+playerAvatar.visible=RIGGED_CHARACTER_READY;
+maraAvatar.visible=RIGGED_CHARACTER_READY;
 
 /* The two display airframes use the same physical, textured model as flight.
    buildPlane initially parents into the match scene; adding it here transfers
@@ -3691,23 +3697,26 @@ function hangarStep(dt){
      invisible first-person eye. Clamp the camera as well to keep it indoors. */
   var view=hangarForward(),camBack=4.6;
   var stride=walk.moving*(1+walk.run*.22);
-  playerAvatar.position.set(walk.x,.07+Math.abs(Math.cos(walk.gait))*.035*stride,walk.z);
-  playerAvatar.rotation.y=walk.face;
-  poseHumanoid(playerAvatar,walk.gait,stride,false);
-  /* Mara is a full rig too: she tracks the player with her body and breathes
-     through a restrained idle pose rather than remaining a frozen cutout. */
-  var mdx=walk.x-MARA_POS.x,mdz=walk.z-MARA_POS.z;
-  maraAvatar.rotation.y=Math.atan2(-mdx,-mdz);
-  poseHumanoid(maraAvatar,performance.now()*.0018,.08,true);
-  hangarCam.position.set(
-    clamp(walk.x-view.x*camBack,-HW+.8,HW-.8),
-    3.35+Math.sin(walk.bob)*.035,
-    clamp(walk.z-view.z*camBack,-HD+.8,HD-.8));
+  if(RIGGED_CHARACTER_READY){
+    playerAvatar.position.set(walk.x,.07+Math.abs(Math.cos(walk.gait))*.035*stride,walk.z);
+    playerAvatar.rotation.y=walk.face;
+    poseHumanoid(playerAvatar,walk.gait,stride,false);
+    var mdx=walk.x-MARA_POS.x,mdz=walk.z-MARA_POS.z;
+    maraAvatar.rotation.y=Math.atan2(-mdx,-mdz);
+    poseHumanoid(maraAvatar,performance.now()*.0018,.08,true);
+    hangarCam.position.set(
+      clamp(walk.x-view.x*camBack,-HW+.8,HW-.8),
+      3.35+Math.sin(walk.bob)*.035,
+      clamp(walk.z-view.z*camBack,-HD+.8,HD-.8));
+  }else{
+    hangarCam.position.set(walk.x,1.72+Math.sin(walk.bob)*.035,walk.z);
+  }
   hangarCam.rotation.set(walk.pitch,walk.yaw,0,'YXZ');
 
   hangarNear=IS_TOUCH?null:nearestBay();
   var board=Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11&&!IS_TOUCH;
-  var mara=Math.hypot(walk.x-MARA_POS.x,walk.z-MARA_POS.z)<5.5&&!IS_TOUCH;
+  var mara=RIGGED_CHARACTER_READY&&
+    Math.hypot(walk.x-MARA_POS.x,walk.z-MARA_POS.z)<5.5&&!IS_TOUCH;
   var msg='';
   if(hangarNear)msg=(hangarNear===PILOT.team&&PILOT.signed?'[E]  FIT OUT KESTREL — ':'[E]  JOIN ')+
     factionName(hangarNear)+(hangarNear===PILOT.team&&PILOT.signed?' TRIAL FLIGHT':' FOR THIS TRIAL');
@@ -3728,7 +3737,7 @@ function hangarInteract(){
     openFit();
     return;
   }
-  if(Math.hypot(walk.x-MARA_POS.x,walk.z-MARA_POS.z)<5.5){
+  if(RIGGED_CHARACTER_READY&&Math.hypot(walk.x-MARA_POS.x,walk.z-MARA_POS.z)<5.5){
     toast('SWITCH: YOUR KESTREL IS READY. LET’S SEE WHAT YOU CAN DO.',3.4);
     startCampaign();
     return;
