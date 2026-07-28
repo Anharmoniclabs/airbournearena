@@ -121,40 +121,51 @@ bpy.context.collection.objects.link(root)
 
 body = loft("Continuous fuselage", [
     (-6.3, .04, .04, 0.00), (-5.8, .34, .28, 0.00),
-    (-4.8, .72, .52, 0.06), (-3.2, 1.04, .70, 0.10),
-    (-1.0, 1.12, .76, 0.05), (1.2, 1.06, .70, 0.00),
-    (3.2, .88, .60, 0.00), (4.5, .66, .48, 0.00),
+    (-4.8, .72, .50, 0.02), (-3.2, 1.06, .66, 0.08),
+    (-1.0, 1.28, .69, 0.02), (1.2, 1.36, .62, -0.02),
+    (3.2, 1.12, .54, -0.02), (4.5, .74, .44, -0.01),
     (5.05, .48, .38, 0.00)
 ], 40, hull)
 body.parent = root
 
 main_wing = prism("Blended main wing", [
-    (-.55, -3.15), (-7.25, .15), (-6.50, 1.50), (-1.20, 1.10),
-    (1.20, 1.10), (6.50, 1.50), (7.25, .15), (.55, -3.15)
-], .26, hull, -0.02)
+    (-.72, -2.82), (-7.25, .12), (-6.55, 1.62), (-1.38, 2.62),
+    (1.38, 2.62), (6.55, 1.62), (7.25, .12), (.72, -2.82)
+], .20, hull, -0.08)
 main_wing.parent = root
 
-trailing = prism("Graphite control surfaces", [
-    (-6.25, .68), (-4.75, 1.48), (4.75, 1.48), (6.25, .68),
-    (4.70, .36), (-4.70, .36)
-], .08, graphite, .15)
-trailing.parent = root
+for side in (-1, 1):
+    control = prism(f"Graphite elevon {'L' if side < 0 else 'R'}", [
+        (side * 6.32, 1.28), (side * 2.0, 2.35),
+        (side * 1.55, 2.02), (side * 5.95, .98)
+    ], .055, graphite, .05)
+    control.parent = root
+    root_panel = prism(f"Graphite wing root panel {'L' if side < 0 else 'R'}", [
+        (side * .95, -1.95), (side * 2.55, -.98),
+        (side * 2.30, -.20), (side * .92, -.52)
+    ], .035, graphite, .045)
+    root_panel.parent = root
+    tip_mark = prism(f"Faction wing identification {'L' if side < 0 else 'R'}", [
+        (side * 6.72, .25), (side * 6.36, .48),
+        (side * 5.98, 1.28), (side * 6.42, 1.18)
+    ], .04, accent, .05)
+    tip_mark.parent = root
 
 tailplane = prism("Tailplane", [
-    (-.45, 2.65), (-3.25, 4.05), (-2.75, 4.78),
-    (0, 4.02), (2.75, 4.78), (3.25, 4.05), (.45, 2.65)
-], .18, hull, .10)
+    (-.55, 3.18), (-3.0, 4.12), (-2.58, 4.72),
+    (0, 4.05), (2.58, 4.72), (3.0, 4.12), (.55, 3.18)
+], .14, hull, .02)
 tailplane.parent = root
 
 for side in (-1, 1):
-    nacelle = cylinder(f"Engine nacelle {'L' if side < 0 else 'R'}", .62, 4.7,
-                       (side * 2.05, 1.2, -.12), hull, 40)
+    nacelle = cylinder(f"Engine nacelle {'L' if side < 0 else 'R'}", .58, 3.7,
+                       (side * 1.72, 2.45, -.18), metal, 40)
     nacelle.parent = root
     exhaust = cylinder(f"Exhaust {'L' if side < 0 else 'R'}", .48, .86,
-                       (side * 2.05, 3.98, -.12), metal, 40)
+                       (side * 1.72, 4.50, -.18), metal, 40)
     exhaust.parent = root
     intake = cylinder(f"Intake lip {'L' if side < 0 else 'R'}", .67, .28,
-                      (side * 2.05, -1.18, -.12), graphite, 40)
+                      (side * 1.72, .56, -.18), graphite, 40)
     intake.parent = root
     fin = prism(f"Canted fin {'L' if side < 0 else 'R'}", [
         (side * .82, 2.55), (side * 1.45, 4.42),
@@ -163,17 +174,17 @@ for side in (-1, 1):
     fin.rotation_euler.y = side * math.radians(18)
     fin.parent = root
 
-bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=24, location=(0, -2.48, .76))
+bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=24, location=(0, -2.62, .66))
 cockpit = bpy.context.object
 cockpit.name = "Framed canopy"
-cockpit.scale = (.72, 1.78, .48)
+cockpit.scale = (.58, 1.42, .36)
 bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 cockpit.data.materials.append(canopy)
 finish(cockpit, 0.015, True)
 cockpit.parent = root
 
 for x in (-.46, .46):
-    frame = cube("Canopy longitudinal frame", (x, -2.44, 1.02), (.035, 1.25, .035), graphite, .015)
+    frame = cube("Canopy longitudinal frame", (x * .78, -2.58, .86), (.028, 1.02, .026), graphite, .012)
     frame.rotation_euler.y = math.radians(-5)
     frame.parent = root
 

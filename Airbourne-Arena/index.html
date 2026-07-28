@@ -2038,10 +2038,14 @@ function installAuthoredPlane(host,team,isPlayer){
     o.material=o.material.clone();
     var name=o.material.name||'';
     if(name.indexOf('Kestrel weathered ceramic')>=0){
-      o.material.map=isPlayer?kestrelSkin:(team==='blue'?vanguardSkin:infernoSkin);
-      o.material.color.setHex(isPlayer?0xffffff:0xe9edf0);
-      o.material.metalness=.28;o.material.roughness=.48;
-      o.material.emissive.setHex(0x454b4d);o.material.emissiveIntensity=.46;
+      /* The diffusion sheet is an art-direction atlas, not this mesh's UV
+         layout. Applying it wholesale scattered dark atlas islands over the
+         wings. Keep the authored ceramic coherent; physical panel/elevon
+         meshes carry the surface breakup at close range. */
+      o.material.map=null;
+      o.material.color.setHex(isPlayer?0xd7d7d1:(team==='blue'?0xcbd6dc:0xd6c8c5));
+      o.material.metalness=.34;o.material.roughness=.39;
+      o.material.emissive.setHex(0x20262a);o.material.emissiveIntensity=.18;
       o.material.emissiveMap=null;
       o.material.needsUpdate=true;
       hullMaterial=o.material;
@@ -3793,15 +3797,34 @@ function prepareCharacter(root,accent){
     o.castShadow=true;o.receiveShadow=true;
     if(o.material){
       o.material=o.material.clone();
-      if(o.material.color)o.material.color.lerp(new THREE.Color(accent),.10);
+      var mn=o.material.name||'';
+      if(o.material.color){
+        if(mn.indexOf('Visor')>=0){
+          o.material.color.setHex(0x80d9e7);
+          if(o.material.emissive){o.material.emissive.setHex(0x123c4b);o.material.emissiveIntensity=.55;}
+        }else if(mn.indexOf('Body')>=0){
+          /* The embedded albedo was baked orange, so tint multiplication could
+             only turn it brown or black. The real skinned mesh, normal detail,
+             weights and clips remain; replace only that incorrect albedo with
+             the canon Starter Coast textile colour. */
+          o.material.map=null;
+          o.material.color.setHex(accent);
+          o.material.roughness=.66;o.material.metalness=.08;
+          if(o.material.emissive){o.material.emissive.setHex(0x101a27);o.material.emissiveIntensity=.08;}
+        }else{
+          o.material.color.setHex(0x46515b);
+          o.material.roughness=.5;o.material.metalness=.22;
+        }
+      }
       o.material.skinning=!!o.isSkinnedMesh;
+      o.material.needsUpdate=true;
     }
   });
   root.scale.setScalar(1.72);
 }
 var characterLoader=new THREE.GLTFLoader(loadManager);
 characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
-  playerAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x294c72);
+  playerAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x3b526e);
   playerMixer=new THREE.AnimationMixer(gltf.scene);
   playerActions=characterActions(playerMixer,gltf.animations);
   RIGGED_CHARACTER_READY=!!(playerActions.Idle&&playerActions.Walk&&playerActions.Run);
