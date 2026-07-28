@@ -1,5 +1,6 @@
 # dependencies
 node_modules/
+.tools/
 
 # build output
 Airbourne-Arena/source/dist/
