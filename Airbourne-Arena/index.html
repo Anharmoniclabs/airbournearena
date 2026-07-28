@@ -1,3 +1,9 @@
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +15,7 @@
 <meta name="theme-color" content="#05070d">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/airbourne-icon-v2-192.png">
-<title>AIRBOURNE ARENA — CASE RUN 4v4</title>
+<title>AIRBOURNE ARENA — ARENA CORE 4v4</title>
 <style>
   :root{
     --ink:#dff3ff; --teal:#6fe3d0; --amber:#ffb347; --alert:#ff5f56;
@@ -417,6 +423,41 @@
   .setNote{font-size:9px;line-height:1.7;color:rgba(223,243,255,.4);margin-top:16px;letter-spacing:.1em}
   .btnRow{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap}
 
+  /* ===================== hangar ===================== */
+  #hangarUI{position:fixed;inset:0;z-index:8;pointer-events:none;opacity:0;
+    transition:opacity .25s;font-size:10px;letter-spacing:.16em}
+  body.hangar #hangarUI{opacity:1}
+  body.hangar #brief{opacity:0;pointer-events:none}
+  #hangarTitle{position:absolute;left:34px;top:30px;max-width:340px}
+  #hangarTitle h2{font-size:20px;letter-spacing:.3em;color:var(--teal);margin-bottom:10px}
+  #hangarTitle p{font-size:10px;line-height:2.1;color:rgba(223,243,255,.5)}
+  #hangarTitle p b{color:var(--amber);font-weight:500}
+  #hangarHint{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);
+    text-align:center;color:rgba(223,243,255,.5);line-height:2.2;white-space:nowrap}
+  #hangarHint b{color:var(--teal);font-weight:500}
+  #hangarPrompt{position:absolute;left:50%;top:54%;transform:translateX(-50%);
+    border:1px solid var(--line);background:rgba(6,14,20,.86);padding:9px 17px;
+    color:var(--ink);opacity:0;transition:opacity .14s;white-space:nowrap}
+  #hangarPrompt.on{opacity:1}
+  #hangarSign{position:absolute;right:34px;top:30px;text-align:right;
+    color:rgba(223,243,255,.45);line-height:2.1}
+  #hangarSign b{display:block;font-size:15px;letter-spacing:.26em;font-weight:600}
+  #hangarSign b.blue{color:var(--blue)} #hangarSign b.red{color:var(--red)}
+
+  #fitCard{position:fixed;inset:0;display:grid;place-items:center;z-index:11;
+    background:rgba(2,5,9,.9);opacity:0;pointer-events:none;transition:opacity .2s}
+  #fitCard.on{opacity:1;pointer-events:auto}
+  #fitCard,#fitCard *{touch-action:auto}
+  .fitTeam{display:flex;gap:7px;flex:none}
+  .seg.blue.on{background:rgba(79,195,255,.22);color:var(--blue);border-color:rgba(79,195,255,.55)}
+  .seg.red.on{background:rgba(255,107,94,.22);color:var(--red);border-color:rgba(255,107,94,.55)}
+  #fitCall{flex:0 0 152px;background:rgba(223,243,255,.06);border:1px solid var(--line);
+    color:var(--ink);font:600 11px/1 ui-monospace,monospace;letter-spacing:.2em;
+    padding:8px 10px;text-transform:uppercase}
+  .swatchRow{display:flex;gap:7px;flex:none}
+  .swatch{width:22px;height:22px;border:1px solid rgba(223,243,255,.25);cursor:pointer;padding:0}
+  .swatch.on{outline:2px solid var(--teal);outline-offset:2px}
+
   /* ===================== end screen ===================== */
   #endStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px;
     margin:22px auto 0;max-width:420px}
@@ -449,6 +490,57 @@
 <body>
 <div id="app"></div>
 
+<div id="hangarUI">
+  <div id="hangarTitle">
+    <h2>BREAKWATER FIELD</h2>
+    <p><b>MARA "SWITCH" VOSS:</b> Two league flights are running an open trial
+    off my strip, and both of them are short a pilot. Take the <b>Arena Core</b>
+    to their ring, keep your carrier alive, and put their masts down. Walk up to
+    whichever airframe you want and I'll sign the paperwork.</p>
+  </div>
+  <div id="hangarSign">
+    <span>SIGNED WITH</span>
+    <b id="hangarTeam">UNSIGNED</b>
+    <span id="hangarCall"></span>
+  </div>
+  <div id="hangarPrompt"></div>
+  <div id="hangarHint">
+    <b>W A S D</b> WALK &nbsp;·&nbsp; <b>MOUSE</b> LOOK &nbsp;·&nbsp;
+    <b>SHIFT</b> RUN &nbsp;·&nbsp; <b>E</b> INTERACT &nbsp;·&nbsp; <b>F</b> FIT OUT
+  </div>
+</div>
+
+<div id="fitCard">
+  <div class="setCard">
+    <h2>FIT OUT</h2>
+    <div class="setRow"><label>CONTRACT</label>
+      <div class="fitTeam">
+        <button class="seg blue" id="fitBlue" data-team="blue">VANGUARD</button>
+        <button class="seg red" id="fitRed" data-team="red">INFERNO</button>
+      </div>
+    </div>
+    <div class="setRow"><label>CALLSIGN</label>
+      <input id="fitCall" maxlength="10" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="setRow"><label>LIVERY</label>
+      <div class="segRow" id="fitLivery"></div>
+    </div>
+    <div class="setRow"><label>ACCENT</label>
+      <div class="swatchRow" id="fitAccent"></div>
+    </div>
+    <div class="setRow"><label>TRIM &mdash; TURN / SPEED</label>
+      <input type="range" id="fitTrim" min="-1" max="1" step=".25">
+      <output id="fitTrimOut">EVEN</output>
+    </div>
+    <div class="setNote">Trim trades a tenth of thrust against a tenth of pitch and
+      roll rate. Livery is paint only. Both are saved to this device.</div>
+    <div class="btnRow">
+      <button class="actionBtn" id="fitDone">BACK TO THE HANGAR</button>
+      <button class="actionBtn" id="fitLaunch">TO THE FLIGHT LINE</button>
+    </div>
+  </div>
+</div>
+
 <div id="hud">
   <div class="bracket" id="tl">
     <div><div class="lbl">AIRSPEED</div><div class="val" id="spd">0<small>KTS</small></div></div>
@@ -458,13 +550,14 @@
       <div class="lbl">AIRFRAME</div><div class="val" id="hpv">100</div>
       <div class="bar hp"><i id="hpBar"></i></div>
       <div class="bar thr"><i id="thrBar"></i></div>
+      <div id="sysDmg" style="font-size:9px;letter-spacing:.12em;color:#ffb347;margin-top:3px;min-height:11px"></div>
     </div>
   </div>
 
   <div id="score">
     <div id="scoreLine"><b id="sB">0</b><i>—</i><b id="sR">0</b></div>
     <div id="clock">05:00</div>
-    <div id="coreLine">CASE ADRIFT AT MIDFIELD</div>
+    <div id="coreLine">ARENA CORE ADRIFT AT MIDFIELD</div>
   </div>
 
   <div id="tape"><div id="tapeInner"></div><div id="needle"></div><div id="hdgRead">000</div></div>
@@ -584,10 +677,10 @@
 
 <div id="brief">
   <div class="card">
-    <h1>CASE RUN</h1>
-    <div class="sub">AIRBOURNE ARENA · 4 v 4 · BLUE WEST vs RED EAST · FIRST TO 3</div>
+    <h1>ARENA CORE</h1>
+    <div class="sub">AIRBOURNE ARENA · 4 v 4 · VANGUARD WEST vs INFERNO EAST · FIRST TO 3</div>
     <p>Four aircraft launch from the blue base in the west, four from the red base in the east.
-      Between them, hanging at midfield, is a hardshell <b>case with the cemí element sealed inside</b>.
+      Between them, hanging at midfield, is a hardened <b>Arena Core</b>.
       Fly through it to pick it up, then run it to the ring at the <b>enemy end</b> to score. Shoot the
       carrier down and the case drops where they died, free for anyone. Wrecks are back in the air off
       their own base in <b>10 seconds</b>.</p>
@@ -831,7 +924,7 @@ var renderer;
 try{
   renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 }catch(webglError){
-  document.getElementById('brief').innerHTML='<div class="card"><h1>CASE RUN</h1>'+
+  document.getElementById('brief').innerHTML='<div class="card"><h1>ARENA CORE</h1>'+
     '<div class="sub">3D ACCELERATION REQUIRED</div><p>This browser could not open a WebGL flight deck. '+
     'Turn on hardware acceleration or open the game in a current Chrome, Edge, Firefox, or Safari browser.</p></div>';
   return;
@@ -906,14 +999,30 @@ function liftedTexture(url,repeatX,repeatY,lift,tint){
    player flies, so painted buildings would duplicate and slide underneath the
    actual 3D city. All architecture now lives on real geometry below. */
 var terrainSkin=liftedTexture('assets/volcanic-terrain-v2.webp',2.4,2.4,'#78787a','#c0ab86');
-var hullSkin=atlasPair('assets/team-skins-v2.webp');
-var caseSkin=gameTexture('assets/cemi-case-skin-v2.webp',1,1);
-var caseObjectiveSkin=tuneTexture(assetLoader.load('assets/cemi-case-objective-v3.webp'));
+var caseSkin=gameTexture('assets/arena-core-skin-v2.webp',1,1);
+var caseObjectiveSkin=tuneTexture(assetLoader.load('assets/arena-core-objective-v3.webp'));
 var airstripSkin=teamTextures('assets/blue-airstrip-v1.webp','assets/red-airstrip-v1.webp');
 var portalSkin=atlasPair('assets/team-goal-portals-v2.webp');
-var fighterSpriteSkin=teamTextures('assets/blue-fighter-v3.webp','assets/red-fighter-v3.webp');
 var cityFacadeSkin=gameTexture('assets/city-facades-diffusion-v1.webp',1,1);
 var cityRoofSkin=gameTexture('assets/city-roofs-diffusion-v1.webp',1,1);
+var roadSkin=gameTexture('assets/road-surface-diffusion-v1.webp',1,1);
+var hangarSkin=gameTexture('assets/hangar-metal-diffusion-v1.webp',1,1);
+var foliageSkin=gameTexture('assets/conifer-foliage-diffusion-v1.webp',1,1);
+var industrialSkin=gameTexture('assets/industrial-tank-diffusion-v1.webp',1,1);
+var residentialSkin=gameTexture('assets/residential-facade-diffusion-v1.webp',1,1);
+var factorySkin=gameTexture('assets/factory-facade-diffusion-v1.webp',1,1);
+var bunkerSkin=gameTexture('assets/bunker-concrete-diffusion-v1.webp',1,1);
+var rooftopSkin=gameTexture('assets/rooftop-equipment-diffusion-v1.webp',1,1);
+var hangarFloorSkin=gameTexture('assets/hangar-floor-diffusion-4k-v1.webp',1,1);
+var readyRoomSkin=gameTexture('assets/ready-room-equipment-diffusion-4k-v1.webp',1,1);
+var briefingBoardSkin=tuneTexture(assetLoader.load('assets/flight-briefing-board-diffusion-4k-v1.webp'));
+var vanguardSkin=gameTexture('assets/vanguard-surface-diffusion-4k-v1.webp',1,1);
+var tempestSkin=gameTexture('assets/tempest-surface-diffusion-4k-v1.webp',1,1);
+var infernoSkin=gameTexture('assets/inferno-surface-diffusion-4k-v1.webp',1,1);
+var blackWingSkin=gameTexture('assets/black-wing-surface-diffusion-4k-v1.webp',1,1);
+var kestrelSkin=gameTexture('assets/kestrel-mk1-surface-diffusion-4k-v1.webp',1,1);
+var breakwaterSkin=gameTexture('assets/breakwater-field-surface-diffusion-4k-v1.webp',1,1);
+var skywaySkin=gameTexture('assets/skyway-navigation-surface-diffusion-4k-v1.webp',1,1);
 
 var sunLight=new THREE.DirectionalLight(0xffffff,1.1); scene.add(sunLight,sunLight.target);
 var moonLight=new THREE.DirectionalLight(0x9fb8ff,0); scene.add(moonLight,moonLight.target);
@@ -1032,6 +1141,15 @@ rain.frustumCulled=false; scene.add(rain);
 /* Blue against red is the worst pair for the two most common kinds of colour
    blindness. Blue against amber survives all three, so the whole arena can be
    recoloured at runtime rather than adding shape badges to everything. */
+/* Story canon names the three Arena League teams Vanguard, Tempest and Inferno
+   (STORY-BIBLE §7). An Arena Core match is fought between two of them, and the
+   palette decides which two this one is: Vanguard is blue/white/cyan, Inferno
+   is red/black/heated orange. 'blue' and 'red' stay as the internal keys — they
+   index every mesh, base, goal and material list in the file — and FACTION is
+   the display name everywhere a pilot can read it. Tempest (teal) joins when
+   the match supports a third flight. */
+var FACTION={blue:'VANGUARD',red:'INFERNO'};
+function factionName(team){return FACTION[team]||String(team).toUpperCase();}
 var TEAM_BASE={blue:0x4fc3ff,red:0xff6b5e},TEAM_CB={blue:0x4aa8ff,red:0xffa32e};
 var TEAM_COL={blue:0x4fc3ff,red:0xff6b5e};
 var teamMats={blue:[],red:[]};
@@ -1062,14 +1180,34 @@ function buildGoal(team){
   goalVisuals.push(portal);
   g.position.copy(GOALS[team]); scene.add(g); return g;
 }
-buildGoal('blue'); buildGoal('red');
+var goalGroups={blue:buildGoal('blue'),red:buildGoal('red')};
+
+/* ===================== late-round escalation =====================
+   The ring closes over the last ninety seconds. A stalemate cannot be ridden
+   out on the approach that worked in the opening minute, and the defenders
+   get a smaller box to cover in exchange — so the endgame reads differently
+   from the midgame without changing a single rule. `goalR` is the live radius
+   everything else scores and draws against; GOAL_R stays the built size. */
+var GOAL_CLOSE=90,GOAL_MIN=0.62,goalR=GOAL_R;
+function stepGoalRings(dt){
+  var k=clamp((GOAL_CLOSE-st.time)/GOAL_CLOSE,0,1);
+  var scale=1-(1-GOAL_MIN)*k;
+  goalR=GOAL_R*scale;
+  /* x/z only: the ring narrows, it does not get shorter */
+  goalGroups.blue.scale.set(scale,1,scale);
+  goalGroups.red.scale.set(scale,1,scale);
+  if(k>0&&!st.ringWarned&&!st.over){st.ringWarned=true;banner('RINGS CLOSING',1.6);}
+}
+
 /* --- home bases: four aircraft launch from each, facing midfield --- */
 function buildBase(team){
   var p=BASES[team], gy=ground(p.x,p.z), side=(team==='blue'?1:-1);
   var deck=new THREE.MeshPhongMaterial({color:team==='blue'?0x24485e:0x5e2f28,shininess:8,flatShading:true});
-  var wall=new THREE.MeshPhongMaterial({color:0x555f63,shininess:10,flatShading:true});
-  var roof=new THREE.MeshPhongMaterial({color:team==='blue'?0x2f6f9e:0x8e3630,shininess:12,flatShading:true});
+  var wall=new THREE.MeshPhongMaterial({map:hangarSkin,color:0xb8bec0,shininess:10,flatShading:true});
+  var roof=new THREE.MeshPhongMaterial({map:cityRoofSkin,
+    color:team==='blue'?0xa9c6d8:0xd0aaa6,shininess:12,flatShading:true});
   var dark=new THREE.MeshPhongMaterial({color:0x2b3038,shininess:20,flatShading:true});
+  var tankMat=new THREE.MeshPhongMaterial({map:industrialSkin,color:0xffffff,shininess:24});
   function put(mesh,x,y,z){mesh.position.set(p.x+x,gy+y,p.z+z);scene.add(mesh);return mesh;}
 
   put(new THREE.Mesh(new THREE.CylinderGeometry(215,240,10,32),deck),0,5,0);
@@ -1088,6 +1226,10 @@ function buildBase(team){
     put(new THREE.Mesh(new THREE.BoxGeometry(46,20,30),wall),side*-60,20,dz);
     put(new THREE.Mesh(new THREE.BoxGeometry(50,4,34),roof),side*-60,31,dz);
   });
+  [-1,1].forEach(function(rz){
+    put(new THREE.Mesh(new THREE.CylinderGeometry(15,15,24,20),tankMat),side*128,17,rz*92);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(10,10,18,18),tankMat),side*162,14,rz*72);
+  });
   /* control tower */
   put(new THREE.Mesh(new THREE.BoxGeometry(12,46,12),wall),side*70,33,-60);
   put(new THREE.Mesh(new THREE.BoxGeometry(20,8,20),dark),side*70,58,-60);
@@ -1101,6 +1243,182 @@ function buildBase(team){
 }
 buildBase('blue'); buildBase('red');
 
+/* ===================== ground structures =====================
+   Two kinds of building that shoot back at the match rather than at you.
+
+   RADAR MASTS pay for the fog of war. While a team still has one standing, its
+   minimap shows every enemy contact; knock both down and that team is back to
+   eyes, forward cone and eight seconds of stale ghosts. This is the reason to
+   fly low and the reason to defend something that cannot defend itself.
+
+   AA BATTERIES ring each goal. Every scoring ring sits deep in the other
+   team's half, so the side that scores there has to fly through guns to do it
+   — a lone carrier can no longer run a straight line at the ring, and escort
+   becomes a job instead of a formation. Both come back after a while, so
+   strafing them buys a window rather than deleting the defence for good.   */
+var structs=[],TOWER_HP=260,AA_HP=140,AA_RANGE=780,AA_MUZZLE=560,AA_DMG=9;
+var _stV=new THREE.Vector3(),_stV2=new THREE.Vector3();
+var steelMat=new THREE.MeshPhongMaterial({map:skywaySkin,color:0xe0e2df,shininess:18,flatShading:true});
+
+function addStruct(o){
+  o.hp=o.maxHp; o.alive=true; o.respawnT=0; o.cd=0; o.kills=0;
+  scene.add(o.mesh); structs.push(o); return o;
+}
+function buildTower(team,x,z){
+  var g=new THREE.Group(); g.position.set(x,ground(x,z),z);
+  /* tall on purpose: it has to stand clear of the skyline to read as a
+     landmark, and clear of the bots' hard deck to be strafeable at all */
+  var mast=new THREE.Mesh(new THREE.CylinderGeometry(5,13,150,7),steelMat);
+  mast.position.y=75; g.add(mast);
+  var dish=new THREE.Mesh(new THREE.SphereGeometry(26,14,8,0,Math.PI*2,0,Math.PI*0.5),
+    new THREE.MeshPhongMaterial({map:skywaySkin,color:0xe1e2de,shininess:30,
+      flatShading:true,side:THREE.DoubleSide}));
+  dish.position.set(0,162,0); dish.rotation.x=-0.75; g.add(dish);
+  var halo=new THREE.Sprite(teamMat(team,new THREE.SpriteMaterial({
+    map:softSprite('rgba(255,255,255,.9)','rgba(255,255,255,0)'),color:TEAM_COL[team],
+    transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending})));
+  halo.scale.set(90,90,1); halo.position.y=190; g.add(halo);
+  return addStruct({kind:'radar',team:team,name:'RADAR',mesh:g,pos:g.position,
+    maxHp:TOWER_HP,respawn:34,radius:46,height:200});
+}
+function buildAA(team,x,z){
+  var g=new THREE.Group(); g.position.set(x,ground(x,z),z);
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(15,19,13,10),steelMat));
+  var turret=new THREE.Mesh(new THREE.BoxGeometry(15,10,15),
+    teamMat(team,new THREE.MeshPhongMaterial({color:TEAM_COL[team],shininess:24,flatShading:true})));
+  turret.position.y=17; g.add(turret);
+  var barrel=new THREE.Mesh(new THREE.CylinderGeometry(1.9,2.4,30,7),steelMat);
+  barrel.position.set(0,12,0); barrel.rotation.x=-0.9; turret.add(barrel);
+  return addStruct({kind:'aa',team:team,name:'AA',mesh:g,pos:g.position,turret:turret,
+    maxHp:AA_HP,respawn:26,radius:30,height:40});
+}
+/* Masts sit outside the city so the skyline cannot hide them, and forward of
+   the base so taking one means crossing into defended air. */
+buildTower('blue',-2000,-780); buildTower('blue',-2000,780);
+buildTower('red',  2000,-780); buildTower('red',  2000,780);
+/* GOALS.blue is the ring blue scores in, and it stands in red's half — so the
+   guns around it are red's. Same the other way. */
+['blue','red'].forEach(function(scorer){
+  var g=GOALS[scorer],owner=(scorer==='blue'?'red':'blue');
+  for(var i=0;i<3;i++){
+    var a=Math.PI*2*i/3+0.4;
+    buildAA(owner,g.x+Math.cos(a)*250,g.z+Math.sin(a)*250);
+  }
+});
+
+function teamHasRadar(team){
+  for(var i=0;i<structs.length;i++)
+    if(structs[i].alive&&structs[i].kind==='radar'&&structs[i].team===team)return true;
+  return false;
+}
+function hurtStruct(s,dmg,by){
+  if(!s.alive)return;
+  s.hp-=dmg;
+  if(s.hp>0)return;
+  s.alive=false; s.mesh.visible=false; s.respawnT=s.respawn;
+  boom(s.pos,s.kind==='radar'?230:150);
+  if(s.kind==='radar'){
+    feed('<span style="color:'+teamHex(s.team)+'">'+factionName(s.team)+' RADAR DOWN</span>');
+    if(s.team===player.team&&!teamHasRadar(s.team))banner('RADAR OFFLINE — CONTACTS LOST',1.6);
+    else if(s.team!==player.team&&!teamHasRadar(s.team))banner('ENEMY RADAR BLIND',1.4);
+  } else feed('<span style="color:'+teamHex(s.team)+'">'+factionName(s.team)+' AA SILENCED</span>');
+}
+function aaFire(s,tgt){
+  /* one refinement pass on time of flight is plenty of lead for a gun that is
+     meant to be threatening rather than lethal */
+  var t=_stV.copy(tgt.pos).sub(s.pos).length()/AA_MUZZLE;
+  t=_stV.copy(tgt.pos).addScaledVector(tgt.vel,t).sub(s.pos).length()/AA_MUZZLE;
+  var aim=_stV2.copy(tgt.pos).addScaledVector(tgt.vel,t).sub(s.pos);
+  aim.y+=14; aim.normalize();
+  var sp=0.030;
+  aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
+  if(s.turret)s.turret.rotation.y=Math.atan2(aim.x,aim.z);
+  bullets.push({p:s.pos.clone().addScaledVector(aim,24).setY(s.pos.y+22),
+    v:aim.clone().multiplyScalar(AA_MUZZLE),life:2.2,team:s.team,owner:s,dmg:AA_DMG});
+  gunSfx(earGain(s.pos)*0.5);
+}
+function stepStructs(dt){
+  for(var i=0;i<structs.length;i++){
+    var s=structs[i];
+    if(!s.alive){
+      s.respawnT-=dt;
+      if(s.respawnT<=0&&!st.over){s.alive=true;s.hp=s.maxHp;s.mesh.visible=true;}
+      continue;
+    }
+    if(s.kind==='radar'){s.mesh.rotation.y+=dt*0.7; continue;}
+    s.cd-=dt;
+    var tgt=null,bd=AA_RANGE;
+    for(var j=0;j<fighters.length;j++){
+      var f=fighters[j];
+      if(!f.alive||f.team===s.team||f.invuln>0)continue;
+      var d=f.pos.distanceTo(s.pos);
+      /* the carrier is worth shooting at from further out than anyone else */
+      if(f.carrying)d*=0.7;
+      if(d<bd){bd=d;tgt=f;}
+    }
+    if(!tgt)continue;
+    if(s.cd<=0){s.cd=tgt.carrying?0.60:1.00; aaFire(s,tgt);}
+  }
+}
+
+/* --- textured road network ---
+   Short terrain-following instances avoid the floating/sliding artifact a
+   single huge flat road would create over the procedural landscape. */
+(function buildRoads(){
+  var routes=[
+    [-BASE_X,0,BASE_X,0],[-2250,-900,2250,-900],[-2250,900,2250,900],
+    [-1200,-1450,-1200,1450],[0,-1450,0,1450],[1200,-1450,1200,1450]
+  ],pieces=[],STEP_R=145;
+  for(var ri=0;ri<routes.length;ri++){
+    var R=routes[ri],dx=R[2]-R[0],dz=R[3]-R[1],len=Math.hypot(dx,dz);
+    var n=Math.ceil(len/STEP_R),ang=Math.atan2(dx,dz);
+    for(var si=0;si<n;si++){
+      var a=si/n,b=(si+1)/n,x1=R[0]+dx*a,z1=R[1]+dz*a,
+          x2=R[0]+dx*b,z2=R[1]+dz*b,mx=(x1+x2)/2,mz=(z1+z2)/2;
+      pieces.push([mx,mz,ground(mx,mz)+1.4,Math.hypot(x2-x1,z2-z1),ang]);
+    }
+  }
+  var geo=new THREE.BoxGeometry(1,1,1),mat=new THREE.MeshPhongMaterial({
+    map:roadSkin,color:0xffffff,shininess:2,polygonOffset:true,polygonOffsetFactor:-2});
+  var roads=new THREE.InstancedMesh(geo,mat,pieces.length);
+  var m=new THREE.Matrix4(),q=new THREE.Quaternion(),pos=new THREE.Vector3(),scl=new THREE.Vector3();
+  var up=new THREE.Vector3(0,1,0);
+  for(var i=0;i<pieces.length;i++){
+    var P=pieces[i];pos.set(P[0],P[2],P[1]);
+    q.setFromAxisAngle(up,P[4]);scl.set(64,1.2,P[3]+3);
+    m.compose(pos,q,scl);roads.setMatrixAt(i,m);
+  }
+  roads.instanceMatrix.needsUpdate=true;roads.frustumCulled=false;scene.add(roads);
+})();
+
+/* --- 3D conifer belts ---
+   Opaque generated foliage wraps real cone geometry, so trees keep parallax
+   and silhouette while avoiding fragile transparent cutouts on mobile. */
+(function buildForest(){
+  var spots=[];
+  for(var x=-3200;x<=3200;x+=125)for(var z=-1450;z<=1450;z+=125){
+    var jitterX=(hash(x*.021,z*.017)-.5)*82,jitterZ=(hash(z*.019,x*.023)-.5)*82;
+    var tx=x+jitterX,tz=z+jitterZ,d=Math.hypot(tx,tz),h=ground(tx,tz);
+    if(d<CITY_REACH*1.05||h<12||h>185||arenaDistance(tx,tz)>ARENA_RADIUS-90)continue;
+    if(Math.min(Math.abs(tz),Math.abs(tz-900),Math.abs(tz+900))<92)continue;
+    if(Math.min(Math.abs(tx),Math.abs(tx-1200),Math.abs(tx+1200))<92)continue;
+    if(Math.min(Math.hypot(tx-BASE_X,tz),Math.hypot(tx+BASE_X,tz))<430)continue;
+    if(hash(tx*.031,tz*.037)<(LOW?.57:.34))continue;
+    spots.push([tx,tz,h,18+hash(tx*.043,tz*.029)*24]);
+  }
+  var geo=new THREE.ConeGeometry(1,1,9);geo.translate(0,.5,0);
+  var mat=new THREE.MeshPhongMaterial({map:foliageSkin,color:0xc3d1a4,shininess:0,flatShading:true});
+  var forest=new THREE.InstancedMesh(geo,mat,spots.length);
+  var m=new THREE.Matrix4(),q=new THREE.Quaternion(),pos=new THREE.Vector3(),scl=new THREE.Vector3();
+  var up=new THREE.Vector3(0,1,0);
+  for(var i=0;i<spots.length;i++){
+    var T=spots[i],r=T[3]*.44;pos.set(T[0],T[2]-2,T[1]);
+    q.setFromAxisAngle(up,hash(T[0],T[1])*6.283);
+    scl.set(r,T[3],r);m.compose(pos,q,scl);forest.setMatrixAt(i,m);
+  }
+  forest.instanceMatrix.needsUpdate=true;forest.frustumCulled=false;scene.add(forest);
+})();
+
 /* --- the city on the valley floor ---
    The ground between the two airbases is a built-up grid: dense downtown over
    midfield, thinning to low-rise out toward each base, streets running along
@@ -1111,7 +1429,7 @@ buildBase('blue'); buildBase('red');
    collision volume. At combat altitude you are well over the roofs, and
    hanging hard bodies on several hundred boxes would turn every low pass into
    a coin flip; the terrain underneath is still the thing that kills you. */
-var cityMat=null,cityRoofMat=null;
+var cityMat=null,cityRoofMat=null,cityNightMats=[];
 (function buildCity(){
   var lots=[],span=Math.round(CITY_REACH/CITY_BLOCK);
   for(var ix=-span;ix<=span;ix++){
@@ -1122,6 +1440,8 @@ var cityMat=null,cityRoofMat=null;
           z=iz*CITY_BLOCK+(hash(ix*3.1,iz*1.9)-.5)*36,
           d=Math.sqrt(x*x+z*z);
       if(d>CITY_REACH)continue;
+      if(Math.min(Math.abs(z),Math.abs(z-900),Math.abs(z+900))<72)continue;
+      if(Math.min(Math.abs(x),Math.abs(x-1200),Math.abs(x+1200))<72)continue;
       var gy=terrainHeight(x,z);
       if(gy<8)continue;                            /* below the water line */
       /* nothing gets built on ground it could not stand on */
@@ -1131,34 +1451,62 @@ var cityMat=null,cityRoofMat=null;
   }
   var geo=new THREE.BoxGeometry(1,1,1);
   geo.translate(0,.5,0);                           /* stand the box on the ground */
-  cityMat=new THREE.MeshPhongMaterial({map:cityFacadeSkin,flatShading:true,
+  cityMat=new THREE.MeshPhongMaterial({map:residentialSkin,flatShading:true,
     shininess:10,color:0xffffff});
+  var officeMat=new THREE.MeshPhongMaterial({map:cityFacadeSkin,flatShading:true,
+    shininess:12,color:0xffffff});
+  var factoryMat=new THREE.MeshPhongMaterial({map:factorySkin,flatShading:true,
+    shininess:9,color:0xffffff});
+  var bunkerMat=new THREE.MeshPhongMaterial({map:bunkerSkin,flatShading:true,
+    shininess:3,color:0xffffff});
   cityRoofMat=new THREE.MeshPhongMaterial({map:cityRoofSkin,flatShading:true,
     shininess:7,color:0xffffff});
-  /* BoxGeometry face order: right, left, top, bottom, front, back. Roof art is
-     confined to the upward face; facade art wraps only the vertical walls. */
-  var cityMats=[cityMat,cityMat,cityRoofMat,cityMat,cityMat,cityMat];
-  var city=new THREE.InstancedMesh(geo,cityMats,lots.length);
-  city.frustumCulled=false;                        /* bounds are the unit box, not the city */
+  cityNightMats=[cityMat,officeMat,factoryMat,bunkerMat];
+  var families=[[],[],[],[]],roofProps=[];
   var TONES=[0xd9d4c6,0xc7cbcb,0xe2dac6,0xbcbfb7,0xd0c7b6,0xb4b8bd];
-  var m=new THREE.Matrix4(),q=new THREE.Quaternion(),
-      pos=new THREE.Vector3(),scl=new THREE.Vector3(),col=new THREE.Color();
   for(var i=0;i<lots.length;i++){
     var L=lots[i],r1=hash(L[0]*.071,L[1]*.113),r2=hash(L[1]*.091,L[0]*.053);
-    scl.set(50+r2*46,24+L[3]*CITY_TOP*(.28+.72*r1*r1),50+r1*46);
-    pos.set(L[0],L[2]-5,L[1]);                     /* sunk slightly so it never floats */
-    m.compose(pos,q,scl);
-    city.setMatrixAt(i,m);
-    col.setHex(TONES[(i*3+((r2*97)|0))%TONES.length]).multiplyScalar(.84+r1*.28);
-    city.setColorAt(i,col);
+    var type=r2<.48?0:(r2<.72?1:(r2<.90?2:3));
+    var w=50+r2*46,d2=50+r1*46,h=24+L[3]*CITY_TOP*(.28+.72*r1*r1);
+    if(type===2){w*=1.38;d2*=1.25;h=Math.min(h,62);} /* factories spread out */
+    if(type===3){w*=1.15;d2*=1.15;h=Math.min(h,34);} /* bunkers stay low */
+    var tone=TONES[(i*3+((r2*97)|0))%TONES.length];
+    families[type].push([L[0],L[1],L[2]-5,w,h,d2,tone,.84+r1*.28]);
+    if(type!==3&&hash(L[0]*.13,L[1]*.17)>.72)
+      roofProps.push([L[0]+(r2-.5)*w*.3,L[1]+(r1-.5)*d2*.3,L[2]-5+h,
+        10+r1*15,4+r2*6,9+r2*13]);
   }
-  city.instanceMatrix.needsUpdate=true;
-  if(city.instanceColor)city.instanceColor.needsUpdate=true;
-  scene.add(city);
+  var walls=[cityMat,officeMat,factoryMat,bunkerMat];
+  var m=new THREE.Matrix4(),q=new THREE.Quaternion(),
+      pos=new THREE.Vector3(),scl=new THREE.Vector3(),col=new THREE.Color();
+  for(var fi=0;fi<families.length;fi++){
+    var list=families[fi],wall=walls[fi];
+    /* BoxGeometry face order: right, left, top, bottom, front, back. */
+    var mats=[wall,wall,cityRoofMat,wall,wall,wall];
+    var city=new THREE.InstancedMesh(geo,mats,list.length);
+    city.frustumCulled=false;
+    for(var bi=0;bi<list.length;bi++){
+      var B=list[bi];pos.set(B[0],B[2],B[1]);scl.set(B[3],B[4],B[5]);
+      m.compose(pos,q,scl);city.setMatrixAt(bi,m);
+      col.setHex(B[6]).multiplyScalar(B[7]);city.setColorAt(bi,col);
+    }
+    city.instanceMatrix.needsUpdate=true;
+    if(city.instanceColor)city.instanceColor.needsUpdate=true;
+    scene.add(city);
+  }
+  /* Rooftop HVAC/generator boxes are separate geometry and keep their own
+     texel scale, so the equipment reads as hardware instead of painted roofs. */
+  var propMat=new THREE.MeshPhongMaterial({map:rooftopSkin,color:0xffffff,shininess:25});
+  var props=new THREE.InstancedMesh(geo,propMat,roofProps.length);
+  for(var pi=0;pi<roofProps.length;pi++){
+    var P=roofProps[pi];pos.set(P[0],P[2],P[1]);scl.set(P[3],P[4],P[5]);
+    m.compose(pos,q,scl);props.setMatrixAt(pi,m);
+  }
+  props.instanceMatrix.needsUpdate=true;props.frustumCulled=false;scene.add(props);
 })();
 
 var coreGroup=new THREE.Group(); scene.add(coreGroup);
-/* the objective: a hardshell case with the cemi element sealed inside */
+/* the objective: the Arena Core, a hardened carry with a decaying cell */
 var coreMesh=(function buildCase(){
   var g=new THREE.Group();
   var shell=new THREE.MeshPhongMaterial({map:caseSkin,color:0xffffff,shininess:40,flatShading:true});
@@ -1201,8 +1549,51 @@ var core={pos:new THREE.Vector3(0,600,0),vel:new THREE.Vector3(),carrier:null,
   lockout:null,lockT:0,charge:100};
 
 /* ===================== fighters ===================== */
-var NAMES={blue:['YOU','ARAWAK','GUABIN','MABI'],red:['YAGUANA','CIBAO','HIGUEY','MAGUA']};
+/* Slot 0 of whichever side you sign with gets overwritten by your callsign, so
+   both rosters carry a real name and neither has a hole in it. */
+var NAMES={blue:['CAONABO','ARAWAK','GUABIN','MABI'],red:['YAGUANA','CIBAO','HIGUEY','MAGUA']};
+/* the two lead names as built, so switching sides can hand the old one back
+   instead of leaving your callsign stamped on a pilot you no longer are */
+var LEAD0={blue:NAMES.blue[0],red:NAMES.red[0]};
+function claimLeadName(){
+  NAMES.blue[0]=LEAD0.blue; NAMES.red[0]=LEAD0.red;
+  NAMES[PILOT.team][0]=PILOT.callsign;
+}
 var fighters=[],player=null;
+
+/* ===================== pilot profile =====================
+   Who you signed with and what your aircraft looks like, kept across sessions.
+   The hangar writes it, the match reads it, and nothing else in the game needs
+   to know the player is not simply blue slot zero any more. */
+var LIVERIES=[
+  {id:'standard', name:'STANDARD',   hull:0xe9edf0},
+  {id:'nightwash',name:'NIGHT WASH', hull:0x77828e},
+  {id:'desert',   name:'DESERT',     hull:0xd8c193},
+  {id:'oxide',    name:'OXIDE',      hull:0xb08268}];
+var ACCENTS=[0x4fc3ff,0xff6b5e,0xffb347,0x6fe3d0,0xc48cff,0xf2f5f7];
+var PILOT={team:'blue',callsign:'YOU',livery:'standard',accent:0,trim:0,signed:false};
+function livery(id){
+  for(var i=0;i<LIVERIES.length;i++)if(LIVERIES[i].id===id)return LIVERIES[i];
+  return LIVERIES[0];
+}
+function loadPilot(){
+  try{
+    var raw=localStorage.getItem('airbourne:pilot');
+    if(!raw)return;
+    var p=JSON.parse(raw);
+    if(p.team==='blue'||p.team==='red')PILOT.team=p.team;
+    if(typeof p.callsign==='string'&&p.callsign)PILOT.callsign=p.callsign.slice(0,10).toUpperCase();
+    if(typeof p.livery==='string')PILOT.livery=livery(p.livery).id;
+    if(typeof p.accent==='number')PILOT.accent=clamp(p.accent|0,0,ACCENTS.length-1);
+    if(typeof p.trim==='number')PILOT.trim=clamp(p.trim,-1,1);
+    PILOT.signed=!!p.signed;
+  }catch(err){}
+}
+function savePilot(){
+  try{localStorage.setItem('airbourne:pilot',JSON.stringify(PILOT));}catch(err){}
+}
+loadPilot();
+function foeOf(team){return team==='blue'?'red':'blue';}
 var _rsTo=new THREE.Vector3(),_rsFwd=new THREE.Vector3();
 
 /* Per-slot skill, so a flight reads as four individual pilots rather than one
@@ -1228,32 +1619,63 @@ function aiSkill(f){
 
 function buildPlane(team,isPlayer){
   var g=new THREE.Group();
-  var hull=new THREE.MeshPhongMaterial({map:hullSkin[team],
-    color:isPlayer?0xffffff:0xe9edf0,shininess:60,flatShading:true});
-  var trim=teamMat(team,new THREE.MeshPhongMaterial({color:TEAM_COL[team],shininess:40,flatShading:true}));
-  var dark=new THREE.MeshPhongMaterial({color:0x2b3038,shininess:20,flatShading:true});
-  var f=new THREE.Mesh(new THREE.CylinderGeometry(.55,1,7.4,8),hull);f.rotation.x=Math.PI/2;g.add(f);
-  var n=new THREE.Mesh(new THREE.ConeGeometry(.55,1.5,8),hull);n.rotation.x=-Math.PI/2;n.position.z=-4.4;g.add(n);
-  var cp=new THREE.Mesh(new THREE.SphereGeometry(.72,10,8),
-    new THREE.MeshPhongMaterial({color:0x8fd8ff,shininess:120,transparent:true,opacity:.55}));
-  cp.scale.set(1,.7,1.7);cp.position.set(0,.55,-1.1);g.add(cp);
-  var w=new THREE.Mesh(new THREE.BoxGeometry(12.5,.22,2.5),hull);w.position.set(0,.15,-.4);g.add(w);
-  var stp=new THREE.Mesh(new THREE.BoxGeometry(12.5,.07,.6),trim);stp.position.set(0,.3,-.4);g.add(stp);
-  var thm=new THREE.Mesh(new THREE.BoxGeometry(4.6,.18,1.3),hull);thm.position.set(0,.2,3.2);g.add(thm);
-  var tv=new THREE.Mesh(new THREE.BoxGeometry(.16,1.8,1.5),trim);tv.position.set(0,1,3.3);g.add(tv);
-  var prop=new THREE.Mesh(new THREE.BoxGeometry(5.4,.16,.1),dark);prop.position.z=-5.15;g.add(prop);
-  g.userData.prop=prop;
-  /* The generated orthographic fighter is the visible high-resolution body.
-     It rides the same group/quaternion as the physical aircraft, so banking,
-     pitch, collision, weapons, carrying and respawn behavior remain real. */
-  var visual=new THREE.Mesh(new THREE.PlaneGeometry(16.2,16.2),
-    new THREE.MeshBasicMaterial({map:fighterSpriteSkin[team],transparent:true,alphaTest:.035,
-      side:THREE.DoubleSide,depthWrite:true,fog:true,polygonOffset:true,polygonOffsetFactor:-2}));
-  visual.rotation.x=-Math.PI/2;
-  visual.position.y=.72;
-  visual.renderOrder=2;
-  g.add(visual);
-  g.userData.hiResFighter=visual;
+  /* One physical airframe is used in the hangar, the match and every camera.
+     Earlier builds covered the flight model with a top-down PNG, which made
+     the aircraft collapse into a card as soon as the camera moved off-axis.
+     Generated 4K surface atlases now wrap the actual Kestrel/faction geometry. */
+  var factionSurface=team==='blue'?vanguardSkin:infernoSkin;
+  var hull=new THREE.MeshPhongMaterial({map:isPlayer?kestrelSkin:factionSurface,
+    color:isPlayer?0xffffff:0xe9edf0,shininess:68,flatShading:true});
+  var trim=teamMat(team,new THREE.MeshPhongMaterial({
+    map:isPlayer?kestrelSkin:factionSurface,color:TEAM_COL[team],shininess:52,flatShading:true}));
+  var dark=new THREE.MeshPhongMaterial({map:blackWingSkin,color:0x343b43,shininess:28,flatShading:true});
+  var glass=new THREE.MeshPhongMaterial({color:0x70c7ea,emissive:0x071b29,
+    shininess:145,transparent:true,opacity:.72});
+
+  /* faceted central spine and armored nose */
+  var f=new THREE.Mesh(new THREE.CylinderGeometry(.72,1.02,8.2,10),hull);
+  f.rotation.x=Math.PI/2;f.position.z=-.1;g.add(f);
+  var n=new THREE.Mesh(new THREE.ConeGeometry(.72,2.1,10),hull);
+  n.rotation.x=-Math.PI/2;n.position.z=-5.15;g.add(n);
+  var cp=new THREE.Mesh(new THREE.SphereGeometry(.84,12,8),glass);
+  cp.scale.set(1,.62,1.85);cp.position.set(0,.68,-1.65);g.add(cp);
+
+  /* swept lifting surfaces: real silhouette from every view, not a rectangle */
+  function surface(points,mat,y){
+    var sh=new THREE.Shape();
+    sh.moveTo(points[0][0],points[0][1]);
+    for(var si=1;si<points.length;si++)sh.lineTo(points[si][0],points[si][1]);
+    sh.closePath();
+    var m=new THREE.Mesh(new THREE.ShapeGeometry(sh),mat);
+    m.rotation.x=Math.PI/2;m.position.y=y;m.material.side=THREE.DoubleSide;g.add(m);return m;
+  }
+  surface([[-.45,-2.3],[-7.15,.15],[-6.15,1.55],[-1.0,1.05],
+           [1.0,1.05],[6.15,1.55],[7.15,.15],[.45,-2.3]],hull,.12);
+  surface([[-.45,2.2],[-3.25,3.75],[-3.0,4.55],[0,3.85],
+           [3.0,4.55],[3.25,3.75],[.45,2.2]],hull,.18);
+  surface([[-6.7,.15],[-4.7,.78],[4.7,.78],[6.7,.15],[4.8,-.2],[-4.8,-.2]],trim,.19);
+
+  /* twin engine nacelles, intakes and exhaust cans */
+  [-2.05,2.05].forEach(function(x){
+    var pod=new THREE.Mesh(new THREE.CylinderGeometry(.5,.63,4.45,10),hull);
+    pod.rotation.x=Math.PI/2;pod.position.set(x,-.03,1.05);g.add(pod);
+    var intake=new THREE.Mesh(new THREE.TorusGeometry(.53,.12,6,12),dark);
+    intake.position.set(x,-.03,-1.18);g.add(intake);
+    var can=new THREE.Mesh(new THREE.CylinderGeometry(.43,.53,.7,10),dark);
+    can.rotation.x=Math.PI/2;can.position.set(x,-.03,3.48);g.add(can);
+  });
+
+  /* tail, control surfaces and visible armament hardpoints */
+  var tv=new THREE.Mesh(new THREE.BoxGeometry(.18,2.25,2.15),trim);
+  tv.position.set(0,1.15,3.05);tv.rotation.x=-.18;g.add(tv);
+  [-4.25,4.25].forEach(function(x){
+    var rail=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,2.35,6),dark);
+    rail.rotation.x=Math.PI/2;rail.position.set(x,-.18,.55);g.add(rail);
+    var tip=new THREE.Mesh(new THREE.ConeGeometry(.14,.48,6),dark);
+    tip.rotation.x=-Math.PI/2;tip.position.set(x,-.18,-.86);g.add(tip);
+  });
+  var gun=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,1.8,6),dark);
+  gun.rotation.x=Math.PI/2;gun.position.set(.34,-.08,-5.35);g.add(gun);
   var exhausts=[];
   [-1.65,1.65].forEach(function(x){
     var ex=new THREE.Sprite(teamMat(team,new THREE.SpriteMaterial({
@@ -1266,6 +1688,9 @@ function buildPlane(team,isPlayer){
   var bea=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite('rgba(255,255,255,.9)','rgba(255,255,255,0)'),
     color:TEAM_COL[team],transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
   bea.scale.set(26,26,1); g.add(bea); g.userData.beacon=bea;
+  /* kept so fit-out repaints this exact shared material across every physical
+     hull panel without changing the faction texture or any other aircraft */
+  g.userData.hull=hull; g.userData.trim=trim;
   scene.add(g); return g;
 }
 function makeFighter(team,idx,isPlayer){
@@ -1273,7 +1698,8 @@ function makeFighter(team,idx,isPlayer){
     vel:new THREE.Vector3(),speed:0,alpha:0,gLoad:1,stalled:false,
     hp:100,alive:true,respawnT:0,invuln:3,throttle:.8,cannonCd:0,
     kills:0,caps:0,carrying:false,aiJink:0,boundT:0,spread:.0105,
-    roll:{t:0,dir:0,cd:0},evade:0,lastSeen:null,lastSeenT:0};
+    roll:{t:0,dir:0,cd:0},evade:0,lastSeen:null,lastSeenT:0,
+    dmgEng:0,dmgAil:0,ailSign:1,strike:null,strikeTarget:null,strikeT:0,ceilT:0};
   f.pos=f.mesh.position; f.quat=f.mesh.quaternion;
   respawnFighter(f,true); fighters.push(f); return f;
 }
@@ -1292,6 +1718,8 @@ function respawnFighter(f,instant){
   f.vel.copy(fwd).multiplyScalar(185);
   f.speed=185; f.hp=100; f.alive=true; f.throttle=.85; f.invuln=instant?2:3;
   f.mesh.visible=true; f.carrying=false; f.boundT=0; f.stalled=false;
+  f.dmgEng=0; f.dmgAil=0;      /* a fresh airframe is a repaired airframe */
+  f.strike=null; f.strikeTarget=null; f.strikeT=0; f.ceilT=0;
 }
 
 /* ===================== FLIGHT MODEL =====================
@@ -1309,6 +1737,23 @@ var A_TRIM=0.045;      // trim angle of attack — hands off, it flies level
 var G_LIMIT=8.0;       // structural limit
 var SIDE_K=0.0022;
 var PITCH_RATE=1.60, ROLL_RATE=4.8, YAW_RATE=0.60, STAB=1.9;
+var AIL_BIAS=1.35;     // standing roll rate a wrecked aileron leaves behind
+
+/* ===================== the ceiling =====================
+   Height used to be free: one clamp at 2800 and nothing between the deck and
+   it, so the whole fight could be sat out from above. Air gets thin instead.
+   Lift, drag and thrust all scale with density, which means the climb dies on
+   its own — you run out of wing somewhere under 2000 and mush there rather
+   than bouncing off an invisible surface. The hard numbers below are only the
+   backstop for anyone who arrives with a lot of energy to trade.
+
+   CEIL_RHO0 sits above the cloud deck on purpose: the deck stays a place you
+   can work over the top of, and the ceiling closes the empty air above it. */
+var CEIL_RHO0=1000, CEIL_RHO_SPAN=1400, CEIL_RHO_MIN=0.22;
+/* the hard limit sits just over the sustainable ceiling so a zoom climb can
+   overshoot for a few seconds without being nagged at, but cannot loiter */
+var CEIL_HARD=2060, CEIL_MAX=2300;
+function airDensity(y){return clamp(1-(y-CEIL_RHO0)/CEIL_RHO_SPAN,CEIL_RHO_MIN,1);}
 
 /* ===================== turn response =====================
    A turn rate is g*tan(bank)/V whatever the input device, so the only way to
@@ -1342,6 +1787,12 @@ function stepFlight(f,ctl,dt){
   axes(f);
   var speed=f.vel.length();
   var carry=f.carrying?1:0;
+  /* Battle damage lands on a system rather than on a bigger subtraction from
+     one health bar. A hit engine caps the thrust you are allowed to command;
+     a hit aileron costs roll authority and leaves a standing roll you have to
+     hold off against for the rest of the sortie. Same damage numbers, but the
+     aircraft degrades in a way you have to fly around. */
+  if(f.dmgEng>0)ctl.throttle=Math.min(ctl.throttle,1-f.dmgEng*0.40);
   /* control authority falls off with airspeed — mushy when slow */
   var auth=clamp((speed-16)/125,0.10,1.0);
   /* soft angle-of-attack limiter: you can still force a departure by holding
@@ -1349,8 +1800,10 @@ function stepFlight(f,ctl,dt){
   var lim=1;
   var over=(Math.abs(f.alpha)-A_CRIT*0.72)/(A_CRIT*0.55);
   if(over>0&&ctl.pitch*(f.alpha>=0?1:-1)>0)lim=1-clamp(over,0,1)*0.70;
-  m.rotateX(ctl.pitch*PITCH_RATE*(carry?.82:1)*auth*lim*dt);
-  m.rotateZ(ctl.roll*ROLL_RATE*(ctl.rollMul||1)*(carry?.82:1)*auth*dt);
+  var agile=f.trimAgile||1;
+  m.rotateX(ctl.pitch*PITCH_RATE*agile*(carry?.82:1)*auth*lim*dt);
+  m.rotateZ(ctl.roll*ROLL_RATE*(ctl.rollMul||1)*agile*(carry?.82:1)*(1-f.dmgAil*0.5)*auth*dt);
+  if(f.dmgAil>0)m.rotateZ(f.dmgAil*f.ailSign*AIL_BIAS*dt);
   m.rotateY(-ctl.yaw*YAW_RATE*auth*dt);
   axes(f);
 
@@ -1365,15 +1818,19 @@ function stepFlight(f,ctl,dt){
   _ld.crossVectors(_r,_vd);
   if(_ld.lengthSq()>1e-6)_ld.normalize(); else _ld.copy(_u);
 
+  /* thin air up high: the wing, the drag and the engine all lose the same
+     medium, so the climb rate goes to nothing on its own */
+  var rho=airDensity(f.pos.y);
   var activeGLimit=carry?6.5:G_LIMIT;
-  var liftA=clamp(LIFT_K*q2*cl,-activeGLimit*G,activeGLimit*G);
+  var liftA=clamp(LIFT_K*q2*cl*rho,-activeGLimit*G,activeGLimit*G);
   var cd=1+CDI*(carry?1.25:1)*cl*cl+(stalled?0.9:0);
   if(speed>280)cd+=(speed-280)/140;          /* compressibility wall */
 
   _ac.set(0,0,0);
-  _ac.addScaledVector(_f,THRUST*(carry?.85:1)*ctl.throttle);
+  /* thrust falls off more slowly than density — an intake still packs air */
+  _ac.addScaledVector(_f,THRUST*(f.trimThrust||1)*(carry?.85:1)*ctl.throttle*Math.pow(rho,0.75));
   _ac.addScaledVector(_ld,liftA);
-  _ac.addScaledVector(_vd,-DRAG_K*q2*cd);
+  _ac.addScaledVector(_vd,-DRAG_K*q2*cd*rho);
   _ac.addScaledVector(_r,-SIDE_K*q2*beta);
   _ac.y-=G;
 
@@ -1392,7 +1849,6 @@ function stepFlight(f,ctl,dt){
 
   f.speed=f.vel.length(); f.alpha=alpha; f.stalled=stalled;
   f.gLoad=liftA/G;
-  if(f.mesh.userData.prop)f.mesh.userData.prop.rotation.z+=dt*(6+ctl.throttle*70);
   if(f.mesh.userData.exhausts){
     var flame=2.8+ctl.throttle*4.8+(f.isPlayer&&touchIn&&touchIn.boost?2.8:0);
     for(var ei=0;ei<f.mesh.userData.exhausts.length;ei++){
@@ -1555,7 +2011,7 @@ function stepFx(dt){
 /* ===================== state ===================== */
 var st={scoreB:0,scoreR:0,time:MATCH_TIME,over:false,hours:9.4,timeSpeed:1,
   camMode:0,flash:0,hitmark:0,dmgFlash:0,mapBig:false,invertY:cfg.invert?-1:1,
-  started:false,locked:false,mouseSeen:false,padSeen:false,paused:false};
+  started:false,locked:false,mouseSeen:false,padSeen:false,paused:false,ringWarned:false};
 var keys={},mouseDown=false;
 var WORLD_UP=new THREE.Vector3(0,1,0);
 var tmpV=new THREE.Vector3(),tmpV2=new THREE.Vector3(),tmpV3=new THREE.Vector3();
@@ -1577,9 +2033,25 @@ var turnHold=0, turnDir=0;
 function mouseSens(){return cfg.sens/100000;}
 var aimDir=new THREE.Vector3(0,0,-1);
 
-player=makeFighter('blue',0,true);
-for(var qi=1;qi<4;qi++)makeFighter('blue',qi,false);
-for(var qj=0;qj<4;qj++)makeFighter('red',qj,false);
+/* The side you signed with is yours; the other one flies against you. */
+claimLeadName();
+player=makeFighter(PILOT.team,0,true);
+for(var qi=1;qi<4;qi++)makeFighter(PILOT.team,qi,false);
+for(var qj=0;qj<4;qj++)makeFighter(foeOf(PILOT.team),qj,false);
+
+/* Paint and trim only ever touch the player's own airframe. Trim is a small
+   trade — a tenth either way — so a livery choice never becomes the reason a
+   match was won. */
+function applyPilot(){
+  claimLeadName();
+  player.name=PILOT.callsign;
+  var ud=player.mesh.userData;
+  if(ud.hull)ud.hull.color.setHex(livery(PILOT.livery).hull);
+  if(ud.trim)ud.trim.color.setHex(ACCENTS[PILOT.accent]);
+  player.trimThrust=1+PILOT.trim*0.10;
+  player.trimAgile=1-PILOT.trim*0.10;
+  renderRoster();
+}
 
 /* ===================== damage ===================== */
 function feed(msg){
@@ -1589,9 +2061,33 @@ function feed(msg){
   setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},6000);
 }
 function tag(f){return '<span style="color:'+teamHex(f.team)+'">'+f.name+'</span>';}
+/* Which system a round takes out is decided at the moment of the hit rather
+   than tracked through separate hitboxes — the cheap way to buy a fight that
+   degrades instead of one that just counts down. Each failure comes in two
+   stages, so a long burst is worse than a glancing one. */
+function systemHit(f,by){
+  var engine=Math.random()<0.5;
+  if(engine){
+    if(f.dmgEng>=1)return;
+    f.dmgEng=Math.min(1,f.dmgEng+0.5);
+  } else {
+    if(f.dmgAil>=1)return;
+    /* which way it hangs is fixed on the first hit, so the pilot can learn to
+       trim against a constant rather than a coin flip every frame */
+    if(f.dmgAil<=0)f.ailSign=Math.random()<0.5?1:-1;
+    f.dmgAil=Math.min(1,f.dmgAil+0.5);
+  }
+  if(f.isPlayer){
+    banner(engine?(f.dmgEng>=1?'ENGINE OUT':'ENGINE HIT')
+                 :(f.dmgAil>=1?'AILERON GONE':'AILERON HIT'),1.1);
+    tone(120,.45,.20,'sawtooth',56);
+  } else if(Math.random()<0.34)feed(tag(f)+(engine?' is trailing smoke':' is flying wing-low'));
+}
 function hurt(f,dmg,by){
   if(!f.alive||f.invuln>0)return;
   f.hp-=dmg;
+  /* `by` is null for the out-of-bounds bleed; only aimed fire breaks things */
+  if(by&&f.hp>0&&Math.random()<0.26)systemHit(f,by);
   if(f.isPlayer){
     st.dmgFlash=Math.max(st.dmgFlash,.55);shake=Math.min(1,shake+.25);
     /* `by` is null for the out-of-bounds bleed, which ticks every frame —
@@ -1617,7 +2113,7 @@ function dropCore(f){
   core.carrier=null; f.carrying=false;
   core.pos.copy(f.pos); core.vel.copy(f.vel).multiplyScalar(.35);
   core.lockout=f; core.lockT=1.0;
-  feed('<span style="color:#ffb347">CASE DROPPED</span>');
+  feed('<span style="color:#ffb347">CORE DROPPED</span>');
   tone(330,.26,.14,'triangle',210);
   emit('case_drop',{pilot:f.name});
 }
@@ -1628,16 +2124,18 @@ function passCore(f){
   core.pos.copy(f.pos).addScaledVector(fwd,14);
   core.vel.copy(f.vel).addScaledVector(fwd,230);
   core.lockout=f; core.lockT=1.1;
-  if(f.isPlayer)banner('CASE AWAY',0.9);
-  feed(tag(f)+' passed the case');
+  if(f.isPlayer)banner('CORE AWAY',0.9);
+  feed(tag(f)+' passed the core');
   if(f.isPlayer)sortie.passes++;
   tone(660,.18,f.isPlayer?.2:earGain(f.pos)*.12,'triangle',880);
   emit('case_pass',{pilot:f.name});
 }
 function grabCore(f){
   core.carrier=f; f.carrying=true; core.vel.set(0,0,0);
-  feed(tag(f)+' has the case');
-  if(f.isPlayer){banner('CASE SECURED — RUN IT EAST',1.4);sortie.grabs++;stingSfx([523,659,784],.19);}
+  feed(tag(f)+' has the core');
+  /* which way home is depends on the side you signed with */
+  if(f.isPlayer){banner('CORE SECURED — RUN IT '+(GOALS[f.team].x>0?'EAST':'WEST'),1.4);
+    sortie.grabs++;stingSfx([523,659,784],.19);}
   else tone(440,.2,earGain(f.pos)*.12,'triangle',560);
   emit('case_grab',{pilot:f.name});
 }
@@ -1649,7 +2147,7 @@ function scoreCap(f){
   feed(tag(f)+' <span style="color:#ffb347">SCORED</span>');
   if(f.isPlayer)sortie.scores++;
   emit('case_score',{pilot:f.name,team:f.team});
-  banner((f.team==='blue'?'BLUE':'RED')+' SCORES',1.8);
+  banner(factionName(f.team)+' SCORES',1.8);
   if(f.team===player.team)stingSfx([523,659,784,1046],.22); else stingSfx([392,330,262],.20);
   if(st.scoreB>=TARGET_SCORE||st.scoreR>=TARGET_SCORE)endMatch();
 }
@@ -1661,7 +2159,7 @@ function stepCore(dt){
     else{
       core.charge=Math.max(0,core.charge-dt*2);
       if(core.charge<=0){
-        banner('CASE DISCHARGED — DROPPED',1.2);
+        banner('CORE DISCHARGED — DROPPED',1.2);
         dropCore(c);
         core.charge=35;
         return;
@@ -1673,7 +2171,7 @@ function stepCore(dt){
       var g=GOALS[c.team];
       axes(c);
       var bank=Math.abs(Math.atan2(-_r.y,_u.y));
-      if(Math.hypot(core.pos.x-g.x,core.pos.z-g.z)<GOAL_R&&
+      if(Math.hypot(core.pos.x-g.x,core.pos.z-g.z)<goalR&&
          Math.abs(core.pos.y-g.y)<260&&c.speed<290&&bank<.78)scoreCap(c);
     }
   } else {
@@ -1735,6 +2233,16 @@ function nearestFoe(f,range){
   }
   return best;
 }
+function nearestStruct(f,kind,team){
+  var best=null,bd=1e9;
+  for(var i=0;i<structs.length;i++){
+    var s=structs[i];
+    if(!s.alive||s.kind!==kind||s.team!==team)continue;
+    var d=s.pos.distanceTo(f.pos);
+    if(d<bd){bd=d;best=s;}
+  }
+  return best;
+}
 function aiFor(f,dt){
   f.aiJink-=dt;
   var sk=aiSkill(f); f.spread=sk.spread;
@@ -1769,7 +2277,30 @@ function aiFor(f,dt){
   } else {
     goal=core.pos.clone(); engage=nearestFoe(f,760);
   }
-  if(!engage)engage=nearestFoe(f,620);
+  /* One pilot a side works the ground war. Without this the masts only ever
+     die to the player and the radar rule is one-sided.
+
+     The commitment has to be sticky. Tasking on "is the case loose right now"
+     read fine and did nothing: possession flips every few seconds, so the
+     assignment dropped long before anyone covered the two or three thousand
+     units to the target. A strike package launches once and stays launched —
+     it releases when the mast falls or the clock on the run runs out. */
+  f.strike=null;
+  if(f.slot===3){
+    var foeTeam=(f.team==='blue'?'red':'blue');
+    f.strikeT-=dt;
+    if(f.strikeTarget&&(!f.strikeTarget.alive||f.strikeT<=0))f.strikeTarget=null;
+    if(!f.strikeTarget&&!holder&&teamHasRadar(foeTeam)){
+      f.strikeTarget=nearestStruct(f,'radar',foeTeam);
+      if(f.strikeTarget)f.strikeT=30;
+    }
+    if(f.strikeTarget){
+      f.strike=f.strikeTarget;
+      goal=f.strike.pos.clone().setY(f.strike.pos.y+150);
+      engage=null;
+    }
+  }
+  if(!engage&&!f.strike)engage=nearestFoe(f,620);
 
   var aimPt=goal;
   if(engage&&holder!==f){
@@ -1783,9 +2314,17 @@ function aiFor(f,dt){
   axes(f);
   var ahead=tmpV3.copy(f.pos).addScaledVector(_f,360);
   var gh=ground(ahead.x,ahead.z);
-  if(ahead.y<gh+120)aimPt=f.pos.clone().addScaledVector(_f,420).setY(gh+340);
-  if(f.pos.y<260)aimPt=aimPt.clone().setY(Math.max(aimPt.y,600));
+  /* a strike run is allowed much closer to the rocks than a dogfight is */
+  if(ahead.y<gh+(f.strike?55:120))
+    aimPt=f.pos.clone().addScaledVector(_f,420).setY(gh+(f.strike?200:340));
+  /* the hard deck exists so bots do not mow the lawn chasing each other; a
+     pilot on a strike run needs to get under it to reach a mast */
+  var deck=f.strike?170:260;
+  if(f.pos.y<deck)aimPt=aimPt.clone().setY(Math.max(aimPt.y,f.strike?420:600));
   if(arenaDistance(f.pos.x,f.pos.z)>ARENA_RADIUS-320)aimPt=new THREE.Vector3(0,650,0);
+  /* never point a bot at air it cannot hold — the extend logic climbs, and
+     without this it would climb into the bleed and sit there */
+  if(aimPt.y>CEIL_HARD-300)aimPt=aimPt.clone().setY(CEIL_HARD-300);
 
   var dir=aimPt.clone().sub(f.pos);
   var dist2=dir.length(); dir.normalize();
@@ -1825,6 +2364,13 @@ function aiFor(f,dt){
     var need=0.952+engage.evade*0.016-(sk.aggro-1)*0.010;
     if(dE<800&&toE.dot(_f)>need&&Math.random()>engage.evade*0.45)fire(f);
     if(dE<300&&Math.random()<dt*.4*sk.react)f.aiJink=1.2;
+  }
+  /* a mast does not manoeuvre, so the gate is tighter and the range shorter */
+  if(f.strike&&f.strike.alive&&f.invuln<=0){
+    axes(f);
+    var toS=tmpV.copy(f.strike.pos).sub(f.pos); toS.y+=130;
+    var dS=toS.length(); toS.normalize();
+    if(dS<700&&toS.dot(_f)>0.982)fire(f);
   }
 }
 
@@ -2077,8 +2623,13 @@ function padTick(){
    Three.js bundle just to zero a scoreboard. */
 function resetMatch(){
   st.scoreB=0; st.scoreR=0; st.time=MATCH_TIME; st.over=false; st.paused=false;
-  st.dmgFlash=0; st.hitmark=0; shake=0;
+  st.dmgFlash=0; st.hitmark=0; shake=0; st.ringWarned=false;
   bullets.length=0;
+  for(var s=0;s<structs.length;s++){
+    var sc=structs[s];
+    sc.alive=true; sc.hp=sc.maxHp; sc.respawnT=0; sc.cd=0; sc.mesh.visible=true;
+  }
+  stepGoalRings(0);
   for(var i=fx.length-1;i>=0;i--)scene.remove(fx[i].s);
   fx.length=0;
   for(var a=dmgArcs.length-1;a>=0;a--)dmgDirEl.removeChild(dmgArcs[a].node);
@@ -2098,13 +2649,13 @@ function resetMatch(){
   el.warn.style.opacity=0; el.center.textContent=''; bannerT=0;
   document.getElementById('feed').innerHTML='';
   emit('match_start',{mode:'case_run_4v4'});
-  banner('CASE IS LIVE',2);
+  banner('CORE IS LIVE',2);
   audioResume();
   if(!IS_TOUCH)lock();
 }
 
 /* ===================== HUD refs ===================== */
-var el={};['spd','alt','aoa','hpv','hpBar','thrBar','sB','sR','clock','coreLine','tapeInner','hdgRead',
+var el={};['spd','alt','aoa','hpv','hpBar','thrBar','sysDmg','sB','sR','clock','coreLine','tapeInner','hdgRead',
   'wx','wxsub','roster','aimRet','pip','lead','vpath','dmg','flash','center','warn','prompt',
   'end','endT','endS','mapWrap','hud','brief'].forEach(function(id){el[id]=document.getElementById(id);});
 var PPD=2.3;
@@ -2116,13 +2667,20 @@ for(var dg=-180;dg<=540;dg+=5){
     cd2.textContent=({0:'N',45:'NE',90:'E',135:'SE',180:'S',225:'SW',270:'W',315:'NW'})[dd]||'';
     cd2.style.left=(dg*PPD)+'px'; el.tapeInner.appendChild(cd2);}
 }
+/* Rebuildable, because the callsign and the side you fly for are both chosen
+   in the hangar and can change before the first sortie. */
 var rosterEls=[];
-fighters.forEach(function(f){
-  var d=document.createElement('div');
-  d.className='pilot '+(f.team==='blue'?'b':'r')+(f.isPlayer?' me':'');
-  d.innerHTML='<span class="d"></span>'+f.name+'<b>—</b>';
-  el.roster.appendChild(d); rosterEls.push(d);
-});
+function renderRoster(){
+  if(!el.roster)return;
+  el.roster.innerHTML=''; rosterEls.length=0;
+  fighters.forEach(function(f){
+    var d=document.createElement('div');
+    d.className='pilot '+(f.team==='blue'?'b':'r')+(f.isPlayer?' me':'');
+    d.innerHTML='<span class="d"></span>'+f.name+'<b>—</b>';
+    el.roster.appendChild(d); rosterEls.push(d);
+  });
+}
+renderRoster();
 var bannerT=0;
 function banner(msg,t){el.center.textContent=msg;bannerT=t||1.2;}
 
@@ -2194,7 +2752,7 @@ function drawMap(){
   ['blue','red'].forEach(function(tm){
     var g=w2m(GOALS[tm].x,GOALS[tm].z);
     mctx.globalAlpha=.85; mctx.strokeStyle=teamHex(tm);
-    mctx.lineWidth=2;mctx.beginPath();mctx.arc(g.x,g.y,GOAL_R/(2*MM_HALF)*MM,0,7);mctx.stroke();
+    mctx.lineWidth=2;mctx.beginPath();mctx.arc(g.x,g.y,goalR/(2*MM_HALF)*MM,0,7);mctx.stroke();
   });
   ['blue','red'].forEach(function(tm){
     var b=w2m(BASES[tm].x,BASES[tm].z);
@@ -2203,12 +2761,28 @@ function drawMap(){
     mctx.globalAlpha=1;
     mctx.strokeStyle='rgba(223,243,255,.5)';mctx.lineWidth=1;mctx.strokeRect(b.x-6,b.y-6,12,12);
   });
+  /* ground structures: a filled mark while it stands, a hollow one counting
+     back up while it rebuilds, so you can see the window you bought */
+  for(var si=0;si<structs.length;si++){
+    var s=structs[si],sp=w2m(s.pos.x,s.pos.z),radar=s.kind==='radar';
+    mctx.globalAlpha=s.alive?.9:.3;
+    mctx.strokeStyle=mctx.fillStyle=teamHex(s.team);
+    mctx.lineWidth=1.5;
+    mctx.beginPath();
+    if(radar){mctx.moveTo(sp.x,sp.y-5);mctx.lineTo(sp.x+5,sp.y+4);mctx.lineTo(sp.x-5,sp.y+4);mctx.closePath();}
+    else mctx.arc(sp.x,sp.y,3,0,7);
+    if(s.alive)mctx.fill(); else mctx.stroke();
+  }
+  mctx.globalAlpha=1;
   mctx.restore();
   var c=w2m(core.pos.x,core.pos.z);
   mctx.fillStyle='#ffb347';
   var cs=5+Math.sin(performance.now()*.006)*1.4;
   mctx.fillRect(c.x-cs,c.y-cs*.72,cs*2,cs*1.44);
   mctx.strokeStyle='#ffe0a8';mctx.lineWidth=1;mctx.strokeRect(c.x-cs,c.y-cs*.72,cs*2,cs*1.44);
+  /* a standing mast is worth the whole picture — this is what the fog of war
+     is for, and what makes a tower worth defending */
+  var radarUp=teamHasRadar(player.team);
   for(var i=0;i<fighters.length;i++){
     var f=fighters[i]; if(!f.alive)continue;
     var enemy=f.team!==player.team,now=performance.now()*.001;
@@ -2217,7 +2791,12 @@ function drawMap(){
       var pf=tmpV.set(0,0,-1).applyQuaternion(player.quat);
       var bearing=tmpV2.copy(f.pos).sub(player.pos).normalize();
       var inCloud=f.pos.y>820&&f.pos.y<1260;
-      var seen=f.carrying||range<(inCloud?430:900)||(!inCloud&&range<1600&&bearing.dot(pf)>.72);
+      /* Radar buys reach and drops the forward-cone requirement, but it cannot
+         see into the cloud deck — so the deck stays the counter to it, and
+         losing both masts costs you the long look rather than everything. */
+      var seen=f.carrying||range<(inCloud?430:900)
+             ||(!inCloud&&range<1600&&bearing.dot(pf)>.72)
+             ||(radarUp&&!inCloud&&range<2400);
       if(seen){f.lastSeen={x:f.pos.x,z:f.pos.z};f.lastSeenT=now;}
       else {
         if(!f.lastSeen||now-f.lastSeenT>8)continue;
@@ -2259,6 +2838,7 @@ function goFullscreen(){
   }catch(e){}
 }
 function launch(){
+  if(st.phase==='hangar')return;
   if(st.over||document.getElementById('settings').classList.contains('on'))return;
   var first=!st.started;
   /* the audio context can only be created from a gesture, and this is the
@@ -2267,7 +2847,7 @@ function launch(){
   if(first){st.started=true;el.brief.classList.add('gone');el.hud.classList.add('live');
     document.body.classList.add('playing');
     sortie.startedAt=performance.now();emit('match_start',{mode:'case_run_4v4'});
-    banner('CASE IS LIVE',2);renderCoach();}
+    banner('CORE IS LIVE',2);renderCoach();}
   if(IS_TOUCH){ if(first){goFullscreen();} }
   else lock();
 }
@@ -2368,6 +2948,9 @@ addEventListener('mousemove',function(e){
 addEventListener('keydown',function(e){
   keys[e.code]=true;
   if(e.code==='Space'||e.code==='Tab'||e.code.indexOf('Arrow')===0)e.preventDefault();
+  /* the hangar runs its own keys, and "any key launches" would fire the match
+     off on the first step you took across the floor */
+  if(st.phase==='hangar')return;
   if(!st.started){launch();return;}
   if(e.code==='Tab'){cycleTarget();return;}
   if(e.code==='KeyX'){releaseLock();return;}
@@ -2481,12 +3064,337 @@ var C={dayTop:new THREE.Color(0x2b6fc9),dayBot:new THREE.Color(0xa9d6f2),
   sunWarm:new THREE.Color(0xffb469),sunHigh:new THREE.Color(0xfff4dc),grey:new THREE.Color(0x59636b)};
 var cTop=new THREE.Color(),cBot=new THREE.Color(),cSun=new THREE.Color(),sunDir=new THREE.Vector3();
 
+/* ===================== the hangar =====================
+   Everything before the sortie happens here: a room you walk around in rather
+   than a menu you click through. Two airframes on the deck, one contract each,
+   a board on the back wall with the situation on it. Signing with a side is
+   walking up to its aircraft and taking it.
+
+   It renders from its own scene and camera, so nothing in it can disturb the
+   match that is already built and waiting behind it.                       */
+var hangarScene=new THREE.Scene();
+hangarScene.background=new THREE.Color(0x080e15);
+hangarScene.fog=new THREE.FogExp2(0x080e15,0.0075);
+var hangarCam=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.1,700);
+var HW=46,HD=34,HH=15;                        /* half width, half depth, height */
+var hangarBays={blue:new THREE.Vector3(-17,0,-9),red:new THREE.Vector3(17,0,-9)};
+var BOARD_POS=new THREE.Vector3(0,4.2,-33.2);
+
+(function buildHangar(){
+  var concrete=new THREE.MeshPhongMaterial({map:hangarFloorSkin,color:0xffffff,shininess:4,flatShading:true});
+  var panel=new THREE.MeshPhongMaterial({map:breakwaterSkin,color:0x8e9699,shininess:8,flatShading:true});
+  var beam=new THREE.MeshPhongMaterial({color:0x1d232b,shininess:14,flatShading:true});
+
+  var floor=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HD*2),concrete);
+  floor.rotation.x=-Math.PI/2; hangarScene.add(floor);
+  var roof=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HD*2),panel);
+  roof.rotation.x=Math.PI/2; roof.position.y=HH; hangarScene.add(roof);
+  var back=new THREE.Mesh(new THREE.PlaneGeometry(HW*2,HH),panel);
+  back.position.set(0,HH/2,-HD); hangarScene.add(back);
+  [-1,1].forEach(function(s){
+    var wall=new THREE.Mesh(new THREE.PlaneGeometry(HD*2,HH),panel);
+    wall.rotation.y=-s*Math.PI/2; wall.position.set(s*HW,HH/2,0); hangarScene.add(wall);
+  });
+  /* roof trusses, which are what actually sell the size of the room */
+  for(var t=-3;t<=3;t++){
+    var tr=new THREE.Mesh(new THREE.BoxGeometry(HW*2,.7,.7),beam);
+    tr.position.set(0,HH-.8,t*9); hangarScene.add(tr);
+  }
+  /* bay markings and a lamp over each */
+  ['blue','red'].forEach(function(tm){
+    var b=hangarBays[tm];
+    var mark=new THREE.Mesh(new THREE.RingGeometry(11,12.2,44),
+      teamMat(tm,new THREE.MeshBasicMaterial({color:TEAM_COL[tm],transparent:true,
+        opacity:.34,side:THREE.DoubleSide})));
+    mark.rotation.x=-Math.PI/2; mark.position.set(b.x,.04,b.z); hangarScene.add(mark);
+    var lamp=new THREE.PointLight(0xfff2d8,1.5,64); lamp.position.set(b.x,HH-2.2,b.z);
+    hangarScene.add(lamp);
+    var housing=new THREE.Mesh(new THREE.BoxGeometry(7,.5,3),
+      new THREE.MeshBasicMaterial({color:0xfff0d2}));
+    housing.position.set(b.x,HH-1.4,b.z); hangarScene.add(housing);
+  });
+  /* barracks end: bunks and lockers down the left wall */
+  var bunkMat=new THREE.MeshPhongMaterial({map:readyRoomSkin,color:0x8c9298,shininess:6,flatShading:true});
+  var sheetMat=new THREE.MeshPhongMaterial({map:readyRoomSkin,color:0x8995a7,shininess:3,flatShading:true});
+  for(var bk=0;bk<4;bk++){
+    var z=-24+bk*7;
+    for(var tier=0;tier<2;tier++){
+      var frame=new THREE.Mesh(new THREE.BoxGeometry(6,.35,2.6),bunkMat);
+      frame.position.set(-HW+3.6,1.1+tier*2.2,z); hangarScene.add(frame);
+      var mat2=new THREE.Mesh(new THREE.BoxGeometry(5.6,.4,2.3),sheetMat);
+      mat2.position.set(-HW+3.6,1.4+tier*2.2,z); hangarScene.add(mat2);
+    }
+    var locker=new THREE.Mesh(new THREE.BoxGeometry(1.6,5,2.4),bunkMat);
+    locker.position.set(-HW+1.2,2.5,z+3.4); hangarScene.add(locker);
+  }
+  /* Generated board hardware behind live, editable briefing copy. */
+  var board=new THREE.Mesh(new THREE.PlaneGeometry(26,13),
+    new THREE.MeshBasicMaterial({map:briefingBoardSkin}));
+  board.position.copy(BOARD_POS); hangarScene.add(board);
+  var bc=document.createElement('canvas'); bc.width=1024; bc.height=512;
+  var bx=bc.getContext('2d');
+  bx.fillStyle='#6fe3d0'; bx.font='600 44px ui-monospace,monospace';
+  bx.fillText('ARENA LEAGUE — CORE RUN', 64, 92);
+  bx.fillStyle='rgba(223,243,255,.62)'; bx.font='400 25px ui-monospace,monospace';
+  [ 'Two league flights. One Arena Core adrift at midfield.',
+    'Deliver it through the scoring ring in the opposing half.',
+    '',
+    'THE CORE loses charge while carried. Keep it moving,',
+    'pass through pressure, and arrive with charge remaining.',
+    '',
+    'THE MASTS feed your side its picture of the sky. Lose both and',
+    'you are down to your own eyes and eight seconds of memory.',
+    '',
+    'THE GUNS around each ring belong to whoever owns that half.',
+    'Nobody makes the run alone.' ].forEach(function(line,i){
+    bx.fillText(line, 52, 158+i*31);
+  });
+  var boardTex=new THREE.CanvasTexture(bc);
+  /* The generated board art carries its own frame, so the copy has to sit
+     inside that frame rather than across the whole plane — at full width the
+     last two lines fell off the bottom of the panel and onto the wall. */
+  var boardCopy=new THREE.Mesh(new THREE.PlaneGeometry(20.8,10.4),
+    new THREE.MeshBasicMaterial({map:boardTex,transparent:true,depthWrite:false}));
+  boardCopy.position.copy(BOARD_POS);boardCopy.position.z+=.025;hangarScene.add(boardCopy);
+
+  /* Canon faction recruitment displays. Generated materials provide the
+     physical identity; live canvas labels keep names and philosophy editable
+     without baking unreliable text into image generation. */
+  function factionPanel(tex,name,motto,z){
+    var display=new THREE.Mesh(new THREE.PlaneGeometry(10.5,11.5),
+      new THREE.MeshPhongMaterial({map:tex,color:0xffffff,shininess:28}));
+    display.rotation.y=-Math.PI/2;display.position.set(HW-.06,7,z);hangarScene.add(display);
+    var lc=document.createElement('canvas');lc.width=768;lc.height=192;
+    var lx=lc.getContext('2d');lx.fillStyle='rgba(2,7,12,.82)';lx.fillRect(0,0,768,192);
+    lx.fillStyle='#e8f5ff';lx.font='700 56px ui-monospace,monospace';lx.textAlign='center';
+    lx.fillText(name,384,74);lx.fillStyle='rgba(223,243,255,.72)';
+    lx.font='400 25px ui-monospace,monospace';lx.fillText(motto,384,128);
+    var label=new THREE.Mesh(new THREE.PlaneGeometry(9.8,2.45),
+      new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(lc),transparent:true}));
+    label.rotation.y=-Math.PI/2;label.position.set(HW-.11,3,z);hangarScene.add(label);
+  }
+  factionPanel(vanguardSkin,'VANGUARD','NO ONE SURVIVES ALONE',-20);
+  factionPanel(tempestSkin,'TEMPEST','THE SKY BELONGS TO THOSE WHO MOVE',0);
+  factionPanel(infernoSkin,'INFERNO','STRENGTH PREVENTS SURRENDER',20);
+
+  /* The open end. Without something bright behind you the room reads as a
+     sealed box and you lose all sense of which way the flight line is. */
+  var doorGlow=new THREE.Mesh(new THREE.PlaneGeometry(HW*2-14,HH-2),
+    new THREE.MeshBasicMaterial({color:0x9ec7e8,fog:false}));
+  doorGlow.position.set(0,(HH-2)/2,HD-.4); doorGlow.rotation.y=Math.PI;
+  hangarScene.add(doorGlow);
+  [-1,1].forEach(function(s){
+    var jamb=new THREE.Mesh(new THREE.BoxGeometry(7,HH,1.2),panel);
+    jamb.position.set(s*(HW-3.5),HH/2,HD-.4); hangarScene.add(jamb);
+  });
+  var lintel=new THREE.Mesh(new THREE.BoxGeometry(HW*2,2,1.2),panel);
+  lintel.position.set(0,HH-1,HD-.4); hangarScene.add(lintel);
+
+  hangarScene.add(new THREE.AmbientLight(0x4d5866,.85));
+  var doorLight=new THREE.DirectionalLight(0xbcd9f2,.7);
+  doorLight.position.set(0,10,40); hangarScene.add(doorLight,doorLight.target);
+})();
+
+/* The two display airframes use the same physical, textured model as flight.
+   buildPlane initially parents into the match scene; adding it here transfers
+   it to this scene without maintaining a divergent showroom-only model. */
+var hangarPlanes={};
+['blue','red'].forEach(function(tm){
+  var g=buildPlane(tm,tm===PILOT.team);
+  hangarScene.add(g);
+  var b=hangarBays[tm];
+  g.position.set(b.x,1.9,b.z);
+  g.rotation.set(-0.04,Math.PI,0);
+  if(g.userData.beacon)g.userData.beacon.visible=false;
+  (g.userData.exhausts||[]).forEach(function(ex){ex.visible=false;});
+  /* parked aircraft need something to stand on, or they read as hovering */
+  var strut=new THREE.MeshPhongMaterial({color:0x22272e,shininess:20,flatShading:true});
+  [[0,-3.4],[-3.2,1.2],[3.2,1.2]].forEach(function(o){
+    var leg=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1.9,6),strut);
+    leg.position.set(o[0],-1.0,o[1]); g.add(leg);
+    var wheel=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.3,10),strut);
+    wheel.rotation.z=Math.PI/2; wheel.position.set(o[0],-1.9,o[1]); g.add(wheel);
+  });
+  hangarPlanes[tm]=g;
+});
+function paintHangarPlane(){
+  var g=hangarPlanes[PILOT.team];
+  if(!g)return;
+  ['blue','red'].forEach(function(tm){
+    var o=hangarPlanes[tm];
+    if(o&&o.userData.hull)o.userData.hull.color.setHex(tm===PILOT.team?livery(PILOT.livery).hull:0xe9edf0);
+    if(o&&o.userData.trim)o.userData.trim.color.setHex(tm===PILOT.team?ACCENTS[PILOT.accent]:TEAM_COL[tm]);
+  });
+}
+
+/* ---------- walking ---------- */
+var walk={x:0,z:26,yaw:0,pitch:0,bob:0,orbit:0};
+var hangarNear=null;
+var hEl={};['hangarUI','hangarPrompt','hangarTeam','hangarCall','hangarHint',
+  'fitCard','fitCall','fitLivery','fitAccent','fitTrim','fitTrimOut','fitBlue','fitRed',
+  'fitDone','fitLaunch'].forEach(function(id){hEl[id]=document.getElementById(id);});
+
+function hangarForward(){return {x:-Math.sin(walk.yaw),z:-Math.cos(walk.yaw)};}
+function nearestBay(){
+  var best=null,bd=13;
+  ['blue','red'].forEach(function(tm){
+    var b=hangarBays[tm],d=Math.hypot(walk.x-b.x,walk.z-b.z);
+    if(d<bd){bd=d;best=tm;}
+  });
+  return best;
+}
+function hangarStep(dt){
+  if(IS_TOUCH){
+    /* no thumbstick walk on a phone: the room comes to you instead, drifting
+       between the two bays so both contracts stay on screen */
+    walk.orbit+=dt*.12;
+    var r=30;
+    walk.x=Math.sin(walk.orbit)*22;
+    walk.z=14+Math.cos(walk.orbit*.7)*8;
+    var look=hangarBays[PILOT.team];
+    walk.yaw=Math.atan2(-(look.x-walk.x),-(look.z-walk.z));
+  } else {
+    var sp=(keys.ShiftLeft||keys.ShiftRight)?17:9;
+    var f=hangarForward();
+    var rt={x:-f.z,z:f.x};
+    var mx=0,mz=0;
+    if(keys.KeyW){mx+=f.x;mz+=f.z;}
+    if(keys.KeyS){mx-=f.x;mz-=f.z;}
+    if(keys.KeyD){mx+=rt.x;mz+=rt.z;}
+    if(keys.KeyA){mx-=rt.x;mz-=rt.z;}
+    var ml=Math.hypot(mx,mz);
+    if(ml>1e-4){
+      walk.x+=mx/ml*sp*dt; walk.z+=mz/ml*sp*dt;
+      walk.bob+=dt*sp*.9;
+    }
+    /* walls, then the aircraft themselves, so you cannot stand inside a wing */
+    walk.x=clamp(walk.x,-HW+2.4,HW-2.4);
+    walk.z=clamp(walk.z,-HD+2.4,HD-3);
+    ['blue','red'].forEach(function(tm){
+      var b=hangarBays[tm],dx=walk.x-b.x,dz=walk.z-b.z,d=Math.hypot(dx,dz);
+      if(d<8.4&&d>1e-3){walk.x=b.x+dx/d*8.4; walk.z=b.z+dz/d*8.4;}
+    });
+  }
+  hangarCam.position.set(walk.x,1.72+Math.sin(walk.bob)*.05,walk.z);
+  hangarCam.rotation.set(walk.pitch,walk.yaw,0,'YXZ');
+
+  hangarNear=IS_TOUCH?null:nearestBay();
+  var board=Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11&&!IS_TOUCH;
+  var msg='';
+  if(hangarNear)msg=(hangarNear===PILOT.team&&PILOT.signed?'[E]  FIT OUT YOUR ':'[E]  SIGN WITH ')+
+    factionName(hangarNear)+(hangarNear===PILOT.team&&PILOT.signed?' AIRFRAME':'');
+  else if(board)msg='[E]  READ THE BOARD';
+  hEl.hangarPrompt.textContent=msg;
+  hEl.hangarPrompt.classList.toggle('on',!!msg);
+}
+function hangarInteract(){
+  if(hangarNear){
+    if(!PILOT.signed||PILOT.team!==hangarNear){
+      PILOT.team=hangarNear; PILOT.signed=true;
+      savePilot(); syncFit(); paintHangarPlane(); updateSignPanel();
+      toast('SIGNED WITH '+factionName(hangarNear),2.2);
+    }
+    openFit();
+    return;
+  }
+  if(Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11)
+    toast('MOVE THE CORE. KILL THE MASTS. DO NOT RUN IT ALONE.',3.4);
+}
+function updateSignPanel(){
+  hEl.hangarTeam.textContent=PILOT.signed?factionName(PILOT.team):'UNSIGNED';
+  hEl.hangarTeam.className=PILOT.signed?PILOT.team:'';
+  hEl.hangarCall.textContent=PILOT.signed?PILOT.callsign:'';
+}
+
+/* ---------- fit out panel ---------- */
+function openFit(){hEl.fitCard.classList.add('on'); if(document.exitPointerLock)document.exitPointerLock();}
+function closeFit(){hEl.fitCard.classList.remove('on');}
+LIVERIES.forEach(function(lv){
+  var b=document.createElement('button');
+  b.className='seg'; b.dataset.livery=lv.id; b.textContent=lv.name;
+  b.addEventListener('click',function(){PILOT.livery=lv.id;commitFit();});
+  hEl.fitLivery.appendChild(b);
+});
+ACCENTS.forEach(function(col,i){
+  var b=document.createElement('button');
+  b.className='swatch'; b.dataset.accent=i;
+  b.style.background='#'+('00000'+col.toString(16)).slice(-6);
+  b.addEventListener('click',function(){PILOT.accent=i;commitFit();});
+  hEl.fitAccent.appendChild(b);
+});
+function syncFit(){
+  hEl.fitBlue.classList.toggle('on',PILOT.team==='blue');
+  hEl.fitRed.classList.toggle('on',PILOT.team==='red');
+  if(document.activeElement!==hEl.fitCall)hEl.fitCall.value=PILOT.callsign;
+  [].forEach.call(hEl.fitLivery.children,function(b){
+    b.classList.toggle('on',b.dataset.livery===PILOT.livery);});
+  [].forEach.call(hEl.fitAccent.children,function(b){
+    b.classList.toggle('on',+b.dataset.accent===PILOT.accent);});
+  hEl.fitTrim.value=PILOT.trim;
+  hEl.fitTrimOut.textContent=PILOT.trim===0?'EVEN':
+    (PILOT.trim>0?'+'+Math.round(PILOT.trim*10)+' SPEED':Math.round(-PILOT.trim*10)+' TURN');
+}
+/* One place where a change becomes real: the profile, the parked airframe, the
+   aircraft you will actually fly, and the disk. */
+function commitFit(){
+  PILOT.signed=true;
+  savePilot(); syncFit(); paintHangarPlane(); updateSignPanel(); rebuildTeams();
+}
+hEl.fitBlue.addEventListener('click',function(){PILOT.team='blue';commitFit();});
+hEl.fitRed.addEventListener('click',function(){PILOT.team='red';commitFit();});
+hEl.fitCall.addEventListener('input',function(){
+  PILOT.callsign=(hEl.fitCall.value||'').toUpperCase().replace(/[^A-Z0-9 \-]/g,'').slice(0,10)||'YOU';
+  savePilot(); applyPilot(); updateSignPanel();
+});
+hEl.fitTrim.addEventListener('input',function(){PILOT.trim=+hEl.fitTrim.value;commitFit();});
+hEl.fitDone.addEventListener('click',closeFit);
+hEl.fitLaunch.addEventListener('click',function(){closeFit();leaveHangar();});
+
+/* Switching sides means the player changes team, so the eight aircraft have to
+   be rebuilt around the new allegiance rather than patched in place. */
+function rebuildTeams(){
+  if(player.team===PILOT.team){applyPilot();return;}
+  for(var i=0;i<fighters.length;i++)scene.remove(fighters[i].mesh);
+  fighters.length=0;
+  claimLeadName();
+  player=makeFighter(PILOT.team,0,true);
+  for(var qi=1;qi<4;qi++)makeFighter(PILOT.team,qi,false);
+  for(var qj=0;qj<4;qj++)makeFighter(foeOf(PILOT.team),qj,false);
+  applyPilot();
+}
+
+function enterHangar(){
+  st.phase='hangar';
+  document.body.classList.add('hangar');
+  walk.x=0; walk.z=26; walk.yaw=0; walk.pitch=0;
+  syncFit(); paintHangarPlane(); updateSignPanel(); applyPilot();
+}
+function leaveHangar(){
+  st.phase='brief';
+  document.body.classList.remove('hangar');
+  if(document.exitPointerLock)document.exitPointerLock();
+}
+enterHangar();
+
+addEventListener('keydown',function(e){
+  if(st.phase!=='hangar')return;
+  if(hEl.fitCard.classList.contains('on')){
+    if(e.code==='Escape'){closeFit();e.preventDefault();}
+    return;
+  }
+  if(e.code==='KeyE'){hangarInteract();e.preventDefault();}
+  if(e.code==='KeyF'){openFit();e.preventDefault();}
+  if(e.code==='Enter'){leaveHangar();e.preventDefault();}
+});
+
 /* ===================== loop ===================== */
 var prevT=performance.now();
 requestAnimationFrame(function loop(now){
   requestAnimationFrame(loop);
   var dt=(now-prevT)/1000; prevT=now; if(dt>.05)dt=.05;
   padTick();
+  /* the hangar owns the frame entirely while you are in it */
+  if(st.phase==='hangar'){hangarStep(dt);renderer.render(hangarScene,hangarCam);return;}
   if(st.started&&!st.paused)step(dt); else env(Math.min(dt,.016));
   audioEngine();
   stepDmgArcs(dt);
@@ -2528,7 +3436,10 @@ function env(dt){
      that stops a night match reading as an empty black valley */
   if(cityMat){
     var lit=(1-dayF)*.34;
-    cityMat.emissive.setRGB(lit,lit*.82,lit*.5);
+    for(var cm=0;cm<cityNightMats.length;cm++){
+      var ml=cm<2?lit:lit*.15;
+      cityNightMats[cm].emissive.setRGB(ml,ml*.82,ml*.5);
+    }
     if(cityRoofMat)cityRoofMat.emissive.setRGB(lit*.24,lit*.2,lit*.15);
   }
   stars.material.opacity=(1-dayF)*(1-wx.cover*.85);
@@ -2691,7 +3602,13 @@ function step(dt){
 
     var gh=ground(f.pos.x,f.pos.z);
     if(f.pos.y-gh<8){kill(f,null);continue;}
-    if(f.pos.y>2800){f.pos.y=2800;if(f.vel.y>0)f.vel.y=0;}
+    /* The ceiling is flown into, not teleported at. Thin air has already taken
+       most of the climb away by this height (see airDensity), so this is the
+       backstop for anyone who arrives with energy to spare: a warning, then a
+       bleed, then a hard stop well above where the aircraft can hold itself. */
+    if(f.pos.y>CEIL_HARD)f.ceilT+=dt; else f.ceilT=0;
+    if(f.ceilT>4)hurt(f,20*dt,null);
+    if(f.pos.y>CEIL_MAX){f.pos.y=CEIL_MAX;if(f.vel.y>0)f.vel.y=0;}
 
     var dc=arenaDistance(f.pos.x,f.pos.z);
     if(dc>ARENA_RADIUS){
@@ -2699,6 +3616,10 @@ function step(dt){
       if(f.isPlayer){el.warn.textContent=f.boundT>8?'LEAVING THE FIGHT — TAKING DAMAGE':'RETURN TO COMBAT AREA';
         el.warn.style.opacity=1;}
       if(f.boundT>8)hurt(f,26*dt,null);
+    } else if(f.ceilT>0){
+      f.boundT=0;
+      if(f.isPlayer){el.warn.textContent=f.ceilT>4?'CEILING — TAKING DAMAGE':'SERVICE CEILING — DESCEND';
+        el.warn.style.opacity=1;}
     } else {f.boundT=0; if(f.isPlayer)el.warn.style.opacity=0;}
 
     var bea=f.mesh.userData.beacon;
@@ -2710,6 +3631,8 @@ function step(dt){
   }
 
   stepBullets(dt);
+  stepStructs(dt);
+  stepGoalRings(dt);
   stepCore(dt);
   stepLock(dt);
   gpwsCheck(dt);
@@ -2735,9 +3658,23 @@ function stepBullets(dt){
         var cx=prev.x+seg.x*t,cy=prev.y+seg.y*t,cz=prev.z+seg.z*t;
         var dx=cx-f.pos.x,dy=cy-f.pos.y,dz=cz-f.pos.z;
         if(dx*dx+dy*dy+dz*dz<HIT_RADIUS*HIT_RADIUS){
-          hurt(f,BULLET_DMG,b.owner);
+          hurt(f,b.dmg||BULLET_DMG,b.owner);
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
           boom(new THREE.Vector3(cx,cy,cz),18); dead=true; break;
+        }
+      }
+    }
+    /* ground structures are fat, stationary and only worth a cylinder test */
+    if(!dead){
+      for(var s2=0;s2<structs.length;s2++){
+        var sc=structs[s2];
+        if(!sc.alive||sc.team===b.team)continue;
+        var sdx=b.p.x-sc.pos.x,sdz=b.p.z-sc.pos.z;
+        if(sdx*sdx+sdz*sdz<sc.radius*sc.radius&&
+           b.p.y>sc.pos.y-10&&b.p.y<sc.pos.y+sc.height){
+          hurtStruct(sc,b.dmg||BULLET_DMG,b.owner);
+          if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
+          boom(b.p,16); dead=true; break;
         }
       }
     }
@@ -2822,6 +3759,10 @@ function hudWork(dt){
   el.hpv.textContent=Math.round(player.hp);
   el.hpBar.style.width=Math.max(0,player.hp)+'%';
   el.thrBar.style.width=Math.round(player.throttle*100)+'%';
+  var sys=[];
+  if(player.dmgEng>0)sys.push(player.dmgEng>=1?'ENGINE OUT':'ENGINE');
+  if(player.dmgAil>0)sys.push(player.dmgAil>=1?'AILERON OUT':'AILERON');
+  el.sysDmg.textContent=sys.join(' · ');
 
   axes(player);
   var hdg=(Math.atan2(_f.x,-_f.z)*180/Math.PI+360)%360;
@@ -2834,12 +3775,12 @@ function hudWork(dt){
   var h=core.carrier;
   if(h){
     var g=GOALS[h.team];
-    el.coreLine.textContent=(h===player?'YOU HAVE THE CASE':
+    el.coreLine.textContent=(h===player?'YOU HAVE THE CORE':
       (h.team===player.team?'ALLY CARRIER — ':'ENEMY CARRIER — ')+h.name)+
       ' · '+Math.round(core.charge)+'% CHARGE · '+
       (Math.hypot(h.pos.x-g.x,h.pos.z-g.z)/1000).toFixed(2)+' KM TO THE RING';
   } else {
-    el.coreLine.textContent='CASE LOOSE · '+
+    el.coreLine.textContent='CORE LOOSE · '+
       (Math.hypot(core.pos.x-player.pos.x,core.pos.z-player.pos.z)/1000).toFixed(2)+' KM';
   }
 
@@ -2881,9 +3822,9 @@ function hudWork(dt){
 
   var pr='';
   if(!IS_TOUCH&&!st.mouseSeen&&alive)pr='MOVE THE MOUSE TO STEER  ·  A / D TO TURN';
-  else if(core.carrier===player)pr='F — PASS THE CASE';
+  else if(core.carrier===player)pr='F — PASS THE CORE';
   else if(player.stalled)pr='STALLED — EASE OFF AND LET THE NOSE DROP';
-  else if(!core.carrier&&alive&&player.pos.distanceTo(core.pos)<450)pr='FLY THROUGH THE CASE';
+  else if(!core.carrier&&alive&&player.pos.distanceTo(core.pos)<450)pr='FLY THROUGH THE CORE';
   el.prompt.textContent=pr; el.prompt.style.opacity=pr?1:0;
 
   /* barrel-roll state + touch button availability */
@@ -2980,11 +3921,11 @@ function targetHud(alive){
 
 function endMatch(){
   if(st.over)return; st.over=true;
-  var win=st.scoreB>st.scoreR?'BLUE':(st.scoreR>st.scoreB?'RED':'DRAW');
-  el.endT.textContent=win==='DRAW'?'STALEMATE':win+' TAKES IT';
-  el.endT.style.color=win==='DRAW'?'var(--ink)':teamHex(win==='RED'?'red':'blue');
+  var winTeam=st.scoreB>st.scoreR?'blue':(st.scoreR>st.scoreB?'red':null);
+  el.endT.textContent=winTeam?factionName(winTeam)+' TAKES IT':'STALEMATE';
+  el.endT.style.color=winTeam?teamHex(winTeam):'var(--ink)';
   var accuracy=sortie.shots?Math.round(sortie.hits/sortie.shots*100):0;
-  emit('match_end',{winner:win,blue:st.scoreB,red:st.scoreR});
+  emit('match_end',{winner:winTeam||'draw',blue:st.scoreB,red:st.scoreR});
   el.endS.innerHTML='<span style="color:'+teamHex('blue')+'">'+st.scoreB+'</span>'+
     ' &mdash; <span style="color:'+teamHex('red')+'">'+st.scoreR+'</span>';
   var stats=[['KILLS',player.kills],['CAPTURES',player.caps],['PASSES',sortie.passes],
@@ -2995,7 +3936,9 @@ function endMatch(){
     html+='<div class="endStat"><b>'+stats[i][1]+'</b><span>'+stats[i][0]+'</span></div>';
   document.getElementById('endStats').innerHTML=html;
   el.end.classList.add('on');
-  stingSfx(win==='BLUE'?[523,659,784,1046]:[440,392,330],.2);
+  /* which chord plays depends on whether YOU won, not on which colour did —
+     the player is no longer always blue */
+  stingSfx(winTeam===player.team?[523,659,784,1046]:[440,392,330],.2);
   if(document.exitPointerLock)document.exitPointerLock();
 }
 
