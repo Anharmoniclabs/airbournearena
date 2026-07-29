@@ -1334,7 +1334,7 @@ try{
   document.getElementById('boot').classList.add('gone');
   return;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.15:2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.25:2));
 renderer.setSize(innerWidth,innerHeight);
 /* Filmic output keeps sunlit concrete from clipping to flat white while
    retaining the teal/orange cockpit language in dusk and storm conditions. */
@@ -1400,7 +1400,8 @@ setTimeout(function(){ if(!assetsReady){bootTimedOut=true; bootFinish();} },2500
 var assetLoader=new THREE.TextureLoader(loadManager);
 var imageLoader=new THREE.ImageLoader(loadManager);
 function tuneTexture(t){
-  t.anisotropy=LOW?1:Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  t.anisotropy=LOW?Math.min(2,renderer.capabilities.getMaxAnisotropy()):
+    Math.min(8,renderer.capabilities.getMaxAnisotropy());
   if('encoding' in t)t.encoding=THREE.sRGBEncoding;
   return t;
 }
@@ -7556,7 +7557,7 @@ function stepBullets(dt){
 /* ---------- camera ---------- */
 var camOff=new THREE.Vector3(),camWant=new THREE.Vector3(),camLook=new THREE.Vector3(),
     camLookWant=new THREE.Vector3(),camTargetDir=new THREE.Vector3(),camLookReady=false,
-    camModeSeen=-1;
+    camFlatRight=new THREE.Vector3(),camModeSeen=-1;
 function camWork(dt){
   var subject=player.alive?player:(core.carrier||fighters.find(function(o){return o.alive;})||player);
   axes(subject);
@@ -7565,7 +7566,20 @@ function camWork(dt){
   if(st.camMode===0)camOff.set(-Math.sin(bank)*5.2*turnPivot,6.5,26+turnPivot*4.5);
   else if(st.camMode===1)camOff.set(-Math.sin(bank)*2.7*turnPivot,3.6,14+turnPivot*2.2);
   else camOff.set(0,1.5,.6);
-  camWant.copy(camOff).applyQuaternion(subject.quat).add(subject.pos);
+  if(st.camMode===2){
+    camWant.copy(camOff).applyQuaternion(subject.quat).add(subject.pos);
+  }else{
+    /* Follow heading and pitch, but keep chase-camera height tied to world-up.
+       Rotating the entire offset by the airframe quaternion made a hard bank
+       swing the camera sideways into terrain and roll the island nearly 90°. */
+    camFlatRight.crossVectors(_f,WORLD_UP);
+    if(camFlatRight.lengthSq()<.001)camFlatRight.set(_r.x,0,_r.z);
+    camFlatRight.normalize();
+    camWant.copy(subject.pos)
+      .addScaledVector(camFlatRight,camOff.x)
+      .addScaledVector(WORLD_UP,camOff.y)
+      .addScaledVector(_f,-camOff.z);
+  }
   camera.position.lerp(camWant,st.camMode===2?1:1-Math.pow(.0012,dt));
   var cg=ground(camera.position.x,camera.position.z)+4;
   if(camera.position.y<cg)camera.position.y=cg;
@@ -7593,7 +7607,9 @@ function camWork(dt){
     camLook.copy(camLookWant);camLookReady=true;camModeSeen=st.camMode;
   }
   else camLook.lerp(camLookWant,1-Math.pow(.018,dt));
-  camera.up.copy(WORLD_UP).lerp(_u,st.camMode===2?1:.52+turnPivot*.26).normalize();
+  camera.up.copy(WORLD_UP).lerp(
+    _u,st.camMode===2?1:(LOW?.08:.18+turnPivot*.10)
+  ).normalize();
   camera.lookAt(camLook);
   var targetFov=70+(st.camMode===2?0:turnPivot*6);
   if(Math.abs(camera.fov-targetFov)>.03){
@@ -7827,7 +7843,7 @@ function applyViewport(){
   if(!w||!h)return;
   camera.aspect=w/h; camera.updateProjectionMatrix();
   hangarCam.aspect=w/h; hangarCam.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.15:2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.25:2));
   renderer.setSize(w,h);
 }
 addEventListener('resize',applyViewport);

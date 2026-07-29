@@ -395,24 +395,52 @@ def sample_polyline(points, step=55.0, closed=False):
     return result
 
 
-def road_ribbon(name, points, width, owner, material, bridge_owner=None, closed=False):
+def road_ribbon(
+    name, points, width, owner, material, bridge_owner=None, closed=False,
+    lift=1.45, bridge_level=14.0
+):
     sampled = sample_polyline(points, 48.0, closed)
     vertices, faces, uvs = [], [], []
     water_flags = [island_mask(*point) < 0.14 for point in sampled]
-    deck_heights = [
-        max(terrain_height(*point) + 2.2, 22.0 if water else terrain_height(*point) + 2.2)
-        for point, water in zip(sampled, water_flags)
-    ]
-    # A terrain-conforming road can rise sharply, but a bridge approach cannot
-    # fall from a high island vertex to a fixed water deck in one 48 m quad.
-    # Raise the lower samples from both directions to enforce a maximum 8.5%
-    # grade. This removes the long triangular ramp faces visible from flight
-    # while never sinking a road into the terrain.
-    max_step = 48.0 * 0.085
-    for index in range(1, len(deck_heights)):
-        deck_heights[index] = max(deck_heights[index], deck_heights[index - 1] - max_step)
-    for index in range(len(deck_heights) - 2, -1, -1):
-        deck_heights[index] = max(deck_heights[index], deck_heights[index + 1] - max_step)
+    ground_decks = [terrain_height(*point) + lift for point in sampled]
+    deck_heights = list(ground_decks)
+    # Grade only the six samples immediately beside a water crossing. The old
+    # whole-route forward/backward pass propagated a high island vertex for
+    # kilometers and turned ordinary roads into huge floating black viaducts.
+    # Land now remains terrain-conforming; bridge transitions are local.
+    index = 0
+    while index < len(sampled):
+        if not water_flags[index]:
+            index += 1
+            continue
+        start = index
+        while index + 1 < len(sampled) and water_flags[index + 1]:
+            index += 1
+        end = index
+        for bridge_index in range(start, end + 1):
+            deck_heights[bridge_index] = bridge_level
+        approach = 6
+        left = max(0, start - approach)
+        if left < start:
+            anchor = ground_decks[left]
+            for approach_index in range(left, start):
+                t = (approach_index - left) / (start - left)
+                desired = anchor + (bridge_level - anchor) * smooth(0.0, 1.0, t)
+                deck_heights[approach_index] = max(
+                    ground_decks[approach_index], desired
+                )
+        right = min(len(sampled) - 1, end + approach)
+        if right > end:
+            anchor = ground_decks[right]
+            for approach_index in range(end + 1, right + 1):
+                t = (approach_index - end) / (right - end)
+                desired = bridge_level + (anchor - bridge_level) * smooth(
+                    0.0, 1.0, t
+                )
+                deck_heights[approach_index] = max(
+                    ground_decks[approach_index], desired
+                )
+        index += 1
     distance = 0.0
     water_run = 0
     for index, point in enumerate(sampled):
@@ -428,9 +456,12 @@ def road_ribbon(name, points, width, owner, material, bridge_owner=None, closed=
         if is_water:
             water_run += 1
             if bridge_owner and water_run % 4 == 0:
+                pier_top = deck_z - 0.8
+                pier_bottom = SEABED_LEVEL - 1.5
                 cylinder(
-                    name + "__bridge_pier", (point[0], point[1], deck_z / 2 - 4),
-                    2.8, max(7.0, deck_z + 8), concrete_mat, bridge_owner, 10
+                    name + "__bridge_pier",
+                    (point[0], point[1], (pier_top + pier_bottom) / 2),
+                    2.4, pier_top - pier_bottom, concrete_mat, bridge_owner, 10
                 )
         else:
             water_run = 0
@@ -461,9 +492,19 @@ def road_ribbon(name, points, width, owner, material, bridge_owner=None, closed=
 
 def detailed_building(name, x, y, width, depth, height, floors, owner, identity):
     z = terrain_height(x, y)
+    lower_height = height * 0.66
+    upper_height = height - lower_height
+    upper_width = width * 0.72
+    upper_depth = depth * 0.70
     shell = cube(
-        name + "__shell", (x, y, z + height / 2),
-        (width, depth, height), concrete_mat, owner, 1.2
+        name + "__lower_shell", (x, y, z + lower_height / 2),
+        (width, depth, lower_height), concrete_mat, owner, 1.2
+    )
+    cube(
+        name + "__upper_shell",
+        (x, y, z + lower_height + upper_height / 2),
+        (upper_width, upper_depth, upper_height),
+        concrete_mat, owner, 1.0
     )
     cube(
         name + "__plinth", (x, y, z - 1.9),
@@ -471,19 +512,38 @@ def detailed_building(name, x, y, width, depth, height, floors, owner, identity)
     )
     cube(
         name + "__roof", (x, y, z + height + 1.8),
-        (width + 3, depth + 3, 3.6), roof_mat, owner, 0.6
+        (upper_width + 3, upper_depth + 3, 3.6), roof_mat, owner, 0.6
+    )
+    cube(
+        name + "__setback_canopy",
+        (x, y - depth / 2 - 1.2, z + lower_height + 1.0),
+        (width * 0.76, 5.0, 2.0), dark_mat, owner, 0.35
     )
     for floor in range(1, floors):
         band_z = z + floor * height / floors
+        upper = band_z > z + lower_height
+        band_width = upper_width * 0.74 if upper else width * 0.76
+        band_depth = upper_depth if upper else depth
         for side in (-1, 1):
             cube(
-                name + "__glazing", (x, y + side * (depth / 2 + 0.35), band_z),
-                (width * 0.76, 0.7, 2.1), glass_mat, owner, 0.08
+                name + "__glazing",
+                (x, y + side * (band_depth / 2 + 0.35), band_z),
+                (band_width, 0.7, 2.1), glass_mat, owner, 0.08
             )
     for side in (-1, 1):
         cube(
-            name + "__corner_pier", (x + side * (width / 2 + 0.45), y, z + height / 2),
-            (0.9, depth + 1.0, height + 1.0), dark_mat, owner, 0.1
+            name + "__lower_corner_pier",
+            (x + side * (width / 2 + 0.45), y, z + lower_height / 2),
+            (0.9, depth + 1.0, lower_height + 1.0), dark_mat, owner, 0.1
+        )
+        cube(
+            name + "__upper_fin",
+            (
+                x + side * (upper_width / 2 + 0.45), y,
+                z + lower_height + upper_height / 2
+            ),
+            (0.9, upper_depth + 1.0, upper_height + 1.0),
+            identity, owner, 0.1
         )
     cube(
         name + "__identity", (x, y - depth / 2 - 0.55, z + height * 0.66),
@@ -491,7 +551,8 @@ def detailed_building(name, x, y, width, depth, height, floors, owner, identity)
     )
     for unit in (-0.24, 0.24):
         cube(
-            name + "__roof_hvac", (x + unit * width, y, z + height + 4.5),
+            name + "__roof_hvac",
+            (x + unit * upper_width, y, z + height + 4.5),
             (8, 5, 5.5), hardware_mat, owner, 0.5
         )
     shell["texel_density_px_per_meter"] = 96
@@ -625,27 +686,57 @@ def build_world(owner, resolution, detailed):
     )
     bridges = make_collection(("WORLD_BRIDGE_PIERS" if detailed else "WORLD_LOD1_PIERS"), owner)
     roads = (
-        ("East_West_Spine", [(-2760, 0), (0, 0), (2760, 0)], 34),
-        ("North_South_Spine", [(0, -2200), (0, 0), (0, 2100)], 34),
-        ("Northwest_Link", [(-2760, 0), (-1500, 1300), (0, 2100)], 26),
-        ("Northeast_Link", [(2760, 0), (1550, 1300), (0, 2100)], 26),
-        ("Southwest_Link", [(-2760, 0), (-1550, -1300), (0, -2200)], 26),
-        ("Southeast_Link", [(2760, 0), (1650, -1250), (0, -2200)], 26),
+        ("East_West_Spine", [(-2760, 0), (0, 0), (2760, 0)], 22),
+        ("North_South_Spine", [(0, -2200), (0, 0), (0, 2100)], 22),
+        ("Northwest_Link", [(-2760, 0), (-1500, 1300), (0, 2100)], 16),
+        ("Northeast_Link", [(2760, 0), (1550, 1300), (0, 2100)], 16),
+        ("Southwest_Link", [(-2760, 0), (-1550, -1300), (0, -2200)], 16),
+        ("Southeast_Link", [(2760, 0), (1650, -1250), (0, -2200)], 16),
     )
     for road_name, points, width in roads:
-        road_ribbon(road_name, points, width, owner, road_mat, bridges)
+        road_ribbon(
+            road_name + "__shoulder", points, width + 5, owner,
+            road_shoulder_mat, None, lift=1.15, bridge_level=13.7
+        )
+        road_ribbon(
+            road_name, points, width, owner, road_mat, bridges,
+            lift=1.5, bridge_level=14.0
+        )
     ring = [(math.cos(index / 64 * math.tau) * 900, math.sin(index / 64 * math.tau) * 900) for index in range(64)]
-    road_ribbon("Arena_Core__civic_ring", ring, 34, owner, road_mat, bridges, True)
+    road_ribbon(
+        "Arena_Core__civic_ring__shoulder", ring, 23, owner,
+        road_shoulder_mat, None, True, 1.15, 13.7
+    )
+    road_ribbon(
+        "Arena_Core__civic_ring", ring, 18, owner, road_mat,
+        bridges, True, 1.5, 14.0
+    )
     for bx in (-2760, 2760):
         loop = [(bx + math.cos(index / 40 * math.tau) * 410, math.sin(index / 40 * math.tau) * 340) for index in range(40)]
-        road_ribbon(("Vanguard" if bx < 0 else "Inferno") + "__perimeter", loop, 24, owner, road_mat, bridges, True)
+        perimeter = ("Vanguard" if bx < 0 else "Inferno") + "__perimeter"
+        road_ribbon(
+            perimeter + "__shoulder", loop, 19, owner,
+            road_shoulder_mat, None, True, 1.15, 13.7
+        )
+        road_ribbon(
+            perimeter, loop, 14, owner, road_mat,
+            bridges, True, 1.5, 14.0
+        )
     airfield("Breakwater_Field", -2760, teal_mat, owner, not detailed)
     airfield("Inferno_Field", 2760, red_mat, owner, not detailed)
     harbor(owner, not detailed)
     if not detailed:
         cylinder("Arena_Core__platform_lod1", (0, 0, 31), 330, 18, concrete_mat, owner, 32)
         for x, y in ((-460, -420), (460, -420), (-460, 420), (460, 420)):
-            cube("District__mass_lod1", (x, y, terrain_height(x, y) + 45), (120, 90, 90), concrete_mat, owner, 2)
+            base = terrain_height(x, y)
+            cube(
+                "District__podium_lod1", (x, y, base + 28),
+                (120, 90, 56), concrete_mat, owner, 2
+            )
+            cube(
+                "District__tower_lod1", (x, y, base + 73),
+                (82, 62, 44), roof_mat, owner, 1.6
+            )
         apply_modifiers_and_batch(owner, "Starter_Coast_LOD1")
         return
     # Arena Core is a constructed circular precinct with water courts and
@@ -655,8 +746,8 @@ def build_world(owner, resolution, detailed):
         angle = index * math.pi / 4
         bridge = cube(
             f"Arena_Core__radial_{index:02d}",
-            (math.cos(angle) * 520, math.sin(angle) * 520, 34),
-            (390, 34, 10), dark_mat, owner, 1.4
+            (math.cos(angle) * 520, math.sin(angle) * 520, 35),
+            (390, 18, 6), dark_mat, owner, 1.0
         )
         bridge.rotation_euler.z = angle
     city_specs = (
@@ -868,6 +959,20 @@ def export_collection(owner, filepath):
     )
 
 
+def unload_collection_objects(owner):
+    """Release exported world geometry before the story-kit export.
+
+    Blender 4's glTF exporter can retain evaluated copies between sequential
+    exports. Unlinking the already-saved world meshes keeps the final story-kit
+    export below the Codespace memory ceiling without changing the .blend.
+    """
+    for obj in list(owner.all_objects):
+        bpy.data.objects.remove(obj, do_unlink=True)
+    for mesh in list(bpy.data.meshes):
+        if mesh.users == 0:
+            bpy.data.meshes.remove(mesh)
+
+
 reset_scene()
 print("world-v2: scene reset", flush=True)
 bpy.context.scene.unit_settings.system = "METRIC"
@@ -875,6 +980,7 @@ bpy.context.scene.unit_settings.scale_length = 1.0
 
 terrain_mat = make_material("Terrain surface", (0.48, 0.54, 0.34), 0.0, 0.9)
 road_mat = make_material("Road surface", (0.10, 0.12, 0.13), 0.08, 0.76)
+road_shoulder_mat = make_material("Road shoulder", (0.24, 0.25, 0.23), 0.02, 0.88)
 deck_mat = make_material("Airbase deck", (0.25, 0.27, 0.28), 0.16, 0.58)
 runway_mat = make_material("Runway surface", (0.075, 0.09, 0.10), 0.06, 0.68)
 concrete_mat = make_material("Bunker concrete", (0.47, 0.47, 0.43), 0.04, 0.78)
@@ -899,9 +1005,9 @@ story = make_collection("STORY_TEMPLATES", source)
 guides = make_collection("AUTHORING_GUIDES", source)
 
 print("world-v2: building LOD0", flush=True)
-build_world(lod0, 193, True)
+build_world(lod0, 225, True)
 print("world-v2: building LOD1", flush=True)
-build_world(lod1, 97, False)
+build_world(lod1, 113, False)
 print("world-v2: building story templates", flush=True)
 build_nav_mast(story)
 build_warden_node(story)
@@ -926,6 +1032,8 @@ print("world-v2: exporting LOD0", flush=True)
 export_collection(lod0, WORLD_OUT)
 print("world-v2: exporting LOD1", flush=True)
 export_collection(lod1, WORLD_LOD1_OUT)
+unload_collection_objects(lod0)
+unload_collection_objects(lod1)
 print("world-v2: exporting story kit", flush=True)
 export_collection(story, STORY_OUT)
 print("Starter Coast world v2, LOD1 and story kit exported")

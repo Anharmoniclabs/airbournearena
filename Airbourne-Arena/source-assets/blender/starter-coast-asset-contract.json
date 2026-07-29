@@ -86,7 +86,8 @@
         "Arena Core civic ring and radial bridges",
         "paired faction airbases with runways, hangars and control towers",
         "north sensor plateau and south industrial harbor",
-        "terrain-conforming road and bridge network",
+        "terrain-conforming road and shoulder network with localized bridge approaches",
+        "stepped civic and district architecture with grounded construction pads",
         "story masts, wreckage, foundry and Warden nodes",
         "defence platforms, carrier engines, drone bays, command relay and Warden core",
         "cargo transports, Black Wing fighters and Black Wing drones",
@@ -118,7 +119,7 @@
     {
       "asset": "starter-coast-world-authored-v2.glb",
       "class": "full_island_world_lod0",
-      "triangles": 125780,
+      "triangles": 163060,
       "texture_policy": "runtime_role_assignment_over_meter_scaled box cylindrical longitudinal and world UVs plus vertex colors",
       "collision": "matching deterministic terrainHeight plus existing simplified gameplay bodies",
       "approved_surface_inputs": [
@@ -136,7 +137,7 @@
     {
       "asset": "starter-coast-world-authored-v2-lod1.glb",
       "class": "full_island_world_lod1_mobile",
-      "triangles": 22940,
+      "triangles": 32044,
       "texture_policy": "runtime_role_assignment_over_meter_scaled box cylindrical longitudinal and world UVs plus vertex colors",
       "collision": "matching deterministic terrainHeight plus existing simplified gameplay bodies",
       "approved_surface_inputs": [

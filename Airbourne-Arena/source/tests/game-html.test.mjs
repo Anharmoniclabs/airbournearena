@@ -102,6 +102,14 @@ test("the Blender world and campaign story kit are runtime assets", () => {
   }
 });
 
+test("chase flight stays readable during hard banks on desktop and mobile", () => {
+  assert.match(canonical, /LOW\?1\.25:2/);
+  assert.match(canonical, /LOW\?Math\.min\(2,renderer\.capabilities\.getMaxAnisotropy\(\)\)/);
+  assert.match(canonical, /camFlatRight\.crossVectors\(_f,WORLD_UP\)/);
+  assert.match(canonical, /\.addScaledVector\(WORLD_UP,camOff\.y\)/);
+  assert.match(canonical, /st\.camMode===2\?1:\(LOW\?\.08:\.18\+turnPivot\*\.10\)/);
+});
+
 test("the three-faction story fallback cannot recurse", () => {
   assert.match(
     canonical,

@@ -70,6 +70,23 @@ if (reviewCase === "all" || reviewCase === "flight") {
   await flight.screenshot({ path: `${output}/airbourne-v2-flight.png`, timeout: 120_000 });
   await flight.close();
 }
+if (reviewCase === "all" || reviewCase === "bank") {
+  const bank = await openPage(desktop, "desktop bank");
+  await enterMission(bank, "ch1_m1", [650, 720, 980]);
+  await bank.evaluate(() => {
+    const capture = window.__AIRBOURNE_CAPTURE__;
+    capture.getPlayer().quat.multiply(
+      new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, -1),
+        Math.PI * 0.46,
+      ),
+    );
+    capture.settleFlightCamera();
+  });
+  await bank.waitForTimeout(1200);
+  await bank.screenshot({ path: `${output}/airbourne-v2-bank.png`, timeout: 120_000 });
+  await bank.close();
+}
 if (reviewCase === "all" || reviewCase === "carrier") {
   const carrier = await openPage(desktop, "desktop carrier");
   await enterMission(carrier, "ch6_m4", [2100, 1080, -620], [2850, 900, 0]);
@@ -88,6 +105,33 @@ if (reviewCase === "all" || reviewCase === "mobile") {
   const phone = await openPage(mobile, "mobile flight");
   await enterMission(phone, "ch1_m1", [650, 720, 980]);
   await phone.screenshot({ path: `${output}/airbourne-v2-mobile-flight.png`, timeout: 120_000 });
+  await phone.close();
+  await mobile.close();
+}
+if (reviewCase === "mobilebank") {
+  const mobile = await browser.newContext({
+    ...devices["iPhone 13"],
+    viewport: { width: 780, height: 360 },
+    screen: { width: 780, height: 360 },
+    deviceScaleFactor: 1,
+  });
+  const phone = await openPage(mobile, "mobile bank");
+  await enterMission(phone, "ch1_m1", [650, 720, 980]);
+  await phone.evaluate(() => {
+    const capture = window.__AIRBOURNE_CAPTURE__;
+    capture.getPlayer().quat.multiply(
+      new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, -1),
+        Math.PI * 0.46,
+      ),
+    );
+    capture.settleFlightCamera();
+  });
+  await phone.waitForTimeout(1200);
+  await phone.screenshot({
+    path: `${output}/airbourne-v2-mobile-bank.png`,
+    timeout: 120_000,
+  });
   await phone.close();
   await mobile.close();
 }
