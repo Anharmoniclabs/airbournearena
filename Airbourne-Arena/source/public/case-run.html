@@ -508,6 +508,11 @@
     border:1px solid var(--line);background:rgba(6,14,20,.86);padding:9px 17px;
     color:var(--ink);opacity:0;transition:opacity .14s;white-space:nowrap}
   #hangarPrompt.on{opacity:1}
+  /* The prompt only means anything on the hangar floor, and hangarStep is the
+     only thing that clears .on — which stops running the moment you launch. An
+     opacity:0 element still takes hits, so leaving it live outside the hangar
+     parks an invisible tap-blocker at z-index 8 over the whole game. */
+  body:not(.hangar) #hangarPrompt{display:none}
   #hangarSign{position:absolute;right:34px;top:30px;text-align:right;
     color:rgba(223,243,255,.45);line-height:2.1}
   /* ---- hangar on a phone ----
@@ -549,7 +554,7 @@
   body.touch #hangarPrompt{top:auto;bottom:calc(118px + env(safe-area-inset-bottom));
     font-size:9px;padding:13px 18px;max-width:88vw;white-space:normal;text-align:center;
     color:var(--teal);border-color:rgba(111,227,208,.5);z-index:3}
-  body.touch #hangarPrompt.on{pointer-events:auto}
+  body.touch.hangar #hangarPrompt.on{pointer-events:auto}
   body.touch #hangarPrompt.press{filter:brightness(1.3)}
   body.touch #hangarHint{white-space:normal;max-width:min(430px,86vw);
     bottom:calc(14px + env(safe-area-inset-bottom));line-height:1.9;font-size:9px}
@@ -4457,6 +4462,10 @@ function enterHangar(){
 function leaveHangar(){
   st.phase='brief';
   document.body.classList.remove('hangar');
+  /* hangarStep owns this class and stops running here, so it has to be dropped
+     on the way out rather than left in whatever state the last frame saw */
+  if(hEl.hangarPrompt)hEl.hangarPrompt.classList.remove('on');
+  hWalk.active=false; hWalk.x=0; hWalk.y=0;
   if(document.exitPointerLock)document.exitPointerLock();
   /* Missions 7 and 8 are fought on foot. Walking out of the hangar during one
      puts the player straight back in the air rather than at the brief card. */

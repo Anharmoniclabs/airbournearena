@@ -110,6 +110,10 @@ graphite = material("Graphite composite", (0.035, 0.045, 0.055), 0.28, 0.32)
 metal = material("Heat stained engine metal", (0.17, 0.19, 0.21), 0.88, 0.23)
 accent = material("Faction accent", (0.02, 0.38, 0.52), 0.5, 0.22, (0.0, 0.10, 0.16))
 canopy = material("Cyan canopy", (0.025, 0.20, 0.28), 0.15, 0.08, (0.0, 0.08, 0.12))
+panel = material("Ceramic service panels", (0.26, 0.30, 0.32), 0.48, 0.36)
+sensor = material("Sensor glass", (0.015, 0.055, 0.070), 0.22, 0.10, (0.0, 0.05, 0.08))
+warning = material("Maintenance warning", (0.72, 0.25, 0.035), 0.35, 0.38)
+engine_inner = material("Engine internal ceramic", (0.018, 0.022, 0.026), 0.70, 0.24)
 canopy.diffuse_color = (0.025, 0.20, 0.28, 0.72)
 if hasattr(canopy, "surface_render_method"):
     canopy.surface_render_method = "DITHERED"
@@ -127,6 +131,27 @@ body = loft("Continuous fuselage", [
     (5.05, .48, .38, 0.00)
 ], 40, hull)
 body.parent = root
+
+# A separate faceted radome and chin sensor prevent the nose from reading as
+# one uninterrupted white cone at the hangar camera distance.
+radome = loft("Graphite sensor radome", [
+    (-6.34, .05, .05, 0.00), (-5.86, .35, .29, 0.00),
+    (-5.35, .58, .42, 0.02)
+], 32, graphite)
+radome.scale = (1.012, 1.0, 1.012)
+bpy.context.view_layer.objects.active = radome
+radome.select_set(True)
+bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+radome.select_set(False)
+radome.parent = root
+bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, location=(0, -5.20, -.38))
+chin_sensor = bpy.context.object
+chin_sensor.name = "Chin electro optical sensor"
+chin_sensor.scale = (.24, .34, .18)
+bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+chin_sensor.data.materials.append(sensor)
+finish(chin_sensor, .012, True)
+chin_sensor.parent = root
 
 main_wing = prism("Blended main wing", [
     (-.72, -2.82), (-7.25, .12), (-6.55, 1.62), (-1.38, 2.62),
@@ -150,6 +175,28 @@ for side in (-1, 1):
         (side * 5.98, 1.28), (side * 6.42, 1.18)
     ], .04, accent, .05)
     tip_mark.parent = root
+    # Raised armor panels and leading-edge caps hold highlights independently
+    # from the main wing, giving the top surface readable construction.
+    armor = prism(f"Wing service armor {'L' if side < 0 else 'R'}", [
+        (side * 1.18, -1.40), (side * 3.20, -.54),
+        (side * 2.76, .18), (side * 1.12, -.35)
+    ], .045, panel, .075)
+    armor.parent = root
+    leading = prism(f"Heat resistant leading edge {'L' if side < 0 else 'R'}", [
+        (side * .82, -2.67), (side * 7.18, .10),
+        (side * 6.92, .28), (side * .96, -2.28)
+    ], .048, metal, .045)
+    leading.parent = root
+    access = prism(f"Outboard access hatch {'L' if side < 0 else 'R'}", [
+        (side * 3.72, .52), (side * 5.10, .86),
+        (side * 4.78, 1.22), (side * 3.48, .91)
+    ], .035, graphite, .065)
+    access.parent = root
+    caution = prism(f"Maintenance warning panel {'L' if side < 0 else 'R'}", [
+        (side * 2.58, -.04), (side * 3.14, .18),
+        (side * 2.98, .43), (side * 2.42, .20)
+    ], .038, warning, .078)
+    caution.parent = root
 
 tailplane = prism("Tailplane", [
     (-.55, 3.18), (-3.0, 4.12), (-2.58, 4.72),
@@ -167,6 +214,18 @@ for side in (-1, 1):
     intake = cylinder(f"Intake lip {'L' if side < 0 else 'R'}", .67, .28,
                       (side * 1.72, .56, -.18), graphite, 40)
     intake.parent = root
+    intake_dark = cylinder(f"Intake throat {'L' if side < 0 else 'R'}", .51, .18,
+                           (side * 1.72, .74, -.18), engine_inner, 32)
+    intake_dark.parent = root
+    intake_cone = cylinder(f"Intake centerbody {'L' if side < 0 else 'R'}", .17, .42,
+                           (side * 1.72, .66, -.18), metal, 24)
+    intake_cone.parent = root
+    nozzle_ring = cylinder(f"Exhaust ceramic ring {'L' if side < 0 else 'R'}", .54, .18,
+                           (side * 1.72, 4.93, -.18), graphite, 40)
+    nozzle_ring.parent = root
+    nozzle_core = cylinder(f"Exhaust internal core {'L' if side < 0 else 'R'}", .37, .12,
+                           (side * 1.72, 5.02, -.18), engine_inner, 32)
+    nozzle_core.parent = root
     fin = prism(f"Canted fin {'L' if side < 0 else 'R'}", [
         (side * .82, 2.55), (side * 1.45, 4.42),
         (side * .84, 4.80), (side * .32, 3.02)
@@ -188,23 +247,67 @@ for x in (-.46, .46):
     frame.rotation_euler.y = math.radians(-5)
     frame.parent = root
 
+for y, width in ((-3.42, .54), (-2.58, .62), (-1.78, .52)):
+    cross = cube("Canopy transverse frame", (0, y, .84), (width, .024, .025), graphite, .012)
+    cross.parent = root
+
+# Dorsal service spine, avionics hatches and a recessed refuelling port. These
+# pieces are deliberately shallow: they catch light without changing the
+# aircraft's aerodynamic silhouette.
+for y, sx, sy in ((-1.02, .42, .52), (.08, .50, .38), (1.02, .45, .34), (1.90, .38, .30)):
+    hatch = cube("Dorsal avionics access panel", (0, y, .735), (sx, sy, .022), panel, .025)
+    hatch.parent = root
+spine = cube("Dorsal systems spine", (0, 2.70, .58), (.24, 1.05, .16), graphite, .06)
+spine.parent = root
+bpy.ops.mesh.primitive_torus_add(major_radius=.18, minor_radius=.035,
+                                 major_segments=24, minor_segments=8,
+                                 location=(-.46, .18, .77))
+fuel_port = bpy.context.object
+fuel_port.name = "Recessed refuelling port"
+fuel_port.data.materials.append(warning)
+fuel_port.parent = root
+
 for side in (-1, 1):
     for y in (-.15, 1.05):
         store = cylinder("Underwing hardpoint", .16, 1.7, (side * 3.35, y, -.46), metal, 24)
         store.parent = root
+    # Navigation lamp housings are geometry, not camera-facing sprites.
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=8,
+                                        location=(side * 6.73, .76, .10))
+    lamp = bpy.context.object
+    lamp.name = f"Navigation lamp {'L' if side < 0 else 'R'}"
+    lamp.scale = (.12, .18, .09)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    lamp.data.materials.append(accent)
+    finish(lamp, .008, True)
+    lamp.parent = root
 
 for y in (-2.9, -1.6, -.2, 1.35, 2.8):
     seam = cube("Dorsal panel seam", (0, y, .79), (.64, .018, .012), graphite, .004)
     seam.parent = root
 
+for side in (-1, 1):
+    for y in (-1.35, -.55, .38, 1.25):
+        seam = cube(f"Wing panel joint {'L' if side < 0 else 'R'}",
+                    (side * (1.65 + (y + 1.35) * .55), y, .085),
+                    (.012, .44, .013), graphite, .003)
+        seam.rotation_euler.z = side * math.radians(24)
+        seam.parent = root
+
 for obj in bpy.context.scene.objects:
     if obj.type == "MESH":
+        bpy.ops.object.select_all(action="DESELECT")
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
         try:
+            bpy.ops.object.mode_set(mode="EDIT")
+            bpy.ops.mesh.select_all(action="SELECT")
             bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.02)
         except RuntimeError:
             pass
+        finally:
+            if obj.mode == "EDIT":
+                bpy.ops.object.mode_set(mode="OBJECT")
         obj.select_set(False)
 
 root.rotation_euler.z = 0
@@ -248,6 +351,29 @@ scene.world.color = (0.008, 0.012, 0.018)
 scene.render.film_transparent = False
 
 bpy.ops.wm.save_as_mainfile(filepath=BLEND_OUT)
+
+# Keep the .blend modular for later art passes, but batch the runtime copy by
+# material so every cloned aircraft does not multiply dozens of draw calls.
+def consolidate_runtime_meshes(asset_root):
+    material_groups = {}
+    for obj in list(asset_root.children_recursive):
+        if obj.type != "MESH":
+            continue
+        material_name = obj.data.materials[0].name if obj.data.materials else "Unassigned"
+        material_groups.setdefault(material_name, []).append(obj)
+
+    for material_name, objects in material_groups.items():
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objects:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = objects[0]
+        if len(objects) > 1:
+            bpy.ops.object.join()
+        batch = bpy.context.view_layer.objects.active
+        batch.name = f"Kestrel runtime — {material_name}"
+        batch.parent = asset_root
+
+consolidate_runtime_meshes(root)
 
 # Only the authored aircraft hierarchy belongs in the runtime export.
 bpy.ops.object.select_all(action="DESELECT")
