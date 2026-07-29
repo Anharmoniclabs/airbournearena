@@ -72,3 +72,36 @@ test("magnetic aim is earned, bounded, and supports ground targets", () => {
   assert.match(canonical, /guide:guide,guideT:guide\?GUIDE_TIME:0/);
   assert.match(canonical, /b\.guideT-=dt/);
 });
+
+test("the Blender world and campaign story kit are runtime assets", () => {
+  assert.match(canonical, /starter-coast-world-authored-v2\.glb/);
+  assert.match(canonical, /starter-coast-world-authored-v2-lod1\.glb/);
+  assert.match(canonical, /starter-coast-story-kit-authored-v2\.glb/);
+  assert.match(canonical, /function islandMask\(x,z\)/);
+  assert.match(canonical, /terrain\.visible=false;proceduralRoads\.visible=false/);
+  for (const template of [
+    "Nav_Mast",
+    "Warden_Node",
+    "Defence_Platform",
+    "Carrier_Engine",
+    "Drone_Bay",
+    "Command_Relay",
+    "Warden_Core",
+    "Cargo_Transport",
+    "Blackwing_Fighter",
+    "Blackwing_Drone",
+    "Warden_Carrier",
+    "Wreck_Field",
+    "Foundry",
+  ]) {
+    assert.match(canonical, new RegExp(`['"]${template}['"]`));
+  }
+});
+
+test("the three-faction story fallback cannot recurse", () => {
+  assert.match(
+    canonical,
+    /return PILOT\.faction\|\|\(PILOT\.team==='red'\?'inferno':'vanguard'\)/,
+  );
+  assert.doesNotMatch(canonical, /function factionKey\(\)\s*\{\s*return factionKey\(\)/);
+});
