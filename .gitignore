@@ -24,3 +24,7 @@ Airbourne-Arena/source/.wrangler/
 # editor / OS
 .DS_Store
 *.swp
+
+# Blender writes a .blend1 backup beside every save; it is the previous
+# revision of a file git already versions.
+*.blend1

@@ -54,10 +54,43 @@ jobs:
           cp Airbourne-Arena/manifest.webmanifest _site/
           cp -r Airbourne-Arena/assets _site/assets
           # Preserve the original public URL used by existing players and
-          # bookmarks while also serving the shorter project-root URL.
-          cp Airbourne-Arena/index.html _site/Airbourne-Arena/
-          cp Airbourne-Arena/manifest.webmanifest _site/Airbourne-Arena/
-          cp -r Airbourne-Arena/assets _site/Airbourne-Arena/assets
+          # bookmarks. This used to be a second full copy of the game and its
+          # asset tree, which doubled the artifact to keep one legacy path
+          # alive. A stub costs half a kilobyte and does the same job — the
+          # game is served once, at the project root.
+          cat > _site/Airbourne-Arena/index.html <<'STUB'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+          <meta name="theme-color" content="#05070d">
+          <title>AIRBOURNE ARENA — CASE RUN 4v4</title>
+          <link rel="canonical" href="../">
+          <meta http-equiv="refresh" content="0; url=../">
+          <style>
+            html,body{height:100%;margin:0;background:#05070d;color:#dff3ff;
+              font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+            main{height:100%;display:grid;place-content:center;text-align:center;gap:14px;padding:24px}
+            h1{margin:0;font-size:13px;letter-spacing:.34em;font-weight:600;color:#6fe3d0}
+            p{margin:0;font-size:11px;letter-spacing:.16em;color:rgba(223,243,255,.45)}
+            a{color:#6fe3d0}
+          </style>
+          </head>
+          <body>
+          <main>
+            <h1>AIRBOURNE ARENA</h1>
+            <p>THE GAME MOVED UP ONE LEVEL&hellip;</p>
+            <p><a href="../">Open the game</a> if this does not move on its own.</p>
+          </main>
+          <script>
+            /* replace() rather than assignment: the back button should leave the
+               site instead of bouncing off this page back into the game */
+            location.replace('../');
+          </script>
+          </body>
+          </html>
+          STUB
           # Without this, Jekyll processes the tree and silently drops anything
           # beginning with an underscore.
           touch _site/.nojekyll

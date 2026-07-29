@@ -1,9 +1,5 @@
 
 
-
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -200,13 +196,13 @@
   #touch{position:fixed;inset:0;z-index:5;display:none;pointer-events:none}
   body.touch #touch{display:block}
   #tStick{position:absolute;left:0;bottom:0;width:48%;height:82%;pointer-events:auto;touch-action:none}
-  #stickBase{position:absolute;width:136px;height:136px;margin:-68px 0 0 -68px;border-radius:50%;
+  #stickBase,#hStickBase{position:absolute;width:136px;height:136px;margin:-68px 0 0 -68px;border-radius:50%;
     border:1px solid rgba(111,227,208,.30);background:rgba(6,14,20,.26);opacity:0;
     transition:opacity .12s;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-  #stickBase.on{opacity:1}
-  #stickBase:before{content:"";position:absolute;left:50%;top:50%;width:5px;height:5px;
+  #stickBase.on,#hStickBase.on{opacity:1}
+  #stickBase:before,#hStickBase:before{content:"";position:absolute;left:50%;top:50%;width:5px;height:5px;
     margin:-2.5px 0 0 -2.5px;border-radius:50%;background:rgba(111,227,208,.5)}
-  #stickKnob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
+  #stickKnob,#hStickKnob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
     border-radius:50%;background:rgba(111,227,208,.28);border:1px solid rgba(111,227,208,.75);
     box-shadow:0 0 16px rgba(111,227,208,.25)}
   /* One grid holds every action control, instead of a per-button right/bottom
@@ -288,6 +284,28 @@
   body.touch .tbtn{box-shadow:0 7px 24px rgba(0,0,0,.28)}
   body.touch #tStick{min-width:44vw}
   body.touch #coach{display:none}
+  /* The objective list and the radio never had a touch placement, so they kept
+     their desktop corners: the list at top-right, which is exactly where the
+     minimap moves to on a phone, and the radio at bottom-left, which is where
+     the thumbstick lives. Both read as clipped because something was sitting on
+     top of them. The list now starts below the map and the radio clears the
+     stick; neither takes pointer events, so nothing new is in the way. */
+  body.touch #objPanel{top:calc(196px + env(safe-area-inset-top));
+    right:calc(10px + env(safe-area-inset-right));width:min(216px,42vw);
+    padding:9px 11px;max-height:34vh;overflow:hidden}
+  body.touch #objTitle{font-size:8.5px;margin-bottom:5px}
+  body.touch .obj{font-size:9px;line-height:1.5;padding:2px 0 2px 12px}
+  body.touch #radio{left:calc(10px + env(safe-area-inset-left));
+    bottom:calc(150px + env(safe-area-inset-bottom));
+    max-width:min(320px,54vw);padding:7px 11px}
+  body.touch #radioText{font-size:10px;line-height:1.6}
+  body.touch #radioWho{font-size:8.5px}
+  /* The kill feed sat 150px up on the right, which is inside the action
+     cluster. FIRE spans both button rows rather than adding a third, so the
+     cluster is one pill row plus two mid rows — clear that, not more, or the
+     feed lands back on the minimap. */
+  body.touch #feed{bottom:calc(var(--b-pill) + var(--b-mid) * 2 +
+    var(--tgap) * 2 + var(--tpad) + 8px + env(safe-area-inset-bottom))}
   @media (pointer:coarse) and (max-width:900px){
     body.touch #tr{display:none}
     body.touch #score{max-width:46vw}
@@ -354,6 +372,16 @@
     body.touch #tStick{width:62%;height:42%}
     body.touch #coach{bottom:calc(252px + env(safe-area-inset-bottom));width:min(230px,62vw)}
     body.touch #center{top:40%}
+    /* Sit the list beside the minimap rather than under it. Stacked, the pair
+       needed ~130px between the map and the thumbstick, which a 640-667px tall
+       phone does not have — the list and the radio ended up on top of each
+       other. Side by side they both fit at every portrait height. */
+    body.touch #objPanel{top:calc(204px + env(safe-area-inset-top));
+      left:calc(10px + env(safe-area-inset-left));right:auto;
+      width:min(200px,52vw);max-height:22vh}
+    /* the stick zone is 42% tall in portrait; sit the radio above it */
+    body.touch #radio{bottom:calc(46% + env(safe-area-inset-bottom));
+      max-width:min(300px,72vw)}
   }
   /* A 320-400px wide phone cannot carry the full-size cluster: at 100px the
      fire button pushed ROLL off the left edge of the screen. */
@@ -375,6 +403,21 @@
       left:calc(12px + env(safe-area-inset-left));width:min(250px,34vw)}
     body.touch #prompt{bottom:calc(96px + env(safe-area-inset-bottom))}
     body.touch #center{top:44%}
+    /* Height is the scarce axis here, and the right column is already the map
+       stacked over the button cluster — between them only ~80px is free, which
+       clips a three-line list. The left column below the instrument bracket has
+       roughly 220px, so the objective list moves there instead. */
+    body.touch #objPanel{top:calc(76px + env(safe-area-inset-top));
+      left:calc(10px + env(safe-area-inset-left));right:auto;
+      width:min(190px,26vw);max-height:44vh;padding:7px 9px}
+    body.touch #radio{bottom:calc(96px + env(safe-area-inset-bottom));
+      max-width:min(280px,34vw)}
+  }
+  /* Under ~360px of height the right column cannot hold the minimap, the kill
+     feed and the button cluster at once — the feed lands on the map. The feed
+     is the one of the three you can play without. */
+  @media (orientation:landscape) and (max-height:360px){
+    body.touch #feed{display:none}
   }
 
   /* ===================== HUD scale =====================
@@ -467,6 +510,49 @@
   #hangarPrompt.on{opacity:1}
   #hangarSign{position:absolute;right:34px;top:30px;text-align:right;
     color:rgba(223,243,255,.45);line-height:2.1}
+  /* ---- hangar on a phone ----
+     None of this had a touch layout. The briefing paragraph is 340px wide at a
+     fixed 34px inset, so it runs off a 360px screen; the sign panel sits in the
+     opposite corner at the same top and overlapped it; and the hint and prompt
+     are both white-space:nowrap, which is the text that was visibly cut. */
+  #hangarTouch{position:absolute;left:50%;transform:translateX(-50%);
+    bottom:calc(56px + env(safe-area-inset-bottom));display:none;gap:10px;
+    flex-wrap:wrap;justify-content:center;width:max-content;max-width:92vw;
+    pointer-events:auto;z-index:2}
+  body.touch.hangar #hangarTouch{display:flex}
+  #hangarTouch .pill{min-width:124px}
+  /* Walk and look on a phone. Before this the hangar ran an automatic camera
+     orbit, which reads as the pilot walking off on their own — the player is
+     holding a controller that does nothing while the character moves. */
+  #hWalkCtl{position:absolute;inset:0;display:none;z-index:1}
+  body.touch.hangar #hWalkCtl{display:block}
+  #hLookZone{position:absolute;right:0;top:0;width:52%;
+    height:calc(100% - 118px - env(safe-area-inset-bottom));
+    pointer-events:auto;touch-action:none}
+  #hStickZone{position:absolute;left:0;bottom:0;width:48%;height:78%;
+    pointer-events:auto;touch-action:none}
+  /* The flight stick and the gun cluster are inert in the hangar — launch()
+     returns for as long as st.phase is 'hangar' — so showing them there is a
+     screen full of controls that do nothing. */
+  body.touch.hangar #touch{display:none}
+  body.touch #hangarTitle{left:calc(14px + env(safe-area-inset-left));
+    top:calc(12px + env(safe-area-inset-top));
+    max-width:min(340px,calc(100vw - 150px - env(safe-area-inset-left)
+      - env(safe-area-inset-right)))}
+  body.touch #hangarTitle h2{font-size:15px;letter-spacing:.24em;margin-bottom:6px}
+  body.touch #hangarTitle p{font-size:9px;line-height:1.8}
+  body.touch #hangarSign{right:calc(14px + env(safe-area-inset-right));
+    top:calc(12px + env(safe-area-inset-top));line-height:1.85;font-size:9px}
+  body.touch #hangarSign b{font-size:12px;letter-spacing:.2em}
+  /* There is no E on a phone, so the prompt becomes the button itself once a
+     touch player can walk up to a bay. */
+  body.touch #hangarPrompt{top:auto;bottom:calc(118px + env(safe-area-inset-bottom));
+    font-size:9px;padding:13px 18px;max-width:88vw;white-space:normal;text-align:center;
+    color:var(--teal);border-color:rgba(111,227,208,.5);z-index:3}
+  body.touch #hangarPrompt.on{pointer-events:auto}
+  body.touch #hangarPrompt.press{filter:brightness(1.3)}
+  body.touch #hangarHint{white-space:normal;max-width:min(430px,86vw);
+    bottom:calc(14px + env(safe-area-inset-bottom));line-height:1.9;font-size:9px}
   #hangarSign b{display:block;font-size:15px;letter-spacing:.26em;font-weight:600}
   #hangarSign b.blue{color:var(--blue)} #hangarSign b.red{color:var(--red)}
 
@@ -566,6 +652,14 @@
     <span id="hangarCall"></span>
   </div>
   <div id="hangarPrompt"></div>
+  <div id="hWalkCtl">
+    <div id="hLookZone"></div>
+    <div id="hStickZone"><div id="hStickBase"><div id="hStickKnob"></div></div></div>
+  </div>
+  <div id="hangarTouch">
+    <div class="pill" id="hFit" role="button" tabindex="0">FIT OUT</div>
+    <div class="pill" id="hGo" role="button" tabindex="0">BEGIN</div>
+  </div>
   <div id="hangarHint">
     <b>W A S D</b> WALK &nbsp;·&nbsp; <b>MOUSE</b> LOOK &nbsp;·&nbsp;
     <b>CLICK</b> CAPTURE &nbsp;·&nbsp; <b>ESC</b> RELEASE &nbsp;·&nbsp;
@@ -765,6 +859,7 @@
   <div id="endS"></div>
   <div id="endStats"></div>
   <div class="btnRow">
+    <button class="actionBtn" id="endStoryBtn">CONTINUE THE STORY</button>
     <button class="actionBtn" id="againBtn">RUN IT BACK</button>
     <button class="actionBtn" id="endSetBtn">SETTINGS</button>
   </div>
@@ -969,12 +1064,24 @@ function audioEngine(){
 var coarse=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
 var fine=window.matchMedia&&matchMedia('(any-pointer:fine)').matches;
 var IS_TOUCH=(coarse&&!fine)||(('ontouchstart' in window)&&!fine);
+var hangarHintKeys=null;
 function setTouchMode(on){
   IS_TOUCH=on;
   document.body.classList.toggle('touch',on);
   var gl=document.getElementById('goLine'),mb=document.getElementById('modeBtn');
   if(gl)gl.textContent=on?'TAP ANYWHERE TO LAUNCH':'CLICK TO CAPTURE THE MOUSE AND LAUNCH';
   if(mb)mb.textContent=on?'SWITCH TO MOUSE + KEYBOARD':'SWITCH TO TOUCH CONTROLS';
+  /* The hangar hint lists WASD, MOUSE, ESC, SHIFT, E and F — none of which a
+     phone has. Keep the markup as the desktop copy and stash it on the first
+     call so switching modes back restores it verbatim. */
+  var hh=document.getElementById('hangarHint');
+  if(hh){
+    if(hangarHintKeys===null)hangarHintKeys=hh.innerHTML;
+    hh.innerHTML=on
+      ? '<b>LEFT</b> WALK &nbsp;·&nbsp; <b>RIGHT</b> LOOK &nbsp;·&nbsp; '+
+        '<b>FIT OUT</b> FLIGHT AND KESTREL &nbsp;·&nbsp; <b>BEGIN</b> CAMPAIGN'
+      : hangarHintKeys;
+  }
 }
 setTouchMode(IS_TOUCH);
 var LOW=IS_TOUCH;   /* trim the scene for phone GPUs */
@@ -2550,6 +2657,9 @@ var bulletMesh=new THREE.LineSegments(bGeo,new THREE.LineBasicMaterial(
   {color:0xffd9a0,transparent:true,opacity:.95,fog:false,depthWrite:false}));
 bulletMesh.frustumCulled=false; scene.add(bulletMesh);
 var MUZZLE=780,BULLET_DMG=14,HIT_RADIUS=14;
+/* .9962 is 5 degrees of half-angle; .9986 was 3. The two together are the
+   whole difficulty of gunnery, so they are named rather than buried in fire(). */
+var ASSIST_CONE=.9962, ASSIST_PULL=.32;
 
 function fire(f){
   if(f.cannonCd>0||!f.alive)return;
@@ -2558,12 +2668,15 @@ function fire(f){
   var spread=(f.isPlayer?.0032:f.spread)*(f.gunSpread||1);
   var d=fwd.clone();
   /* A small, earned aim assist helps a near-correct burst connect without
-     turning the cannon into a lock-on weapon. The nose still has to be within
-     roughly three degrees of the real intercept solution. */
+     turning the cannon into a lock-on weapon. The nose still has to be inside
+     ASSIST_CONE of the real intercept solution, and the assist only closes
+     part of what is left — put the pipper on the circle and it rewards you,
+     spray from off-axis and it does nothing. Widen ASSIST_CONE to make the
+     fight more forgiving; drop it back to .9986 for the original 3 degrees. */
   if(f.isPlayer&&lockOn.target&&lockOn.target.alive){
     var at=interceptTime(f,lockOn.target);
     interceptAim(f,lockOn.target,at,_aimV);
-    if(_aimV.dot(fwd)>.9986)d.lerp(_aimV,.24).normalize();
+    if(_aimV.dot(fwd)>ASSIST_CONE)d.lerp(_aimV,ASSIST_PULL).normalize();
   }
   d.x+=rnd(-spread,spread);d.y+=rnd(-spread,spread);d.z+=rnd(-spread,spread);
   d.normalize();
@@ -3083,16 +3196,29 @@ function foes(){
   }
   return out;
 }
+/* Acquisition follows the crosshair, not the nose. The nose only chases the
+   reticle, so in any hard pull the two sit tens of degrees apart — scoring off
+   the nose kept designating whoever happened to be centred in the airframe
+   rather than whoever the player was pointing at, which is the one they are
+   trying to shoot. aimDir is refreshed earlier in the same frame, in
+   playerControl, so this is always reading the reticle the player can see. */
 function pickTarget(){
   axes(player);
   var list=foes(),best=null,bestScore=0;
   for(var i=0;i<list.length;i++){
     var dist=bearing(list[i],_tv);
     if(dist>TGT_RANGE)continue;
-    var dot=_tv.dot(_f);
+    var dot=_tv.dot(aimDir);
     if(dot<TGT_CONE)continue;
-    var s=(dot-TGT_CONE)/(1-TGT_CONE)+(1-dist/TGT_RANGE)*0.35;
-    if(list[i]===lockOn.target)s+=TGT_STICK;
+    var aimS=(dot-TGT_CONE)/(1-TGT_CONE);
+    /* Squared so the bandit actually under the crosshair wins outright. Left
+       linear, something closer but well off to one side beat a dead-on target
+       on the distance term alone, which is the opposite of taking a shot. */
+    var s=aimS*aimS+(1-dist/TGT_RANGE)*0.18;
+    /* Hold the current designation only while the crosshair is still broadly
+       on it, so a deliberate move onto someone else is not fought by the
+       stickiness that exists to stop flicker. */
+    if(list[i]===lockOn.target&&aimS>0.25)s+=TGT_STICK;
     if(s>bestScore){bestScore=s;best=list[i];}
   }
   return best;
@@ -3655,6 +3781,25 @@ tapBtn('pauseSetBtn',function(){setOpen(true);});
 tapBtn('endSetBtn',function(){setOpen(true);});
 tapBtn('briefSetBtn',function(){setOpen(true);},true);
 tapBtn('againBtn',function(){resetMatch();});
+/* A free Core Run used to dead-end on RUN IT BACK. The scoreboard is the point
+   where a player is most likely to want the next chapter, so it hands straight
+   back to the mission runtime rather than making them fly home to the board. */
+tapBtn('endStoryBtn',function(){
+  var id=(typeof SAVE!=='undefined'&&SAVE&&SAVE.mission&&CH1[SAVE.mission])?SAVE.mission:'ch1_m1';
+  /* zero the arena first: score, wreckage and the debris of the last match all
+     belong to the run that just ended */
+  resetMatch();
+  el.end.classList.remove('on');
+  if(missionDone(id)){
+    /* chapter flown out — there is no next mission to load */
+    st.mode='arena'; parkArena(false); enterHangar();
+    return;
+  }
+  startMission(id);
+  /* resetMatch announces a Core Run; the mission brief is the headline here */
+  banner('',0); bannerT=0;
+  if(!IS_TOUCH)lock(); else goFullscreen();
+});
 tapBtn('pauseQuitBtn',function(){setPaused(false);endMatch();});
 
 (function touchPause(){
@@ -3975,7 +4120,7 @@ function paintHangarPlane(){
 }
 
 /* ---------- walking ---------- */
-var walk={x:0,z:26,yaw:0,pitch:0,bob:0,gait:0,orbit:0,face:0,moving:0,run:0};
+var walk={x:0,z:26,yaw:0,pitch:0,bob:0,gait:0,face:0,moving:0,run:0};
 var hangarNear=null;
 var hEl={};['hangarUI','hangarPrompt','hangarTeam','hangarCall','hangarHint',
   'fitCard','fitCall','fitLivery','fitAccent','fitTrim','fitTrimOut','fitBlue','fitRed',
@@ -3991,49 +4136,48 @@ function nearestBay(){
   });
   return best;
 }
+/* The thumbstick, filled by the hangar touch block further down. Keeping it up
+   here means hangarStep never has to know which input device it came from. */
+var hWalk={x:0,y:0,active:false};
 function hangarStep(dt){
-  if(IS_TOUCH){
-    /* no thumbstick walk on a phone: the room comes to you instead, drifting
-       between the two bays so both contracts stay on screen */
-    walk.orbit+=dt*.12;
-    var r=30;
-    walk.x=Math.sin(walk.orbit)*22;
-    walk.z=14+Math.cos(walk.orbit*.7)*8;
-    var look=hangarBays[PILOT.team];
-    walk.yaw=Math.atan2(-(look.x-walk.x),-(look.z-walk.z));
-    walk.gait+=dt*3.4;walk.bob=walk.gait;
-    walk.face=walk.yaw;walk.moving=.22;walk.run=0;
-  } else {
-    /* Speeds now match a 3.5-unit-tall human. The old first-person values
-       crossed several body lengths per step, which no leg animation could
-       visually plant against. */
-    var running=!!(keys.ShiftLeft||keys.ShiftRight),sp=running?5.2:2.8;
-    var f=hangarForward();
-    var rt={x:-f.z,z:f.x};
-    var mx=0,mz=0;
-    if(keys.KeyW){mx+=f.x;mz+=f.z;}
-    if(keys.KeyS){mx-=f.x;mz-=f.z;}
-    if(keys.KeyD){mx+=rt.x;mz+=rt.z;}
-    if(keys.KeyA){mx-=rt.x;mz-=rt.z;}
-    var ml=Math.hypot(mx,mz);
-    if(ml>1e-4){
-      walk.x+=mx/ml*sp*dt; walk.z+=mz/ml*sp*dt;
-      walk.gait+=dt*(running?9.2:6.15);
-      walk.bob=walk.gait;
-      var desired=Math.atan2(-mx/ml,-mz/ml);
-      var da=Math.atan2(Math.sin(desired-walk.face),Math.cos(desired-walk.face));
-      walk.face+=da*Math.min(1,dt*12);
-    }
-    walk.moving+=( (ml>1e-4?1:0)-walk.moving)*Math.min(1,dt*14);
-    walk.run+=( (ml>1e-4&&running?1:0)-walk.run)*Math.min(1,dt*10);
-    /* walls, then the aircraft themselves, so you cannot stand inside a wing */
-    walk.x=clamp(walk.x,-HW+2.4,HW-2.4);
-    walk.z=clamp(walk.z,-HD+2.4,HD-3);
-    ['blue','red'].forEach(function(tm){
-      var b=hangarBays[tm],dx=walk.x-b.x,dz=walk.z-b.z,d=Math.hypot(dx,dz);
-      if(d<8.4&&d>1e-3){walk.x=b.x+dx/d*8.4; walk.z=b.z+dz/d*8.4;}
-    });
+  /* Speeds match a 3.5-unit-tall human. The old first-person values crossed
+     several body lengths per step, which no leg animation could visually plant
+     against. Touch and keyboard both land in mx/mz so the collision, gait and
+     turn-to-face below are one path — a phone used to get an automatic camera
+     orbit here, which looked exactly like the pilot walking on their own. */
+  var f=hangarForward();
+  var rt={x:-f.z,z:f.x};
+  var mx=0,mz=0,running=false;
+  if(hWalk.active){
+    /* stick up is negative y, and up is forward */
+    mx=f.x*-hWalk.y+rt.x*hWalk.x;
+    mz=f.z*-hWalk.y+rt.z*hWalk.x;
+    running=Math.hypot(hWalk.x,hWalk.y)>.82;
   }
+  if(keys.KeyW){mx+=f.x;mz+=f.z;}
+  if(keys.KeyS){mx-=f.x;mz-=f.z;}
+  if(keys.KeyD){mx+=rt.x;mz+=rt.z;}
+  if(keys.KeyA){mx-=rt.x;mz-=rt.z;}
+  if(keys.ShiftLeft||keys.ShiftRight)running=true;
+  var ml=Math.hypot(mx,mz);
+  var sp=(running?5.2:2.8)*Math.min(1,ml);
+  if(ml>1e-4){
+    walk.x+=mx/ml*sp*dt; walk.z+=mz/ml*sp*dt;
+    walk.gait+=dt*(running?9.2:6.15);
+    walk.bob=walk.gait;
+    var desired=Math.atan2(-mx/ml,-mz/ml);
+    var da=Math.atan2(Math.sin(desired-walk.face),Math.cos(desired-walk.face));
+    walk.face+=da*Math.min(1,dt*12);
+  }
+  walk.moving+=( (ml>1e-4?1:0)-walk.moving)*Math.min(1,dt*14);
+  walk.run+=( (ml>1e-4&&running?1:0)-walk.run)*Math.min(1,dt*10);
+  /* walls, then the aircraft themselves, so you cannot stand inside a wing */
+  walk.x=clamp(walk.x,-HW+2.4,HW-2.4);
+  walk.z=clamp(walk.z,-HD+2.4,HD-3);
+  ['blue','red'].forEach(function(tm){
+    var b=hangarBays[tm],dx=walk.x-b.x,dz=walk.z-b.z,d=Math.hypot(dx,dz);
+    if(d<8.4&&d>1e-3){walk.x=b.x+dx/d*8.4; walk.z=b.z+dz/d*8.4;}
+  });
   /* Third-person free roam. `walk` remains the collision body; the camera
      trails it, so aircraft and walls still block the character rather than an
      invisible first-person eye. Clamp the camera as well to keep it indoors. */
@@ -4058,16 +4202,19 @@ function hangarStep(dt){
   }
   hangarCam.rotation.set(walk.pitch,walk.yaw,0,'YXZ');
 
-  hangarNear=IS_TOUCH?null:nearestBay();
-  var board=Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11&&!IS_TOUCH;
+  /* A phone can walk the floor now, so it gets the same proximity prompts the
+     desktop does; the prompt itself is the tap target there. */
+  hangarNear=nearestBay();
+  var board=Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11;
   var mara=RIGGED_CHARACTER_READY&&
-    Math.hypot(walk.x-MARA_POS.x,walk.z-MARA_POS.z)<5.5&&!IS_TOUCH;
+    Math.hypot(walk.x-MARA_POS.x,walk.z-MARA_POS.z)<5.5;
+  var K=IS_TOUCH?'TAP  ':'[E]  ';
   var msg='';
-  if(hangarNear)msg=(hangarNear===PILOT.team&&PILOT.signed?'[E]  FIT OUT KESTREL — ':'[E]  JOIN ')+
+  if(hangarNear)msg=K+(hangarNear===PILOT.team&&PILOT.signed?'FIT OUT KESTREL — ':'JOIN ')+
     factionName(hangarNear)+(hangarNear===PILOT.team&&PILOT.signed?' TRIAL FLIGHT':' FOR THIS TRIAL');
-  else if(mara)msg='[E]  TALK TO MARA "SWITCH" VOSS';
-  else if(board)msg=missionDone('ch1_m10')?'[E]  FLY A FREE CORE RUN':
-    ('[E]  '+(SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+
+  else if(mara)msg=K+'TALK TO MARA "SWITCH" VOSS';
+  else if(board)msg=missionDone('ch1_m10')?K+'FLY A FREE CORE RUN':
+    (K+(SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+
      ((CH1[SAVE.mission]||CH1.ch1_m1).title));
   hEl.hangarPrompt.textContent=msg;
   hEl.hangarPrompt.classList.toggle('on',!!msg);
@@ -4094,7 +4241,117 @@ function updateSignPanel(){
   hEl.hangarTeam.textContent=PILOT.signed?factionName(PILOT.team):'INDEPENDENT';
   hEl.hangarTeam.className=PILOT.signed?PILOT.team:'';
   hEl.hangarCall.textContent=PILOT.signed?PILOT.callsign:'';
+  /* mission progress only moves while you are out flying, so refreshing the
+     touch label whenever the hangar re-renders its sign is enough */
+  var go=document.getElementById('hGo');
+  /* enterHangar() runs before the save block is initialized. Treat that first
+     paint as a clean profile; updateSignPanel() is called again after progress
+     changes, once SAVE exists. */
+  var saved=(typeof SAVE!=='undefined'&&SAVE&&SAVE.completed)?SAVE:null;
+  if(go)go.textContent=(saved&&missionDone('ch1_m10'))?'FREE RUN':
+    (saved&&saved.completed.length?'CONTINUE':'BEGIN');
+  var fit=document.getElementById('hFit');
+  if(fit)fit.textContent=PILOT.signed?'FIT OUT':'PICK FLIGHT';
 }
+/* ---------- hangar: touch ----------
+   Walking, looking and [E] are the only routes to the fit-out panel and the
+   campaign, and a phone has none of them: hangarNear is forced null on touch
+   and the camera flies its own orbit instead. Without these two buttons the
+   hangar is where a phone player stops, because launch() returns early for the
+   whole time st.phase is 'hangar' and every touch control is inert. */
+(function hangarTouchUI(){
+  function tap(id,fn){
+    var b=document.getElementById(id); if(!b)return;
+    b.addEventListener('pointerdown',function(e){
+      e.preventDefault(); e.stopPropagation(); b.classList.add('press');
+      if(navigator.vibrate)navigator.vibrate(10);
+    });
+    var rel=function(){b.classList.remove('press');};
+    b.addEventListener('pointercancel',rel);
+    b.addEventListener('pointerup',rel);
+    /* click rather than pointerup so sliding a thumb off the button cancels it,
+       and so the gesture still counts as one for the audio context */
+    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();fn();});
+  }
+  /* The fit-out card carries the flight choice itself, so an unsigned pilot
+     picks a side in there rather than needing a bay to walk up to. */
+  tap('hFit',function(){openFit();});
+  tap('hGo',function(){startCampaign();});
+
+  /* Walk stick (left) and look drag (right). Both place their origin wherever
+     the thumb lands rather than at a fixed spot, so neither has to be hunted
+     for on a landscape phone. */
+  var zone=document.getElementById('hStickZone'),
+      base=document.getElementById('hStickBase'),
+      knob=document.getElementById('hStickKnob'),
+      look=document.getElementById('hLookZone');
+  if(zone&&base&&knob){
+    var R=54,sid=null,ox=0,oy=0;
+    zone.addEventListener('pointerdown',function(e){
+      if(sid!==null)return;
+      e.preventDefault();
+      sid=e.pointerId; ox=e.clientX; oy=e.clientY;
+      hWalk.active=true; hWalk.x=0; hWalk.y=0;
+      base.style.left=e.clientX+'px'; base.style.top=e.clientY+'px';
+      base.classList.add('on'); knob.style.transform='translate(0px,0px)';
+      try{zone.setPointerCapture(e.pointerId);}catch(err){}
+    });
+    zone.addEventListener('pointermove',function(e){
+      if(e.pointerId!==sid)return;
+      e.preventDefault();
+      var dx=e.clientX-ox,dy=e.clientY-oy,r=Math.hypot(dx,dy);
+      if(r>R){dx*=R/r;dy*=R/r;}
+      hWalk.x=dx/R; hWalk.y=dy/R;
+      knob.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)';
+    });
+    var sup=function(e){
+      if(e.pointerId!==sid)return;
+      sid=null; hWalk.active=false; hWalk.x=0; hWalk.y=0;
+      base.classList.remove('on'); knob.style.transform='translate(0px,0px)';
+    };
+    zone.addEventListener('pointerup',sup);
+    zone.addEventListener('pointercancel',sup);
+  }
+  if(look){
+    var lid=null,lx=0,ly=0;
+    look.addEventListener('pointerdown',function(e){
+      if(lid!==null)return;
+      e.preventDefault();
+      lid=e.pointerId; lx=e.clientX; ly=e.clientY;
+      try{look.setPointerCapture(e.pointerId);}catch(err){}
+    });
+    look.addEventListener('pointermove',function(e){
+      if(e.pointerId!==lid)return;
+      e.preventDefault();
+      /* the same sensitivity slider the mouse look uses, so one setting covers
+         both devices */
+      var s=clamp(cfg.sens,20,120)/16000;
+      walk.yaw-=(e.clientX-lx)*s*2.6;
+      walk.pitch=clamp(walk.pitch-(e.clientY-ly)*s*2.6,-1.05,1.05);
+      lx=e.clientX; ly=e.clientY;
+    });
+    var lup=function(e){ if(e.pointerId===lid)lid=null; };
+    look.addEventListener('pointerup',lup);
+    look.addEventListener('pointercancel',lup);
+  }
+
+  /* [E] has no key on a phone, so the prompt doubles as the interact button */
+  var pr=document.getElementById('hangarPrompt');
+  if(pr){
+    pr.addEventListener('pointerdown',function(e){
+      if(!IS_TOUCH)return;
+      e.preventDefault(); e.stopPropagation(); pr.classList.add('press');
+      if(navigator.vibrate)navigator.vibrate(10);
+    });
+    var prel=function(){pr.classList.remove('press');};
+    pr.addEventListener('pointerup',prel);
+    pr.addEventListener('pointercancel',prel);
+    pr.addEventListener('click',function(e){
+      if(!IS_TOUCH)return;
+      e.preventDefault(); e.stopPropagation(); hangarInteract();
+    });
+  }
+})();
 
 /* ---------- fit out panel ---------- */
 function openFit(){hEl.fitCard.classList.add('on'); if(document.exitPointerLock)document.exitPointerLock();}
@@ -4882,7 +5139,9 @@ function startCampaign(){
   audioInit(); audioResume();
   applyLoadout();
   startMission(id);
-  if(!IS_TOUCH)lock();
+  /* The mouse path grabs the pointer here; the touch path never went through
+     launch(), so this is its only chance to take the screen. */
+  if(!IS_TOUCH)lock(); else goFullscreen();
 }
 
 /* ===================== loop ===================== */
@@ -5465,6 +5724,14 @@ function endMatch(){
   for(var i=0;i<stats.length;i++)
     html+='<div class="endStat"><b>'+stats[i][1]+'</b><span>'+stats[i][0]+'</span></div>';
   document.getElementById('endStats').innerHTML=html;
+  /* name the mission the button will load, so the story button is a promise of
+     something specific rather than a second "play again" */
+  var sb=document.getElementById('endStoryBtn');
+  if(sb){
+    var nid=(typeof SAVE!=='undefined'&&SAVE&&SAVE.mission&&CH1[SAVE.mission])?SAVE.mission:'ch1_m1';
+    sb.textContent=missionDone(nid)?'BREAKWATER HANGAR':
+      ((SAVE&&SAVE.completed&&SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+CH1[nid].title);
+  }
   el.end.classList.add('on');
   /* which chord plays depends on whether YOU won, not on which colour did —
      the player is no longer always blue */
@@ -5472,10 +5739,29 @@ function endMatch(){
   if(document.exitPointerLock)document.exitPointerLock();
 }
 
-addEventListener('resize',function(){
-  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
+/* Both cameras, not just the flight one. hangarCam took its aspect once at
+   construction, so rotating a phone to landscape rendered a portrait frustum
+   into a landscape canvas — the hangar came out horizontally stretched while
+   the match looked right. */
+function applyViewport(){
+  var w=innerWidth,h=innerHeight;
+  if(!w||!h)return;
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+  hangarCam.aspect=w/h; hangarCam.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.15:2));
+  renderer.setSize(w,h);
+}
+addEventListener('resize',applyViewport);
+/* iOS reports the pre-rotation innerWidth/innerHeight for a frame or two after
+   orientationchange, and a URL bar sliding away fires no resize at all, so the
+   first reading is re-taken rather than trusted. */
+addEventListener('orientationchange',function(){
+  applyViewport();
+  setTimeout(applyViewport,120);
+  setTimeout(applyViewport,420);
 });
+if(window.visualViewport)visualViewport.addEventListener('resize',applyViewport);
+applyViewport();
 })();
 </script>
 </body>

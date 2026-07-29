@@ -1,3 +1,4 @@
+
 ---
 name: blender-author-game-assets
 description: Author, repair, optimize, export, and validate production game assets with Blender and Python. Use for Blender .blend source files, GLB/glTF meshes, hard-surface aircraft and vehicles, modular buildings, terrain kits, UVs, PBR materials, LODs, collision meshes, armatures, skin weights, animation clips, baking, procedural bpy/bmesh authoring, or Blender-to-WebGL/Three.js asset pipelines.
