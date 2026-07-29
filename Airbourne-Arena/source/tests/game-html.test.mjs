@@ -59,3 +59,16 @@ test("branding is consistent", () => {
     "leftover SKYWARD branding",
   );
 });
+
+test("magnetic aim is earned, bounded, and supports ground targets", () => {
+  assert.match(canonical, /SOFT_LOCK_DWELL\s*=\s*\.24/);
+  assert.match(canonical, /SOFT_LOCK_GRACE\s*=\s*\.48/);
+  assert.match(canonical, /GUIDE_TIME\s*=\s*\.62/);
+  assert.match(canonical, /GUIDE_TRACK_CONE\s*=\s*\.9455/);
+  assert.match(canonical, /function targetPoint\(target,out\)/);
+  assert.match(canonical, /if\(!target\.vel&&target\.height\)out\.y\+=target\.height\*\.52/);
+  assert.match(canonical, /if\(sc\.alive&&sc\.team!==player\.team\)out\.push\(sc\)/);
+  assert.match(canonical, /if\(site\.alive&&site\.hostile&&!site\.hold\)out\.push\(site\)/);
+  assert.match(canonical, /guide:guide,guideT:guide\?GUIDE_TIME:0/);
+  assert.match(canonical, /b\.guideT-=dt/);
+});

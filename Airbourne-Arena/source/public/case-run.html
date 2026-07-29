@@ -97,7 +97,11 @@
     box-shadow:0 0 10px rgba(111,227,208,.35)}
   #aimRet:after{content:"";position:absolute;left:50%;top:50%;width:3px;height:3px;
     margin:-1.5px 0 0 -1.5px;background:var(--teal);border-radius:50%}
-  #aimRet.stall{border-color:var(--alert);box-shadow:0 0 14px rgba(255,95,86,.6)}
+  #aimRet.assist{border-color:#7dff9b;box-shadow:0 0 16px rgba(125,255,155,.55)}
+  #aimRet.assist:after{background:#7dff9b;box-shadow:0 0 7px rgba(125,255,155,.9)}
+  /* Flight safety always outranks the lock cue. */
+  #aimRet.stall,#aimRet.stall.assist{border-color:var(--alert);box-shadow:0 0 14px rgba(255,95,86,.6)}
+  #aimRet.stall:after{background:var(--alert)}
   #pip{position:fixed;width:26px;height:26px;margin:-13px 0 0 -13px;pointer-events:none}
   #pip div{position:absolute;background:var(--amber)}
   #pip .h{width:7px;height:1px;top:12.5px} #pip .v{width:1px;height:7px;left:12.5px}
@@ -120,6 +124,12 @@
   #tgtBox.solved{border-color:#7dff9b;box-shadow:0 0 14px rgba(125,255,155,.45)}
   #tgtBox.solved:before{border-top-color:#7dff9b;border-left-color:#7dff9b}
   #tgtBox.solved:after{border-bottom-color:#7dff9b;border-right-color:#7dff9b}
+  #tgtBox.assist{border-color:var(--teal);box-shadow:0 0 16px rgba(111,227,208,.4)}
+  #tgtBox.assist:before{border-top-color:var(--teal);border-left-color:var(--teal)}
+  #tgtBox.assist:after{border-bottom-color:var(--teal);border-right-color:var(--teal)}
+  #tgtBox.assist.solved{border-color:#7dff9b;box-shadow:0 0 16px rgba(125,255,155,.55)}
+  #tgtBox.assist.solved:before{border-top-color:#7dff9b;border-left-color:#7dff9b}
+  #tgtBox.assist.solved:after{border-bottom-color:#7dff9b;border-right-color:#7dff9b}
   #tgtInfo{position:fixed;pointer-events:none;opacity:0;transform:translateX(-50%);
     font-size:9px;letter-spacing:.14em;color:var(--amber);white-space:nowrap;
     text-shadow:0 0 8px rgba(0,0,0,.9)}
@@ -371,6 +381,22 @@
   #missionCard,#missionCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
   .card,.setCard,.pauseCard,#end>div{max-height:92vh;overflow-y:auto;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  /* The way out of a panel has to be on screen.
+
+     Fit-out is eleven rows tall and settings is ten; on a laptop at 520px, or
+     any phone in landscape, the card overflows and its action row — CLOSE,
+     BACK TO THE HANGAR, TO THE FLIGHT LINE — lands below the fold. The card
+     does scroll, but nothing announces that, so the buttons are simply gone and
+     the panel reads as a dead end. Pinning the row to the bottom of the card
+     means the exit is reachable at every height, and the rest of the panel
+     scrolls underneath it. */
+  /* Direct children only: the briefing keeps a second button row inside its
+     collapsible key list, and pinning that one parks it on top of the list. */
+  .setCard>.btnRow,.pauseCard>.btnRow,.card>.btnRow,#end>div>.btnRow{
+    position:sticky;bottom:0;z-index:2;margin-top:18px;
+    padding:14px 0 2px;background:linear-gradient(transparent,var(--panel-solid) 42%)}
+  /* the decorative inner hairline is drawn over the sticky row otherwise */
+  .card:after,.setCard:after,.pauseCard:after{z-index:1}
   body.touch #coach{top:auto;bottom:calc(214px + env(safe-area-inset-bottom));left:10px;width:min(270px,70vw)}
   @media(max-width:720px){#coach{width:min(250px,54vw)}}
 
@@ -2795,32 +2821,34 @@ var bulletMesh=new THREE.LineSegments(bGeo,new THREE.LineBasicMaterial(
   {color:0xffd9a0,transparent:true,opacity:.95,fog:false,depthWrite:false}));
 bulletMesh.frustumCulled=false; scene.add(bulletMesh);
 var MUZZLE=780,BULLET_DMG=14,HIT_RADIUS=14;
-/* .9962 is 5 degrees of half-angle; .9986 was 3. The two together are the
-   whole difficulty of gunnery, so they are named rather than buried in fire(). */
-var ASSIST_CONE=.9962, ASSIST_PULL=.32;
+/* Magnetic aim only rewards a shot the player has already lined up. The
+   initial pull closes part of an eight-degree error; the tracer may then bend
+   a few more degrees during its first half-second. It cannot U-turn, chase an
+   off-screen lock or keep steering all the way to impact. */
+var ASSIST_CONE=.9903,ASSIST_PULL=.38,GUIDE_FIRE_CONE=.9703;
+var GUIDE_TIME=.62,GUIDE_TURN=1.35,GUIDE_TRACK_CONE=.9455;
 
 function fire(f){
   if(f.cannonCd>0||!f.alive)return;
   f.cannonCd=.085/(f.gunRate||1);
   var fwd=new THREE.Vector3(0,0,-1).applyQuaternion(f.quat);
   var spread=(f.isPlayer?.0032:f.spread)*(f.gunSpread||1);
-  var d=fwd.clone();
-  /* A small, earned aim assist helps a near-correct burst connect without
-     turning the cannon into a lock-on weapon. The nose still has to be inside
-     ASSIST_CONE of the real intercept solution, and the assist only closes
-     part of what is left — put the pipper on the circle and it rewards you,
-     spray from off-axis and it does nothing. Widen ASSIST_CONE to make the
-     fight more forgiving; drop it back to .9986 for the original 3 degrees. */
-  if(f.isPlayer&&lockOn.target&&lockOn.target.alive){
+  var d=fwd.clone(),guide=null;
+  var assist=f.isPlayer&&lockOn.target&&targetAlive(lockOn.target)&&
+    (lockOn.assisted||lockOn.manual);
+  if(assist){
     var at=interceptTime(f,lockOn.target);
     interceptAim(f,lockOn.target,at,_aimV);
-    if(_aimV.dot(fwd)>ASSIST_CONE)d.lerp(_aimV,ASSIST_PULL).normalize();
+    var aimDot=_aimV.dot(fwd);
+    if(aimDot>ASSIST_CONE)d.lerp(_aimV,ASSIST_PULL).normalize();
+    if(aimDot>GUIDE_FIRE_CONE)guide=lockOn.target;
   }
   d.x+=rnd(-spread,spread);d.y+=rnd(-spread,spread);d.z+=rnd(-spread,spread);
   d.normalize();
   bullets.push({p:f.pos.clone().addScaledVector(fwd,6.4),
     v:d.multiplyScalar(MUZZLE).add(f.vel),   /* rounds carry the aircraft's velocity */
-    life:1.6,team:f.team,owner:f,dmg:BULLET_DMG*(f.gunDmg||1)});
+    life:1.6,team:f.team,owner:f,dmg:BULLET_DMG*(f.gunDmg||1),
+    guide:guide,guideT:guide?GUIDE_TIME:0});
   gunSfx(f.isPlayer?1:earGain(f.pos)*.75);
   if(f.isPlayer){shake=Math.min(0.5,shake+0.05);sortie.shots++;}
 }
@@ -3287,14 +3315,27 @@ function stepDmgArcs(dt){
 var _iR=new THREE.Vector3(),_iW=new THREE.Vector3(),_tv=new THREE.Vector3(),
     _tv2=new THREE.Vector3(),_aimV=new THREE.Vector3(),_pipV=new THREE.Vector3(),
     _hitV=new THREE.Vector3(),_camV=new THREE.Vector3(),
-    _camR=new THREE.Vector3(),_camU=new THREE.Vector3();
+    _camR=new THREE.Vector3(),_camU=new THREE.Vector3(),
+    _guideV=new THREE.Vector3(),_guideDir=new THREE.Vector3();
 var tgtBox=document.getElementById('tgtBox'),
     tgtInfo=document.getElementById('tgtInfo'),
     tgtArrow=document.getElementById('tgtArrow');
 
+function targetAlive(target){return !!target&&target.alive!==false;}
+function targetVelocity(target,out){
+  return target.vel?out.copy(target.vel):out.set(0,0,0);
+}
+/* Aircraft positions are their centres; fixed installations are planted at
+   terrain height. Aim halfway up a building instead of magnetising rounds into
+   the dirt at its origin. */
+function targetPoint(target,out){
+  out.copy(target.pos);
+  if(!target.vel&&target.height)out.y+=target.height*.52;
+  return out;
+}
 function interceptTime(shooter,target){
-  _iR.copy(target.pos).sub(shooter.pos);
-  _iW.copy(target.vel).sub(shooter.vel);
+  targetPoint(target,_iR).sub(shooter.pos);
+  targetVelocity(target,_iW).sub(shooter.vel);
   var range=_iR.length();
   var a=MUZZLE*MUZZLE-_iW.lengthSq();
   /* a<=0 means the target opens faster than the rounds close, so there is no
@@ -3309,8 +3350,8 @@ function interceptTime(shooter,target){
 /* Direction the nose must point for rounds fired now to arrive at the same
    place, at the same time, as the target. */
 function interceptAim(shooter,target,t,out){
-  out.copy(target.pos).sub(shooter.pos).divideScalar(t)
-     .add(_tv2.copy(target.vel).sub(shooter.vel));
+  targetPoint(target,out).sub(shooter.pos).divideScalar(Math.max(t,.001))
+     .add(targetVelocity(target,_tv2).sub(shooter.vel));
   return out.normalize();
 }
 
@@ -3319,21 +3360,42 @@ function interceptAim(shooter,target,t,out){
    the cone would steal the solution from the one you were actually pointing
    at, and the pick flickered between them through every turn. Bearing
    dominates the score, range only breaks ties, and whatever is already locked
-   carries a bonus so it holds until something is clearly better. */
-var TGT_RANGE=1500, TGT_CONE=0.82, TGT_STICK=0.20;
-var lockOn={target:null,manual:false,cue:false,cueT:0};
+   carries a bonus so it holds until something is clearly better.
+
+   A contact under the reticle has to remain there briefly before MAG LOCK
+   arms. This prevents every pass over a crowded skyline from stealing shots,
+   while a wider release cone and short grace period stop the lock flickering
+   during ordinary corrections. */
+var TGT_RANGE=1800,TGT_CONE=.9397,TGT_STICK=.20;
+var SOFT_LOCK_CONE=.9848,SOFT_RELEASE_CONE=.9511;
+var SOFT_LOCK_DWELL=.24,SOFT_LOCK_GRACE=.48;
+var lockOn={target:null,manual:false,assisted:false,hover:null,hoverT:0,grace:0,
+  cue:false,cueT:0};
 
 function bearing(e,out){
-  out.copy(e.pos).sub(player.pos);
+  targetPoint(e,out).sub(player.pos);
   var d=out.length();
   if(d>1e-3)out.multiplyScalar(1/d);
   return d;
 }
-function foes(){
+function targetCandidates(){
   var out=[];
   for(var i=0;i<fighters.length;i++){
     var e=fighters[i];
     if(e.alive&&e.team!==player.team)out.push(e);
+  }
+  for(var s=0;s<structs.length;s++){
+    var sc=structs[s];
+    if(sc.alive&&sc.team!==player.team)out.push(sc);
+  }
+  for(var d=0;d<drones.length;d++)if(drones[d].alive)out.push(drones[d]);
+  for(var c=0;c<convoy.length;c++){
+    var cv=convoy[c];
+    if(cv.alive&&cv.hostile)out.push(cv);
+  }
+  for(var q=0;q<sites.length;q++){
+    var site=sites[q];
+    if(site.alive&&site.hostile&&!site.hold)out.push(site);
   }
   return out;
 }
@@ -3345,7 +3407,7 @@ function foes(){
    playerControl, so this is always reading the reticle the player can see. */
 function pickTarget(){
   axes(player);
-  var list=foes(),best=null,bestScore=0;
+  var list=targetCandidates(),best=null,bestScore=0;
   for(var i=0;i<list.length;i++){
     var dist=bearing(list[i],_tv);
     if(dist>TGT_RANGE)continue;
@@ -3368,7 +3430,7 @@ function pickTarget(){
    it repeatedly steps through the fight instead of re-picking the same bandit. */
 function cycleTarget(){
   axes(player);
-  var list=foes();
+  var list=targetCandidates();
   if(!list.length)return;
   for(var i=0;i<list.length;i++){
     bearing(list[i],_tv); list[i]._bear=_tv.dot(_f);
@@ -3377,25 +3439,66 @@ function cycleTarget(){
   var idx=list.indexOf(lockOn.target);
   lockOn.target=list[(idx+1)%list.length];
   lockOn.manual=true;
+  lockOn.assisted=true;
+  lockOn.hover=lockOn.target; lockOn.hoverT=SOFT_LOCK_DWELL;
   toast('LOCKED — '+lockOn.target.name,1.4);
   tone(1180,.10,.16,'square',1480);
 }
 function releaseLock(){
   if(!lockOn.manual)return;
   lockOn.manual=false;
+  lockOn.assisted=false; lockOn.hover=null; lockOn.hoverT=0; lockOn.grace=0;
   toast('LOCK RELEASED',1.1);
   tone(620,.12,.13,'square',420);
 }
 function stepLock(dt){
   lockOn.cueT-=dt;
-  if(!player.alive||st.over){lockOn.target=null;lockOn.manual=false;return;}
-  if(lockOn.target&&!lockOn.target.alive){lockOn.target=null;lockOn.manual=false;}
+  if(!player.alive||st.over){
+    lockOn.target=null;lockOn.manual=false;lockOn.assisted=false;
+    lockOn.hover=null;lockOn.hoverT=0;return;
+  }
+  if(lockOn.target&&!targetAlive(lockOn.target)){
+    lockOn.target=null;lockOn.manual=false;lockOn.assisted=false;
+    lockOn.hover=null;lockOn.hoverT=0;
+  }
   /* A deliberate designation is a decision, not a proximity test: it holds
      right across the arena until the bandit dies or the player drops it. That
      is what makes the off-screen arrow worth having — it is how you go and
      find someone, not just how you shoot at what is already in front of you. */
   if(lockOn.manual&&lockOn.target)return;
-  lockOn.target=pickTarget();
+  var candidate=pickTarget(),candidateDot=-1;
+  if(candidate){
+    bearing(candidate,_tv);
+    candidateDot=_tv.dot(aimDir);
+  }
+
+  /* Dwell directly over a target to arm assistance. Until then the amber box
+     is only tracking information and rounds remain completely ballistic. */
+  if(candidate&&candidateDot>=SOFT_LOCK_CONE){
+    if(candidate===lockOn.hover)lockOn.hoverT+=dt;
+    else {lockOn.hover=candidate;lockOn.hoverT=0;}
+    if(!lockOn.assisted)lockOn.target=candidate;
+    if(lockOn.hoverT>=SOFT_LOCK_DWELL){
+      var fresh=!lockOn.assisted||lockOn.target!==candidate;
+      lockOn.target=candidate;lockOn.assisted=true;lockOn.grace=SOFT_LOCK_GRACE;
+      if(fresh){
+        toast('MAG LOCK — '+candidate.name,1.0);
+        tone(980,.07,.10,'square',1320);
+      }
+    }
+    return;
+  }
+
+  lockOn.hover=null;lockOn.hoverT=0;
+  if(lockOn.assisted&&lockOn.target&&targetAlive(lockOn.target)){
+    var heldRange=bearing(lockOn.target,_tv),heldDot=_tv.dot(aimDir);
+    if(heldRange<TGT_RANGE*1.12&&heldDot>=SOFT_RELEASE_CONE){
+      lockOn.grace=SOFT_LOCK_GRACE;return;
+    }
+    lockOn.grace-=dt;
+    if(lockOn.grace>0)return;
+  }
+  lockOn.assisted=false;lockOn.grace=0;lockOn.target=candidate;
 }
 
 /* ===================== ground proximity =====================
@@ -3496,6 +3599,8 @@ function padTick(){
 function resetMatch(){
   st.scoreB=0; st.scoreR=0; st.time=MATCH_TIME; st.over=false; st.paused=false;
   st.dmgFlash=0; st.hitmark=0; shake=0; st.ringWarned=false;
+  lockOn.target=null;lockOn.manual=false;lockOn.assisted=false;
+  lockOn.hover=null;lockOn.hoverT=0;lockOn.grace=0;
   bullets.length=0;
   for(var s=0;s<structs.length;s++){
     var sc=structs[s];
@@ -6940,6 +7045,22 @@ function step(dt){
 function stepBullets(dt){
   for(var i=bullets.length-1;i>=0;i--){
     var b=bullets[i];
+    /* A guided tracer receives only a short, rate-limited correction. The
+       target still has to stay in a forward cone; once the allowance expires
+       the round continues on the heading it earned. */
+    if(b.guide&&b.guideT>0&&targetAlive(b.guide)){
+      var guideSpeed=b.v.length();
+      targetPoint(b.guide,_guideV);
+      var guideLead=Math.min(.65,_guideV.distanceTo(b.p)/Math.max(guideSpeed,1));
+      _guideV.addScaledVector(targetVelocity(b.guide,_tv2),guideLead).sub(b.p).normalize();
+      _guideDir.copy(b.v).normalize();
+      if(_guideDir.dot(_guideV)>GUIDE_TRACK_CONE){
+        var guideAlpha=Math.min(1,GUIDE_TURN*dt*(.45+.55*b.guideT/GUIDE_TIME));
+        _guideDir.lerp(_guideV,guideAlpha).normalize();
+        b.v.copy(_guideDir).multiplyScalar(guideSpeed);
+      }
+      b.guideT-=dt;
+    }
     var prev=tmpV.copy(b.p);
     b.p.addScaledVector(b.v,dt); b.life-=dt;
     var dead=b.life<=0;
@@ -7188,7 +7309,8 @@ function hudWork(dt){
         lb=document.getElementById('tLock');
     if(pb)pb.classList.toggle('off',core.carrier!==player);
     if(rb)rb.classList.toggle('off',player.roll.cd>0||!alive);
-    if(lb){lb.classList.toggle('armed',lockOn.manual);lb.classList.toggle('off',!lockOn.target&&!lockOn.manual);}
+    if(lb){lb.classList.toggle('armed',lockOn.manual||lockOn.assisted);
+      lb.classList.toggle('off',!lockOn.target&&!lockOn.manual);}
   }
 
   drawMap();
@@ -7210,6 +7332,8 @@ function targetHud(alive){
     el.lead.style.opacity=0;
     tgtBox.style.opacity=0; tgtInfo.style.opacity=0; tgtArrow.style.opacity=0;
     el.pip.classList.remove('hot');
+    el.aimRet.classList.remove('assist');
+    tgtBox.classList.remove('assist','solved');
     /* no target: park the pipper at boresight so it stays a stable reference */
     place(el.pip,project(_pipV.copy(player.pos).addScaledVector(_f,700)),alive);
     lockOn.cue=false;
@@ -7220,14 +7344,14 @@ function targetHud(alive){
   var t=interceptTime(player,tgt);
 
   /* where the target will be, and where this burst will be, at the same t */
-  var hitPt=_hitV.copy(tgt.pos).addScaledVector(tgt.vel,t);
+  var hitPt=targetPoint(tgt,_hitV).addScaledVector(targetVelocity(tgt,_tv2),t);
   _pipV.copy(_f).multiplyScalar(MUZZLE).add(player.vel).multiplyScalar(t).add(player.pos);
 
   place(el.lead,project(hitPt),true);
   place(el.pip,project(_pipV),true);
 
   /* target box, sized by range so it reads as distance at a glance */
-  var bp=project(tgt.pos);
+  var bp=project(targetPoint(tgt,_camV));
   var size=clamp(4200/Math.max(range,1),20,150);
   if(bp.vis){
     tgtBox.style.opacity=1;
@@ -7242,7 +7366,7 @@ function targetHud(alive){
     tgtBox.style.opacity=0; tgtInfo.style.opacity=0;
     /* the arrow lives on the screen, so the angle has to come from the camera
        basis rather than the airframe's — they differ most in a hard bank */
-    _camV.copy(tgt.pos).sub(camera.position).normalize();
+    targetPoint(tgt,_camV).sub(camera.position).normalize();
     _camR.set(1,0,0).applyQuaternion(camera.quaternion);
     _camU.set(0,1,0).applyQuaternion(camera.quaternion);
     var ang=Math.atan2(_camV.dot(_camR),_camV.dot(_camU))*180/Math.PI;
@@ -7251,10 +7375,11 @@ function targetHud(alive){
   }
 
   /* closure is the part of relative motion along the line of sight */
-  var closure=-(_aimV.copy(tgt.vel).sub(player.vel).dot(_tv));
+  var closure=-(targetVelocity(tgt,_aimV).sub(player.vel).dot(_tv));
+  var lockLabel=lockOn.manual?'HARD LOCK':(lockOn.assisted?'MAG LOCK':'TRACKING');
   tgtInfo.innerHTML=tgt.name+
     ' <b>'+(range/1000).toFixed(2)+'km</b> '+
-    (closure>=0?'+':'')+Math.round(closure*1.1)+'kt';
+    (closure>=0?'+':'')+Math.round(closure*1.1)+'kt · '+lockLabel;
 
   /* Firing cue: is the required aim direction inside the cone the gun can
      actually cover at this range? */
@@ -7263,6 +7388,8 @@ function targetHud(alive){
   var solved=range<1050&&err<(HIT_RADIUS/Math.max(range,1))+0.008;
   el.pip.classList.toggle('hot',solved);
   tgtBox.classList.toggle('solved',solved);
+  tgtBox.classList.toggle('assist',lockOn.assisted||lockOn.manual);
+  el.aimRet.classList.toggle('assist',lockOn.assisted||lockOn.manual);
   if(solved&&!lockOn.cue&&lockOn.cueT<=0){lockOn.cueT=0.6;tone(1650,.05,.10,'square');}
   lockOn.cue=solved;
 }
