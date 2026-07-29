@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blender Game Asset Authoring"
+  short_description: "Author optimized Blender assets for real-time games"
+  default_prompt: "Use $blender-author-game-assets to build and validate a production-ready Blender asset for this game."
