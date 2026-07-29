@@ -44,7 +44,9 @@ jobs:
         # that all asset paths are relative, and that every referenced asset
         # actually exists. New art landing in only one of the two asset folders
         # has already shipped a game with missing textures once.
-        run: node --test tests/game-html.test.mjs
+        run: |
+          bash scripts/sync-game.sh
+          node --test tests/game-html.test.mjs
 
       - name: Assemble the site
         run: |
