@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#05070d">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/airbourne-icon-v2-192.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/airbourne-icon-v2-192.png">
 <title>AIRBOURNE ARENA — ARENA CORE 4v4</title>
 <style>
@@ -19,6 +20,10 @@
     --panel:rgba(6,14,20,.58); --panel-solid:rgba(5,12,18,.94);
     --line:rgba(111,227,208,.30); --line-hot:rgba(111,227,208,.62);
     --panel-shadow:0 24px 90px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.025);
+    /* the touch-control sizes are declared on body.touch, but .pill is on
+       screen in the hangar on every device now and has to have a height there
+       too — without this it collapses to its 12px line box */
+    --b-pill:44px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:#05070d;color:var(--ink);
@@ -366,11 +371,7 @@
   #missionCard,#missionCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
   .card,.setCard,.pauseCard,#end>div{max-height:92vh;overflow-y:auto;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
-  #sessionTag{position:fixed;left:14px;bottom:214px;font-size:8px;letter-spacing:.17em;
-    color:rgba(223,243,255,.35);z-index:3;opacity:0;transition:.3s}
-  #hud.live #sessionTag{opacity:1}
   body.touch #coach{top:auto;bottom:calc(214px + env(safe-area-inset-bottom));left:10px;width:min(270px,70vw)}
-  body.touch #sessionTag{display:none}
   @media(max-width:720px){#coach{width:min(250px,54vw)}}
 
   /* ===================== phone layouts =====================
@@ -459,7 +460,6 @@
      clear of the bottom of the tape */
   #feed{top:calc(142px * var(--hs))}
   #coach{top:calc(112px * var(--hs))}
-  #sessionTag{bottom:calc(214px * var(--hs))}
 
   /* ===================== colour-blind safe teams =====================
      Blue/red is the worst possible pair for deuteranopia and protanopia, which
@@ -520,11 +520,14 @@
   body.hangar #brief{opacity:0;pointer-events:none}
   /* on-foot missions: flight furniture has no business over the hangar */
   body.hangar #objPanel,body.hangar #radio{opacity:0}
-  #hangarTitle{position:absolute;left:34px;top:30px;max-width:340px}
+  #hangarTitle{position:absolute;left:34px;top:30px;max-width:340px;
+    text-shadow:0 2px 10px rgba(2,6,11,.95),0 0 22px rgba(2,6,11,.8)}
   #hangarTitle h2{font-size:20px;letter-spacing:.3em;color:var(--teal);margin-bottom:10px}
   #hangarTitle p{font-size:10px;line-height:2.1;color:rgba(223,243,255,.5)}
   #hangarTitle p b{color:var(--amber);font-weight:500}
-  #hangarChapter{color:var(--amber)}
+  /* #hangarTitle p is more specific than a bare id, so the chapter line needs
+     the parent in front of it or it inherits the dimmed body colour */
+  #hangarTitle p#hangarChapter{color:var(--amber)}
   #hangarPrompt{position:absolute;left:50%;top:54%;transform:translateX(-50%);
     border:1px solid var(--line);background:rgba(6,14,20,.86);padding:9px 17px;
     color:var(--ink);opacity:0;transition:opacity .14s;white-space:nowrap}
@@ -535,7 +538,8 @@
      parks an invisible tap-blocker at z-index 8 over the whole game. */
   body:not(.hangar) #hangarPrompt{display:none}
   #hangarSign{position:absolute;right:34px;top:30px;text-align:right;
-    color:rgba(223,243,255,.45);line-height:2.1}
+    color:rgba(223,243,255,.62);line-height:2.1;
+    text-shadow:0 2px 10px rgba(2,6,11,.95),0 0 22px rgba(2,6,11,.8)}
   /* ---- the hangar button bar ----
      Walking up to a bay and pressing E is a discovery, not a control scheme.
      The same four buttons are on screen on every device now, so a mouse player
@@ -612,6 +616,9 @@
   .obj.now{color:var(--ink)} .obj.now:before{content:"▸";color:var(--teal)}
   .obj.done{color:rgba(223,243,255,.28);text-decoration:line-through}
   .obj.done:before{content:"✓";color:var(--teal)}
+  .objMeta{margin-top:8px;padding-top:7px;border-top:1px solid rgba(111,227,208,.18);
+    font-size:9px;letter-spacing:.18em;line-height:1.9;color:rgba(223,243,255,.55)}
+  .objMeta b{color:var(--teal);font-weight:600}
   #debrief,#choiceCard,#missionCard,#finaleCard{position:fixed;inset:0;display:grid;
     place-items:center;z-index:11;background:rgba(2,5,9,.9);opacity:0;pointer-events:none;
     transition:opacity .2s}
@@ -826,11 +833,10 @@
   <div id="coachHint">W adds throttle. Hold A / D to tighten the turn.</div>
   <div id="coachTrack"><i></i></div>
 </div>
-<div id="sessionTag">LOCAL SORTIE · LIVE METRICS</div>
 <div id="pause">
   <div class="pauseCard">
     <h2>PAUSED</h2>
-    <p>THE SORTIE IS FROZEN<br>P resumes · C camera · M tactical map · I invert pitch</p>
+    <p>THE SORTIE IS FROZEN</p>
     <div class="btnRow">
       <button class="actionBtn" id="resumeBtn">RETURN TO SORTIE</button>
       <button class="actionBtn" id="pauseSetBtn">SETTINGS</button>
@@ -915,7 +921,7 @@
       <b>enemy end</b>. Shoot the carrier down and it drops where they died, free for anyone.</p>
     <div class="btnRow">
       <button class="actionBtn" id="briefGoBtn">LAUNCH</button>
-      <button class="actionBtn" id="briefStoryBtn">CAMPAIGN</button>
+      <button class="actionBtn" id="briefStoryBtn">BACK TO THE HANGAR</button>
       <button class="actionBtn" id="briefSetBtn">SETTINGS</button>
       <button class="actionBtn" id="briefKeysBtn">CONTROLS</button>
     </div>
@@ -991,47 +997,46 @@ function fbm(x,y,o){var s=0,a=.5,f=1;o=o||5;for(var i=0;i<o;i++){s+=a*vnoise(x*f
 /* ===================== buttons =====================
    One binder for every button in the game, because the two devices used to be
    wired differently and each menu got whichever half its author remembered.
-   Menus bound `click`, which a phone delivers 300ms late or not at all when a
-   pointerdown handler below has already claimed the gesture; the touch cluster
-   bound `pointerdown`, which fires on a scroll that happens to start on a
-   button. This does both jobs once:
 
-     · pointerdown captures the pointer, paints a press state and swallows the
-       event so nothing underneath (the briefing's launch, the canvas) sees it
-     · pointerup inside the button's own box is the activation, so a thumb that
-       slides off cancels the press exactly like a mouse does
-     · Enter and Space activate, so the keyboard and screen readers still work
+   `click` is the activation, and deliberately so. It is the one event every
+   input path produces — mouse, touch, pen, Enter, Space, and the synthetic
+   clicks assistive technology sends — and the browser has already decided by
+   then that the press started and ended on this element, which is the "slid my
+   thumb off to cancel" rule for free.
 
-   Every activation is a real user gesture, which is what the audio context and
-   pointer lock both require. */
+   The pointer handlers exist only to paint a press state and to stop the
+   gesture reaching what is underneath (the briefing's tap-to-launch backdrop,
+   the canvas). They must NOT preventDefault: that suppresses the compatibility
+   mouse events the browser generates from a tap, and the click never arrives —
+   which is exactly how every one of these buttons came to be dead on a real
+   device while passing a synthetic-event test. `touch-action:manipulation` on
+   the overlays is what removes the old 300ms tap delay, not a hand-rolled
+   pointerup path. */
 function bindBtn(target,fn){
   var b=(typeof target==='string')?document.getElementById(target):target;
   if(!b)return null;
-  var armed=false;
-  var off=function(){armed=false;b.classList.remove('press');};
+  var off=function(){b.classList.remove('press');};
   b.addEventListener('pointerdown',function(e){
     if(b.disabled)return;
-    e.preventDefault(); e.stopPropagation();
-    armed=true; b.classList.add('press');
-    try{b.setPointerCapture(e.pointerId);}catch(err){}
+    e.stopPropagation();
+    b.classList.add('press');
     if(typeof IS_TOUCH!=='undefined'&&IS_TOUCH&&navigator.vibrate)navigator.vibrate(8);
   });
-  b.addEventListener('pointerup',function(e){
+  b.addEventListener('pointerup',function(e){e.stopPropagation();off();});
+  b.addEventListener('pointercancel',off);
+  b.addEventListener('pointerleave',off);
+  b.addEventListener('click',function(e){
     e.preventDefault(); e.stopPropagation();
-    var was=armed; off();
-    if(!was||b.disabled)return;
-    var r=b.getBoundingClientRect(),pad=14;
-    if(e.clientX<r.left-pad||e.clientX>r.right+pad||
-       e.clientY<r.top-pad||e.clientY>r.bottom+pad)return;
+    if(b.disabled)return;
     fn(e);
   });
-  b.addEventListener('pointercancel',off);
-  b.addEventListener('lostpointercapture',off);
-  b.addEventListener('keydown',function(e){
-    if(b.disabled)return;
-    if(e.key==='Enter'||e.key===' '||e.code==='Space'){e.preventDefault();fn(e);}
-  });
   if(!b.hasAttribute('tabindex')&&b.tagName!=='BUTTON')b.setAttribute('tabindex','0');
+  if(!b.hasAttribute('role')&&b.tagName!=='BUTTON')b.setAttribute('role','button');
+  /* a div with role=button gets no free keyboard activation */
+  if(b.tagName!=='BUTTON')b.addEventListener('keydown',function(e){
+    if(b.disabled)return;
+    if(e.key==='Enter'||e.key===' '||e.code==='Space'){e.preventDefault();b.click();}
+  });
   return b;
 }
 
@@ -1887,7 +1892,7 @@ function stepDrones(dt){
   }
 }
 function clearDrones(){
-  for(var i=0;i<drones.length;i++)scene.remove(drones[i].mesh);
+  for(var i=0;i<drones.length;i++){scene.remove(drones[i].mesh);disposeSubtree(drones[i].mesh);}
   drones.length=0; raid.on=false; raid.fired=false; raid.t=0;
 }
 
@@ -2327,46 +2332,77 @@ function aiSkill(f){
   };
 }
 
-var authoredPlaneTemplate=null,authoredPlaneHosts=[];
-function installAuthoredPlane(host,team,isPlayer){
-  if(!authoredPlaneTemplate||host.userData.authoredPlane)return;
-  (host.userData.legacyParts||[]).forEach(function(part){part.visible=false;});
-  var model=authoredPlaneTemplate.clone(true),hullMaterial=null;
+var authoredPlaneTemplate=null,authoredPlaneLod1Template=null,authoredPlaneHosts=[];
+function styleAuthoredPlane(model,team,isPlayer){
+  var hullMaterial=null;
   model.traverse(function(o){
     if(!o.isMesh||!o.material)return;
     o.castShadow=true;o.receiveShadow=true;
     o.material=o.material.clone();
     var name=o.material.name||'';
-    if(name.indexOf('Kestrel weathered ceramic')>=0){
-      /* The diffusion sheet is an art-direction atlas, not this mesh's UV
-         layout. Applying it wholesale scattered dark atlas islands over the
-         wings. Keep the authored ceramic coherent; physical panel/elevon
-         meshes carry the surface breakup at close range. */
-      o.material.map=null;
-      o.material.color.setHex(isPlayer?0xd7d7d1:(team==='blue'?0xcbd6dc:0xd6c8c5));
-      o.material.metalness=.34;o.material.roughness=.39;
-      o.material.emissive.setHex(0x20262a);o.material.emissiveIntensity=.18;
-      o.material.emissiveMap=null;
+    if(name.indexOf('Vanguard ceramic armor')>=0||
+       name.indexOf('Vanguard clean ceramic armor')>=0){
+      /* Preserve the generated micro-panel albedo on broad skin while tinting
+         the physical ceramic response per faction. The clean ceramic meshes
+         remain texture-free so the silhouette does not dissolve into noise. */
+      o.material.color.setHex(isPlayer?0xe2e7e9:(team==='blue'?0xd3e0e5:0xe0d0cc));
+      o.material.metalness=.48;o.material.roughness=.34;
+      if(o.material.emissive){
+        o.material.emissive.setHex(0x111820);o.material.emissiveIntensity=.10;
+      }
       o.material.needsUpdate=true;
       hullMaterial=o.material;
-    }else if(name.indexOf('Faction accent')>=0){
-      o.material.color.setHex(TEAM_COL[team]);o.material.emissive.setHex(TEAM_COL[team]);
-      o.material.emissiveIntensity=.65;
-    }else if(name.indexOf('Graphite composite')>=0){
-      o.material.color.setHex(0x46515b);o.material.metalness=.38;o.material.roughness=.42;
-    }else if(name.indexOf('Heat stained engine metal')>=0){
-      o.material.color.setHex(0x69727b);o.material.metalness=.82;o.material.roughness=.30;
+    }else if(name.indexOf('Vanguard cobalt armor')>=0){
+      o.material.color.setHex(TEAM_COL[team]);
+      if(o.material.emissive){
+        o.material.emissive.setHex(TEAM_COL[team]);o.material.emissiveIntensity=.18;
+      }
+    }else if(name.indexOf('Vanguard energy channel')>=0){
+      o.material.color.setHex(0xbfeeff);o.material.emissive.setHex(TEAM_COL[team]);
+      o.material.emissiveIntensity=3.2;
+    }else if(name.indexOf('Graphite mechanical structure')>=0||
+             name.indexOf('Engine interior')>=0){
+      o.material.color.setHex(0x18212b);o.material.metalness=.74;o.material.roughness=.28;
+    }else if(name.indexOf('Heat shield metal')>=0){
+      o.material.color.setHex(0x56616d);o.material.metalness=.88;o.material.roughness=.27;
     }
   });
-  host.add(model);host.userData.authoredPlane=model;
+  return hullMaterial;
+}
+function installAuthoredPlaneLod1(host,team,isPlayer){
+  var lod=host.userData.authoredPlane;
+  if(!lod||!authoredPlaneLod1Template||host.userData.authoredPlaneLod1)return;
+  var farModel=authoredPlaneLod1Template.clone(true);
+  styleAuthoredPlane(farModel,team,isPlayer);
+  lod.addLevel(farModel,260);
+  host.userData.authoredPlaneLod1=farModel;
+}
+function installAuthoredPlane(host,team,isPlayer){
+  if(!authoredPlaneTemplate||host.userData.authoredPlane)return;
+  (host.userData.legacyParts||[]).forEach(function(part){part.visible=false;});
+  var model=authoredPlaneTemplate.clone(true);
+  var hullMaterial=styleAuthoredPlane(model,team,isPlayer);
+  var lod=new THREE.LOD();
+  lod.name='Vanguard Interceptor runtime LOD';
+  lod.addLevel(model,0);
+  host.add(lod);host.userData.authoredPlane=lod;
+  installAuthoredPlaneLod1(host,team,isPlayer);
   if(hullMaterial)host.userData.hull=hullMaterial;
 }
-new THREE.GLTFLoader(loadManager).load('assets/kestrel-mk1-authored-v1.glb',function(gltf){
+new THREE.GLTFLoader(loadManager).load('assets/vanguard-interceptor-v4.glb',function(gltf){
   authoredPlaneTemplate=gltf.scene;
   for(var i=0;i<authoredPlaneHosts.length;i++){
     var h=authoredPlaneHosts[i];installAuthoredPlane(h.host,h.team,h.isPlayer);
   }
-},undefined,function(err){console.error('Authored Kestrel GLB failed to load.',err);});
+},undefined,function(err){console.error('Vanguard Interceptor LOD0 failed to load.',err);});
+new THREE.GLTFLoader(loadManager).load('assets/vanguard-interceptor-v4-lod1.glb',function(gltf){
+  authoredPlaneLod1Template=gltf.scene;
+  for(var i=0;i<authoredPlaneHosts.length;i++){
+    var h=authoredPlaneHosts[i];
+    installAuthoredPlane(h.host,h.team,h.isPlayer);
+    installAuthoredPlaneLod1(h.host,h.team,h.isPlayer);
+  }
+},undefined,function(err){console.error('Vanguard Interceptor LOD1 failed to load.',err);});
 
 function buildPlane(team,isPlayer){
   var g=new THREE.Group();
@@ -2479,8 +2515,8 @@ function buildPlane(team,isPlayer){
     var ex=new THREE.Sprite(teamMat(team,new THREE.SpriteMaterial({
       map:softSprite('rgba(255,255,255,.98)','rgba(80,180,255,.42)'),
       color:TEAM_COL[team],transparent:true,depthWrite:false,fog:false,
-      blending:THREE.AdditiveBlending})));
-    ex.position.set(x,.05,5.3);ex.scale.set(3.2,5.8,1);g.add(ex);exhausts.push(ex);
+      opacity:.36,blending:THREE.AdditiveBlending})));
+    ex.position.set(x,.05,5.3);ex.scale.set(1.35,3.10,1);g.add(ex);exhausts.push(ex);
   });
   g.userData.exhausts=exhausts;
   var bea=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite('rgba(255,255,255,.9)','rgba(255,255,255,0)'),
@@ -2803,7 +2839,10 @@ function stepFx(dt){
     var e=fx[i]; e.t+=dt; var k=e.t/e.life;
     var sz=20+e.scale*k; e.s.scale.set(sz,sz,1);
     e.s.material.opacity=Math.max(0,1-k);
-    if(k>=1){scene.remove(e.s);fx.splice(i,1);}
+    /* one SpriteMaterial per explosion, and a busy sortie makes hundreds.
+       Removing the sprite from the scene never freed the material — the map is
+       the shared explosion skin and stays. */
+    if(k>=1){scene.remove(e.s);e.s.material.dispose();fx.splice(i,1);}
   }
   shake=Math.max(0,shake-dt*2.2);
 }
@@ -3464,7 +3503,7 @@ function resetMatch(){
   }
   clearDrones();
   stepGoalRings(0);
-  for(var i=fx.length-1;i>=0;i--)scene.remove(fx[i].s);
+  for(var i=fx.length-1;i>=0;i--){scene.remove(fx[i].s);fx[i].s.material.dispose();}
   fx.length=0;
   for(var a=dmgArcs.length-1;a>=0;a--)dmgDirEl.removeChild(dmgArcs[a].node);
   dmgArcs.length=0;
@@ -3563,7 +3602,7 @@ function setPaused(on){
   if(on&&document.exitPointerLock)document.exitPointerLock();
   else if(!IS_TOUCH)lock();
 }
-document.getElementById('resumeBtn').addEventListener('click',function(){setPaused(false);});
+bindBtn('resumeBtn',function(){setPaused(false);});
 
 /* minimap */
 var MM=372,MM_HALF=3600,mapCv=document.getElementById('map'),mctx=mapCv.getContext('2d');
@@ -3638,6 +3677,35 @@ function drawMap(){
     else mctx.arc(sp.x,sp.y,3,0,7);
     if(s.alive)mctx.fill(); else mctx.stroke();
   }
+  /* mission traffic and mission installations. Without these a campaign
+     objective — a hauler to escort, a relay to reach — exists on the HUD and
+     nowhere on the map, which is the one panel a player checks to find it. */
+  for(var mi=0;mi<sites.length;mi++){
+    var ms=sites[mi]; if(!ms.alive)continue;
+    var mp=w2m(ms.pos.x,ms.pos.z);
+    mctx.globalAlpha=.92;
+    mctx.strokeStyle=ms.hold?(ms.worked?'#6fe3d0':'#ffb347'):'#b98cff';
+    mctx.lineWidth=1.6;
+    mctx.beginPath(); mctx.rect(mp.x-4,mp.y-4,8,8);
+    if(ms.hold&&ms.worked)mctx.fillStyle='#6fe3d0',mctx.fill(); else mctx.stroke();
+  }
+  for(var ci=0;ci<convoy.length;ci++){
+    var cvm=convoy[ci]; if(!cvm.alive)continue;
+    var cp=w2m(cvm.pos.x,cvm.pos.z);
+    mctx.globalAlpha=.92;
+    mctx.fillStyle=cvm.hostile?'#b98cff':'#ffb347';
+    mctx.beginPath(); mctx.arc(cp.x,cp.y,cvm.maxHp>150?4.5:3.2,0,7); mctx.fill();
+  }
+  for(var gi2=0;gi2<gates.length;gi2++){
+    var ga=gates[gi2]; if(ga.passed)continue;
+    var gp=w2m(ga.pos.x,ga.pos.z),isNext=(ga===gateNext);
+    mctx.globalAlpha=isNext?1:.5;
+    mctx.strokeStyle=isNext?'#ffb347':'#6fe3d0'; mctx.lineWidth=isNext?2:1.3;
+    mctx.beginPath(); mctx.arc(gp.x,gp.y,isNext?6:4,0,7); mctx.stroke();
+    /* the one you are heading for gets a filled pip as well, so it reads at a
+       glance on a phone-sized minimap */
+    if(isNext){mctx.fillStyle='#ffb347';mctx.beginPath();mctx.arc(gp.x,gp.y,2,0,7);mctx.fill();}
+  }
   mctx.globalAlpha=1;
   mctx.restore();
   var c=w2m(core.pos.x,core.pos.z);
@@ -3695,7 +3763,20 @@ function drawMap(){
 var touchIn={fire:false,thrUp:false,thrDn:false,boost:false};
 var stick={id:null,ox:0,oy:0,dx:0,dy:0,active:false,R:64};
 
-function lock(){ if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock(); }
+/* Chrome rejects requestPointerLock outside a user gesture with a promise, and
+   an unhandled rejection surfaces as a page error. Not every caller is on a
+   gesture — a mission restarting after a failure is on a timer — and none of
+   them can do anything useful about it, so the refusal is swallowed here. The
+   mouse-position fallback in the mousemove handler already covers an
+   uncaptured pointer. */
+function lock(){
+  var c=renderer.domElement;
+  if(!c.requestPointerLock)return;
+  try{
+    var r=c.requestPointerLock();
+    if(r&&r.catch)r.catch(function(){});
+  }catch(err){}
+}
 function goFullscreen(){
   var d=document.documentElement;
   try{
@@ -3709,10 +3790,16 @@ function launch(){
   /* the audio context can only be created from a gesture, and this is the
      first one the game is guaranteed to get */
   audioInit(); audioResume();
-  if(first){st.started=true;el.brief.classList.add('gone');el.hud.classList.add('live');
-    document.body.classList.add('playing');
+  if(first){st.started=true;
     sortie.startedAt=performance.now();emit('match_start',{mode:'case_run_4v4'});
     banner('CORE IS LIVE',2);renderCoach();}
+  /* Taking the briefing down is not part of "first ever launch". Ending a
+     sortie and walking back out of the hangar puts the card up again with
+     st.started still true, and LAUNCH used to be a no-op every time after the
+     first — the button visibly did nothing. */
+  el.brief.classList.add('gone');
+  el.hud.classList.add('live');
+  document.body.classList.add('playing');
   if(IS_TOUCH){ if(first){goFullscreen();} }
   else lock();
 }
@@ -3802,10 +3889,7 @@ document.addEventListener('pointerlockchange',function(){
   hold('tCam',function(){st.camMode=(st.camMode+1)%3;});
   hold('tMap',function(){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);});
 
-  var mb=document.getElementById('modeBtn');
-  if(mb)mb.addEventListener('pointerdown',function(e){
-    e.preventDefault();e.stopPropagation();setTouchMode(!IS_TOUCH);
-  });
+  bindBtn('modeBtn',function(){setTouchMode(!IS_TOUCH);});
 })();
 addEventListener('mousemove',function(e){
   st.mouseSeen=true;
@@ -3899,38 +3983,40 @@ bindToggle('sCoach','coach');
 
 var diffBtns=[].slice.call(document.querySelectorAll('#sDiff .seg'));
 diffBtns.forEach(function(b){
-  b.addEventListener('click',function(){cfg.diff=+b.getAttribute('data-v');applyCfg();syncSettings();});
+  bindBtn(b,function(){cfg.diff=+b.getAttribute('data-v');applyCfg();syncSettings();});
 });
 syncFns.push(function(){
   diffBtns.forEach(function(b){b.classList.toggle('on',+b.getAttribute('data-v')===cfg.diff);});
 });
 function syncSettings(){for(var i=0;i<syncFns.length;i++)syncFns[i]();}
 
-function tapBtn(id,fn,stop){
-  var b=document.getElementById(id); if(!b)return;
-  b.addEventListener('click',function(e){
-    e.preventDefault(); if(stop)e.stopPropagation(); fn();
-  });
-  /* the briefing listens for pointerdown to launch, so anything layered over
-     it has to swallow that event too or the match starts underneath the menu */
-  if(stop)b.addEventListener('pointerdown',function(e){e.stopPropagation();});
-}
-tapBtn('setClose',function(){setOpen(false);});
-tapBtn('pauseSetBtn',function(){setOpen(true);});
-tapBtn('endSetBtn',function(){setOpen(true);});
-tapBtn('briefSetBtn',function(){setOpen(true);},true);
-tapBtn('againBtn',function(){resetMatch();});
+bindBtn('setClose',function(){setOpen(false);});
+bindBtn('pauseSetBtn',function(){setOpen(true);});
+bindBtn('endSetBtn',function(){setOpen(true);});
+bindBtn('briefSetBtn',function(){setOpen(true);});
+bindBtn('briefKeysBtn',function(){
+  var k=document.getElementById('keyList');
+  if(k)k.classList.toggle('on');
+});
+bindBtn('briefGoBtn',function(){launch();});
+bindBtn('briefStoryBtn',function(){
+  /* one way back to the one place the campaign is run from */
+  abandonMission(); st.mode='arena'; parkArena(false); enterHangar();
+});
+bindBtn('againBtn',function(){
+  abandonMission(); st.mode='arena'; parkArena(false); resetMatch();
+});
 /* A free Core Run used to dead-end on RUN IT BACK. The scoreboard is the point
    where a player is most likely to want the next chapter, so it hands straight
    back to the mission runtime rather than making them fly home to the board. */
-tapBtn('endStoryBtn',function(){
-  var id=(typeof SAVE!=='undefined'&&SAVE&&SAVE.mission&&CH1[SAVE.mission])?SAVE.mission:'ch1_m1';
+bindBtn('endStoryBtn',function(){
+  var id=nextPlayableMission();
   /* zero the arena first: score, wreckage and the debris of the last match all
      belong to the run that just ended */
   resetMatch();
   el.end.classList.remove('on');
-  if(missionDone(id)){
-    /* chapter flown out — there is no next mission to load */
+  if(!id){
+    /* campaign flown out — there is no next mission to load */
     st.mode='arena'; parkArena(false); enterHangar();
     return;
   }
@@ -3939,17 +4025,8 @@ tapBtn('endStoryBtn',function(){
   banner('',0); bannerT=0;
   if(!IS_TOUCH)lock(); else goFullscreen();
 });
-tapBtn('pauseQuitBtn',function(){setPaused(false);endMatch();});
-
-(function touchPause(){
-  var b=document.getElementById('tPause'); if(!b)return;
-  b.addEventListener('pointerdown',function(e){
-    e.preventDefault(); e.stopPropagation(); b.classList.add('press');
-    if(st.started&&!st.over)setPaused(!st.paused);
-  });
-  var rel=function(){b.classList.remove('press');};
-  b.addEventListener('pointerup',rel); b.addEventListener('pointercancel',rel);
-})();
+bindBtn('pauseQuitBtn',function(){setPaused(false);abandonMission();endMatch();});
+bindBtn('tPause',function(){if(st.started&&!st.over)setPaused(!st.paused);});
 
 /* ===================== focus =====================
    A match that keeps running while the tab is hidden burns the clock and
@@ -4261,7 +4338,7 @@ function paintHangarPlane(){
 /* ---------- walking ---------- */
 var walk={x:0,z:26,yaw:0,pitch:0,bob:0,gait:0,face:0,moving:0,run:0};
 var hangarNear=null;
-var hEl={};['hangarUI','hangarPrompt','hangarTeam','hangarCall','hangarHint',
+var hEl={};['hangarUI','hangarPrompt','hangarTeam','hangarCall',
   'fitCard','fitCall','fitLivery','fitAccent','fitTrim','fitTrimOut','fitBlue','fitRed',
   'fitDone','fitLaunch','fitEngine','fitWings','fitArmor','fitPrimary','fitTrade'
   ].forEach(function(id){hEl[id]=document.getElementById(id);});
@@ -4352,9 +4429,11 @@ function hangarStep(dt){
   if(hangarNear)msg=K+(hangarNear===PILOT.team&&PILOT.signed?'FIT OUT KESTREL — ':'JOIN ')+
     factionName(hangarNear)+(hangarNear===PILOT.team&&PILOT.signed?' TRIAL FLIGHT':' FOR THIS TRIAL');
   else if(mara)msg=K+'TALK TO MARA "SWITCH" VOSS';
-  else if(board)msg=missionDone('ch1_m10')?K+'FLY A FREE CORE RUN':
-    (K+(SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+
-     ((CH1[SAVE.mission]||CH1.ch1_m1).title));
+  else if(board){
+    var nx=nextPlayableMission();
+    msg=nx?(K+(SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+MISSIONS[nx].title)
+          :(K+'FLY A FREE CORE RUN');
+  }
   hEl.hangarPrompt.textContent=msg;
   hEl.hangarPrompt.classList.toggle('on',!!msg);
 }
@@ -4373,8 +4452,12 @@ function hangarInteract(){
     startCampaign();
     return;
   }
-  if(Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11)
-    startCampaign();
+  if(Math.hypot(walk.x-BOARD_POS.x,walk.z-BOARD_POS.z)<11){
+    /* The board is the campaign, so it opens the campaign. Walking up to it
+       and being thrown straight into whatever mission was next gave the player
+       no way to see the six chapters they were in the middle of. */
+    if(nextPlayableMission())openMissions(); else startCampaign();
+  }
 }
 function updateSignPanel(){
   hEl.hangarTeam.textContent=PILOT.signed?factionName(PILOT.team):'INDEPENDENT';
@@ -4387,35 +4470,30 @@ function updateSignPanel(){
      paint as a clean profile; updateSignPanel() is called again after progress
      changes, once SAVE exists. */
   var saved=(typeof SAVE!=='undefined'&&SAVE&&SAVE.completed)?SAVE:null;
-  if(go)go.textContent=(saved&&missionDone('ch1_m10'))?'FREE RUN':
-    (saved&&saved.completed.length?'CONTINUE':'BEGIN');
+  var nx=saved?nextPlayableMission():null;
+  if(go)go.textContent=!saved?'BEGIN':(nx?(saved.completed.length?'CONTINUE':'BEGIN'):'FREE RUN');
   var fit=document.getElementById('hFit');
   if(fit)fit.textContent=PILOT.signed?'FIT OUT':'PICK FLIGHT';
-}
-/* ---------- hangar: touch ----------
-   Walking, looking and [E] are the only routes to the fit-out panel and the
-   campaign, and a phone has none of them: hangarNear is forced null on touch
-   and the camera flies its own orbit instead. Without these two buttons the
-   hangar is where a phone player stops, because launch() returns early for the
-   whole time st.phase is 'hangar' and every touch control is inert. */
-(function hangarTouchUI(){
-  function tap(id,fn){
-    var b=document.getElementById(id); if(!b)return;
-    b.addEventListener('pointerdown',function(e){
-      e.preventDefault(); e.stopPropagation(); b.classList.add('press');
-      if(navigator.vibrate)navigator.vibrate(10);
-    });
-    var rel=function(){b.classList.remove('press');};
-    b.addEventListener('pointercancel',rel);
-    b.addEventListener('pointerup',rel);
-    /* click rather than pointerup so sliding a thumb off the button cancels it,
-       and so the gesture still counts as one for the audio context */
-    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();fn();});
+  var chp=document.getElementById('hangarChapter');
+  if(chp&&saved){
+    var ch=CHAPTERS[clamp(saved.chapter,1,CHAPTERS.length)-1];
+    chp.textContent=nx?('CHAPTER '+saved.chapter+' — '+ch.name+'  ·  '+MISSIONS[nx].title)
+                      :'CAMPAIGN COMPLETE — THE ARENA IS OPEN';
   }
+}
+/* ---------- hangar UI ----------
+   Walking up to a bay and pressing [E] is a discovery, not a control scheme,
+   and a phone has neither the walk nor the key. Every route out of the hangar
+   — fit out, the campaign list, settings, launch — is a button on the bar now,
+   on every device. Walking to a bay still works and still does the same thing;
+   it is no longer the only way. */
+(function hangarUI(){
   /* The fit-out card carries the flight choice itself, so an unsigned pilot
      picks a side in there rather than needing a bay to walk up to. */
-  tap('hFit',function(){openFit();});
-  tap('hGo',function(){startCampaign();});
+  bindBtn('hFit',function(){openFit();});
+  bindBtn('hGo',function(){startCampaign();});
+  bindBtn('hMissions',function(){openMissions();});
+  bindBtn('hSet',function(){setOpen(true);});
 
   /* Walk stick (left) and look drag (right). Both place their origin wherever
      the thumb lands rather than at a fixed spot, so neither has to be hunted
@@ -4475,21 +4553,7 @@ function updateSignPanel(){
   }
 
   /* [E] has no key on a phone, so the prompt doubles as the interact button */
-  var pr=document.getElementById('hangarPrompt');
-  if(pr){
-    pr.addEventListener('pointerdown',function(e){
-      if(!IS_TOUCH)return;
-      e.preventDefault(); e.stopPropagation(); pr.classList.add('press');
-      if(navigator.vibrate)navigator.vibrate(10);
-    });
-    var prel=function(){pr.classList.remove('press');};
-    pr.addEventListener('pointerup',prel);
-    pr.addEventListener('pointercancel',prel);
-    pr.addEventListener('click',function(e){
-      if(!IS_TOUCH)return;
-      e.preventDefault(); e.stopPropagation(); hangarInteract();
-    });
-  }
+  bindBtn('hangarPrompt',function(){ if(IS_TOUCH)hangarInteract(); });
 })();
 
 /* ---------- fit out panel ---------- */
@@ -4498,14 +4562,14 @@ function closeFit(){hEl.fitCard.classList.remove('on');}
 LIVERIES.forEach(function(lv){
   var b=document.createElement('button');
   b.className='seg'; b.dataset.livery=lv.id; b.textContent=lv.name;
-  b.addEventListener('click',function(){PILOT.livery=lv.id;commitFit();});
+  bindBtn(b,function(){PILOT.livery=lv.id;commitFit();});
   hEl.fitLivery.appendChild(b);
 });
 ACCENTS.forEach(function(col,i){
   var b=document.createElement('button');
   b.className='swatch'; b.dataset.accent=i;
   b.style.background='#'+('00000'+col.toString(16)).slice(-6);
-  b.addEventListener('click',function(){PILOT.accent=i;commitFit();});
+  bindBtn(b,function(){PILOT.accent=i;commitFit();});
   hEl.fitAccent.appendChild(b);
 });
 function syncFit(){
@@ -4532,7 +4596,7 @@ function buildSlots(){
       var b=document.createElement('button');
       b.className='seg'; b.dataset.pid=pt.id; b.textContent=pt.name.split(' ')[0];
       b.title=pt.name;
-      b.addEventListener('click',function(){
+      bindBtn(b,function(){
         SAVE.loadout[slot]=pt.id; saveGame(); applyLoadout(); syncFit();
       });
       host.appendChild(b);
@@ -4564,15 +4628,15 @@ function commitFit(){
   PILOT.signed=true;
   savePilot(); syncFit(); paintHangarPlane(); updateSignPanel(); rebuildTeams();
 }
-hEl.fitBlue.addEventListener('click',function(){PILOT.team='blue';commitFit();});
-hEl.fitRed.addEventListener('click',function(){PILOT.team='red';commitFit();});
+bindBtn(hEl.fitBlue,function(){PILOT.team='blue';commitFit();});
+bindBtn(hEl.fitRed,function(){PILOT.team='red';commitFit();});
 hEl.fitCall.addEventListener('input',function(){
   PILOT.callsign=(hEl.fitCall.value||'').toUpperCase().replace(/[^A-Z0-9 \-]/g,'').slice(0,10)||'YOU';
   savePilot(); applyPilot(); updateSignPanel();
 });
 hEl.fitTrim.addEventListener('input',function(){PILOT.trim=+hEl.fitTrim.value;commitFit();});
-hEl.fitDone.addEventListener('click',closeFit);
-hEl.fitLaunch.addEventListener('click',function(){closeFit();leaveHangar();});
+bindBtn(hEl.fitDone,closeFit);
+bindBtn(hEl.fitLaunch,function(){closeFit();leaveHangar();});
 
 /* Switching sides means the player changes team, so the eight aircraft have to
    be rebuilt around the new allegiance rather than patched in place. */
@@ -4612,6 +4676,22 @@ function leaveHangar(){
   }
 }
 enterHangar();
+
+/* Opt-in runtime inspection for automated visual approval. It is absent in
+   normal play and exposes no mutation path unless the explicit capture query
+   is present. */
+if(new URLSearchParams(location.search).has('capture')){
+  Object.defineProperty(window,'__AIRBOURNE_CAPTURE__',{value:{
+    renderer:renderer,camera:camera,st:st,hangarPlanes:hangarPlanes,
+    getPlayer:function(){return player;},
+    leaveHangar:leaveHangar,launch:launch,
+    settleFlightCamera:function(){
+      camera.position.copy(player.pos);
+      camLookReady=false;
+      camWork(1);
+    }
+  }});
+}
 
 addEventListener('keydown',function(e){
   if(st.phase!=='hangar')return;
@@ -4674,11 +4754,17 @@ var POWERS={
   overdrive:{name:'WEAPONS OVERDRIVE', team:'red',blurb:'More damage, rate and heat headroom.'}
 };
 
+/* --- rival trust (section 17.3) and the unity score (17.4). Both are read by
+   Chapter 6 to pick an ending, so they are part of the save rather than one
+   chapter's private state. --- */
+var TRUST_KEYS=['aras','mercer','serrano','nyx'];
+
 function freshSave(){
-  var rep={};
+  var rep={},trust={};
   for(var i=0;i<REP_KEYS.length;i++)rep[REP_KEYS[i]]=0;
+  for(var j=0;j<TRUST_KEYS.length;j++)trust[TRUST_KEYS[j]]=0;
   return {version:SAVE_VERSION, chapter:1, mission:'ch1_m1', completed:[], flags:{},
-    rep:rep, credits:0, trials:{},
+    rep:rep, trust:trust, unity:0, credits:0, trials:{}, ending:null,
     loadout:{engine:'turbine',wings:'stable',armor:'light',primary:'machine',power:null}};
 }
 var SAVE=freshSave();
@@ -4693,9 +4779,11 @@ function loadSave(){
     var f=freshSave();
     SAVE=Object.assign(f,s);
     SAVE.rep=Object.assign(f.rep,s.rep||{});
+    SAVE.trust=Object.assign(f.trust,s.trust||{});
     SAVE.loadout=Object.assign(f.loadout,s.loadout||{});
     SAVE.flags=s.flags||{};
     SAVE.completed=s.completed||[];
+    if(typeof SAVE.unity!=='number')SAVE.unity=0;
   }catch(err){SAVE=freshSave();}
 }
 function saveGame(){
@@ -4705,6 +4793,19 @@ loadSave();
 function addRep(key,amount){
   if(!(key in SAVE.rep))return;
   SAVE.rep[key]=clamp(SAVE.rep[key]+amount,-100,100);
+}
+function addTrust(key,amount){
+  if(!(key in SAVE.trust))return;
+  SAVE.trust[key]=clamp(SAVE.trust[key]+amount,-100,100);
+}
+/* Section 17.4: unity is what the player did across faction lines, not a
+   difficulty setting. Every choice that shares, protects or refuses to exploit
+   moves it, and Chapter 6 reads it to decide which ending is available. */
+function addUnity(amount){SAVE.unity=clamp(SAVE.unity+amount,-100,100);}
+function alliedAces(){
+  var n=0;
+  for(var i=0;i<TRUST_KEYS.length;i++)if(SAVE.trust[TRUST_KEYS[i]]>=20)n++;
+  return n;
 }
 function missionDone(id){return SAVE.completed.indexOf(id)>=0;}
 
@@ -4747,6 +4848,36 @@ function stepRadio(dt){
 }
 function radioBusy(){return !!(radio.cur||radio.q.length);}
 
+/* ===================== disposal =====================
+   three.js does not release GPU memory when a mesh leaves the scene graph, and
+   a six-chapter campaign builds and discards several hundred gates, aircraft
+   and installations in a single session — each with its own geometry, its own
+   inline material and, for every beacon and halo, its own 128x128 canvas
+   texture. Removing them from the scene only ever made them invisible; the
+   buffers stayed allocated until the tab ran out and the renderer died.
+
+   Everything cleared through here is built per-object, so it is freed
+   per-object. The few materials the kit shares between objects are named and
+   skipped, and only generated canvas textures are disposed — the loaded skins
+   belong to the asset kit and outlive every mission. */
+var _sharedMats=null;
+function disposeSubtree(root){
+  if(!root)return;
+  if(!_sharedMats)_sharedMats=[steelMat];
+  root.traverse(function(o){
+    if(o.geometry&&o.geometry.dispose)o.geometry.dispose();
+    var m=o.material;
+    if(!m)return;
+    var list=Array.isArray(m)?m:[m];
+    for(var i=0;i<list.length;i++){
+      var mat=list[i];
+      if(!mat||_sharedMats.indexOf(mat)>=0)continue;
+      if(mat.map&&mat.map.isCanvasTexture&&mat.map.dispose)mat.map.dispose();
+      if(mat.dispose)mat.dispose();
+    }
+  });
+}
+
 /* ===================== mission entities =====================
    Two primitives cover every Chapter 1 objective: a ring you fly through, and
    a simple aircraft that is either hostile, passive cargo, or a rival. They
@@ -4764,17 +4895,71 @@ function makeGate(x,y,z,r){
   var o={mesh:g,pos:g.position,r:r||60,passed:false};
   gates.push(o); return o;
 }
-function clearGates(){for(var i=0;i<gates.length;i++)scene.remove(gates[i].mesh);gates.length=0;}
+function clearGates(){
+  for(var i=0;i<gates.length;i++){scene.remove(gates[i].mesh);disposeSubtree(gates[i].mesh);}
+  gates.length=0;
+  gateNext=null; sweep.has=false;
+}
+/* The nearest checkpoint still owed, kept here so the objective panel and the
+   minimap can both point at the same one. */
+var gateNext=null;
+/* Last frame's player position, for the swept test below. `has` is false for
+   the first frame after a mission starts, because the aircraft is teleported to
+   its start point then and a segment drawn from wherever it used to be would
+   sweep across the whole map and trip every ring at once. */
+var sweep={has:false,p:new THREE.Vector3()};
+var _sgA=new THREE.Vector3(),_sgB=new THREE.Vector3();
+/* Did the path from a to b pass within r of c? */
+function segNear(a,b,c,r){
+  _sgA.copy(b).sub(a);
+  var L2=_sgA.lengthSq();
+  var t=L2<1e-9?0:clamp(_sgB.copy(c).sub(a).dot(_sgA)/L2,0,1);
+  _sgB.copy(a).addScaledVector(_sgA,t);
+  return _sgB.distanceTo(c)<r;
+}
 function stepGates(dt){
+  if(!gates.length){gateNext=null;return;}
+  /* Checkpoints are counted in any order.
+
+     They used to be a strict chain — ring N did nothing until ring N-1 had been
+     flown — with no marker saying which one was live. The first mission's five
+     rings zig-zag either side of the run in, so taking them out of order is the
+     normal outcome rather than an edge case, and the result was a lap that
+     could not be completed and a panel that never changed to explain why.
+     Anybody who flies through every ring has done the job; the order they did
+     it in was never what the objective was about. */
+  var best=null,bd=Infinity;
   for(var i=0;i<gates.length;i++){
     var g=gates[i];
-    g.mesh.rotation.z+=dt*.5;
-    var live=(i===0||gates[i-1].passed)&&!g.passed;
-    g.mesh.material.opacity=g.passed?.12:(live?.55+Math.sin(performance.now()*.006)*.2:.2);
-    if(live&&player.alive&&player.pos.distanceTo(g.pos)<g.r){
-      g.passed=true; stingSfx([880,1170],.10);
+    if(g.passed)continue;
+    var d=player.pos.distanceTo(g.pos);
+    if(d<bd){bd=d;best=g;}
+  }
+  gateNext=best;
+  for(var j=0;j<gates.length;j++){
+    var gj=gates[j];
+    gj.mesh.rotation.z+=dt*.5;
+    /* the one you are going for is bright and pulses; the rest are visible but
+       plainly secondary, so "which ring next" is answerable at a glance */
+    gj.mesh.material.opacity=gj.passed?.10
+      :(gj===gateNext?.62+Math.sin(performance.now()*.006)*.28:.26);
+    var s=gj===gateNext?1.06+Math.sin(performance.now()*.006)*.05:1;
+    gj.mesh.scale.setScalar(s);
+    if(gj.passed||!player.alive)continue;
+    /* Swept, not sampled. A point test only asks where the aircraft happens to
+       be on each frame; at 300 m/s a slow frame steps far enough to land on
+       both sides of a 70 m ring without ever being inside it, and a checkpoint
+       you flew through but did not get credit for is unrecoverable. */
+    var hit=sweep.has?segNear(sweep.p,player.pos,gj.pos,gj.r)
+                     :player.pos.distanceTo(gj.pos)<gj.r;
+    if(hit){
+      gj.passed=true;
+      stingSfx([880,1170],.10);
+      banner('CHECKPOINT '+(gates.length-gatesLeft())+' / '+gates.length,1.1);
+      toast('CHECKPOINT '+(gates.length-gatesLeft())+' OF '+gates.length,1.4);
     }
   }
+  if(player.alive){sweep.p.copy(player.pos);sweep.has=true;} else sweep.has=false;
 }
 function gatesLeft(){var n=0;for(var i=0;i<gates.length;i++)if(!gates[i].passed)n++;return n;}
 
@@ -4802,7 +4987,10 @@ function spawnFlier(opts){
   o.pos.copy(opts.at);
   convoy.push(o); return o;
 }
-function clearConvoy(){for(var i=0;i<convoy.length;i++)scene.remove(convoy[i].mesh);convoy.length=0;}
+function clearConvoy(){
+  for(var i=0;i<convoy.length;i++){scene.remove(convoy[i].mesh);disposeSubtree(convoy[i].mesh);}
+  convoy.length=0;
+}
 function stepConvoy(dt){
   for(var i=0;i<convoy.length;i++){
     var c=convoy[i];
@@ -4846,30 +5034,152 @@ function convoyArrived(){
   for(var i=0;i<convoy.length;i++)if(convoy[i].passive&&convoy[i].alive&&!convoy[i].arrived)return false;
   return true;
 }
+function namedFlier(name){
+  for(var i=0;i<convoy.length;i++)if(convoy[i].name===name)return convoy[i];
+  return null;
+}
+
+/* ===================== mission sites =====================
+   The third primitive, and the last one the campaign needs. A site is a fixed
+   installation the mission owns: a navigation tower, a Warden relay, a Black
+   Wing defence platform, a section of the carrier. Two verbs cover every use
+   the bible asks for across Chapters 2 to 6 —
+
+     · BREAK it — hp, shootable, optionally shoots back
+     · WORK it — hold station inside its radius for a few seconds, which is
+       what scanning wreckage, restoring a tower and disabling a relay all are
+
+   They are a separate list from `structs` for the same reason drones are a
+   separate list from fighters: `structs` are league property, they respawn on
+   a timer and they belong to blue or red. A mission's installations belong to
+   the mission and disappear with it. */
+var sites=[],_siV=new THREE.Vector3();
+function makeSite(opts){
+  var g=new THREE.Group();
+  var hostile=opts.hostile!==false;
+  var col=opts.hold?0x6fe3d0:(hostile?0x6b5f7a:0x9fb4c4);
+  var h=opts.height||120, r=opts.radius||34;
+  if(opts.kind==='mast'){
+    var mast=new THREE.Mesh(new THREE.CylinderGeometry(r*0.16,r*0.42,h,7),steelMat);
+    mast.position.y=h/2; g.add(mast);
+    var dish=new THREE.Mesh(new THREE.SphereGeometry(r*0.7,12,7,0,Math.PI*2,0,Math.PI*0.5),
+      new THREE.MeshPhongMaterial({map:skywaySkin,color:0xe1e2de,shininess:30,
+        flatShading:true,side:THREE.DoubleSide}));
+    dish.position.y=h+r*0.2; dish.rotation.x=-0.75; g.add(dish);
+  } else {
+    var slab=new THREE.Mesh(new THREE.BoxGeometry(r*1.9,h,r*1.9),
+      new THREE.MeshPhongMaterial({map:blackWingSkin,color:col,shininess:22,flatShading:true}));
+    slab.position.y=h/2; g.add(slab);
+    var cap=new THREE.Mesh(new THREE.CylinderGeometry(r*0.7,r*1.0,h*0.22,8),steelMat);
+    cap.position.y=h*1.06; g.add(cap);
+  }
+  var halo=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:softSprite('rgba(255,255,255,.9)','rgba(255,255,255,0)'),
+    color:col,transparent:true,depthWrite:false,fog:false,
+    blending:THREE.AdditiveBlending}));
+  halo.scale.set(r*3.4,r*3.4,1); halo.position.y=h*1.2; g.add(halo);
+  var at=opts.at;
+  /* airborne sites (carrier sections, platforms) keep the y they were given;
+     ground ones plant themselves on the terrain */
+  g.position.set(at.x, opts.flying?at.y:ground(at.x,at.z), at.z);
+  scene.add(g);
+  var o={mesh:g,pos:g.position,halo:halo,name:opts.name||'INSTALLATION',
+    hp:opts.hp||300,maxHp:opts.hp||300,alive:true,hostile:hostile,
+    radius:r*1.5,height:h*1.35,guns:!!opts.guns,cd:rnd(1,2.6),
+    hold:opts.hold||0,holdR:opts.holdR||360,prog:0,worked:false};
+  sites.push(o); return o;
+}
+function clearSites(){
+  for(var i=0;i<sites.length;i++){scene.remove(sites[i].mesh);disposeSubtree(sites[i].mesh);}
+  sites.length=0;
+}
+function killSite(s){
+  if(!s.alive)return;
+  s.alive=false; s.mesh.visible=false; boom(s.pos,240);
+  feed('<span style="color:#b98cff">'+s.name+' DESTROYED</span>');
+  stingSfx([392,294],.12);
+}
+function hurtSite(s,dmg,by){
+  if(!s.alive||s.hold)return;
+  s.hp-=dmg;
+  if(s.hp<=0)killSite(s);
+}
+function stepSites(dt){
+  for(var i=0;i<sites.length;i++){
+    var s=sites[i];
+    if(!s.alive)continue;
+    if(s.hold){
+      /* hold-station work: progress only accumulates while the player is
+         actually inside the ring, and bleeds back off when they leave, so
+         orbiting away and returning does not bank the time */
+      var inside=player.alive&&player.pos.distanceTo(s.pos)<s.holdR;
+      s.prog=clamp(s.prog+(inside?dt:-dt*0.5),0,s.hold);
+      if(s.prog>=s.hold&&!s.worked){
+        s.worked=true; stingSfx([880,1170,1320],.12);
+        feed('<span style="color:#6fe3d0">'+s.name+' — DONE</span>');
+      }
+      s.halo.material.opacity=s.worked?.95:.3+(s.prog/s.hold)*.6;
+      s.mesh.rotation.y+=dt*(inside?1.4:0.35);
+      continue;
+    }
+    s.halo.material.opacity=.35+Math.sin(performance.now()*.004+i)*.14;
+    if(!s.guns||!player.alive)continue;
+    s.cd-=dt;
+    var d=player.pos.distanceTo(s.pos);
+    if(d<AA_RANGE&&s.cd<=0){
+      s.cd=rnd(.9,1.5);
+      var t=d/AA_MUZZLE;
+      var aim=_siV.copy(player.pos).addScaledVector(player.vel,t).sub(s.pos);
+      aim.y+=10; aim.normalize();
+      var sp=.028;
+      aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
+      bullets.push({p:s.pos.clone().addScaledVector(aim,30).setY(s.pos.y+s.height*.6),
+        v:aim.clone().multiplyScalar(AA_MUZZLE),life:2.2,team:'blackwing',owner:s,dmg:AA_DMG});
+      gunSfx(earGain(s.pos)*.5);
+    }
+  }
+}
+function sitesLeft(){var n=0;for(var i=0;i<sites.length;i++)if(sites[i].alive&&!sites[i].hold)n++;return n;}
+function sitesWorked(){var n=0;for(var i=0;i<sites.length;i++)if(sites[i].hold&&sites[i].worked)n++;return n;}
+function sitesToWork(){var n=0;for(var i=0;i<sites.length;i++)if(sites[i].hold)n++;return n;}
+function allWorked(){return sitesToWork()>0&&sitesWorked()===sitesToWork();}
 
 /* ===================== mission state machine =====================
    A mission is a list of objectives. Each objective declares how it sets up,
    how it reports progress, and what counts as done. The runtime never knows
-   what a mission is about — that lives entirely in the CH1 table below. */
-var mission={def:null,i:0,obj:null,t:0,running:false,failed:false,choice:null};
+   what a mission is about — that lives entirely in the MISSIONS table below,
+   which is why six chapters cost data rather than six code paths.
+
+   `token` rises on every start and every abandon. Anything scheduled against a
+   mission — the retry after a failure, a delayed radio beat — checks it before
+   acting, so a player who walks out to the hangar mid-sortie does not get the
+   dead mission restarted on top of wherever they went. */
+var mission={def:null,i:0,obj:null,t:0,running:false,failed:false,choice:null,token:0};
 
 function objText(){
   if(!mission.obj)return '';
   return typeof mission.obj.text==='function'?mission.obj.text():mission.obj.text;
 }
 function startMission(id){
-  var def=CH1[id];
+  var def=MISSIONS[id];
   if(!def)return false;
   if(rEl.debrief)rEl.debrief.classList.remove('on');
   if(rEl.choiceCard)rEl.choiceCard.classList.remove('on');
-  clearGates(); clearConvoy(); clearRadio();
+  var fc=document.getElementById('finaleCard'); if(fc)fc.classList.remove('on');
+  el.end.classList.remove('on');
+  clearGates(); clearConvoy(); clearRadio(); clearSites();
   mission.def=def; mission.i=-1; mission.obj=null; mission.t=0;
-  mission.running=true; mission.failed=false; mission.choice=null;
-  SAVE.mission=id; saveGame();
+  mission.running=true; mission.failed=false; mission.choice=null; mission.token++;
+  /* Replaying a finished mission must not drag the story position backwards:
+     SAVE.mission is the furthest point reached, not the last thing flown. */
+  if(!missionDone(id))
+    {SAVE.mission=id; saveGame();}
   st.mode='campaign'; st.over=false; st.paused=false;
   parkArena(true);
   respawnFighter(player,true);
-  player.pos.copy(BREAKWATER); player.pos.y=520;
+  var start=def.start||BREAKWATER;
+  player.pos.copy(start); player.pos.y=Math.max(start.y,520);
+  if(def.weather){wxKey=def.weather; wxTimer=400;}
   if(def.intro)def.intro();
   nextObjective();
   return true;
@@ -4879,31 +5189,50 @@ function nextObjective(){
   if(mission.i>=mission.def.objectives.length){finishMission();return;}
   mission.obj=mission.def.objectives[mission.i];
   mission.t=0;
+  /* Objectives are shared definitions, not instances. A one-shot flag left on
+     one from a previous run ("_nag", "_wave") would silently skip that beat on
+     every replay, so the scratch keys are wiped on entry. */
+  for(var k in mission.obj)if(k.charAt(0)==='_')delete mission.obj[k];
   if(mission.obj.setup)mission.obj.setup();
   renderObjective();
 }
 function failMission(why){
   if(!mission.running||mission.failed)return;
   mission.failed=true; mission.running=false;
+  var id=mission.def.id, tk=mission.token;
   sayNow('BREAKWATER',why||'Sortie lost. Come back around.',4);
   banner('MISSION FAILED',2.2);
   if(rEl.objPanel)rEl.objPanel.classList.remove('on');
-  setTimeout(function(){ if(st.mode==='campaign')startMission(SAVE.mission); },3600);
+  /* Section 15.4: a failure returns you to the start of the sortie, not to a
+     menu — but only if the player is still in the sortie it belongs to. */
+  setTimeout(function(){
+    if(mission.token===tk&&st.mode==='campaign')startMission(id);
+  },3600);
 }
 function finishMission(){
   mission.running=false;
   var def=mission.def;
+  var first=!missionDone(def.id);
   if(def.reward)def.reward();
-  if(SAVE.completed.indexOf(def.id)<0)SAVE.completed.push(def.id);
-  SAVE.mission=def.next||def.id;
+  if(first)SAVE.completed.push(def.id);
+  /* Only forward. Replaying Chapter 2 after reaching Chapter 5 leaves the
+     campaign pointer where it was. */
+  if(first||missionIndex(def.next)>missionIndex(SAVE.mission))
+    SAVE.mission=def.next||def.id;
+  if(def.chapter&&def.last&&SAVE.chapter<=def.chapter)
+    SAVE.chapter=Math.min(CHAPTERS.length,def.chapter+1);
   saveGame();
   banner('MISSION COMPLETE',2.2);
   if(rEl.objPanel)rEl.objPanel.classList.remove('on');
-  clearGates(); clearConvoy();
+  clearGates(); clearConvoy(); clearSites();
+  /* An Arena mission ends by ending a match, which raises the scoreboard. The
+     debrief is the campaign's own board and owns the screen from here. */
+  el.end.classList.remove('on');
+  if(def.finale){showFinale(def.finale());return;}
   showDebrief(def);
 }
 function stepMission(dt){
-  stepGates(dt); stepConvoy(dt); stepRadio(dt);
+  stepGates(dt); stepConvoy(dt);
   if(!mission.running||!mission.obj)return;
   mission.t+=dt;
   var o=mission.obj;
@@ -4926,13 +5255,51 @@ function parkArena(on){
 }
 var BREAKWATER=new THREE.Vector3(-BASE_X,460,0);
 
-/* ===================== PHASES 2-6 — CHAPTER 1 =====================
-   Ten missions, section 11, written as data on the runtime above.        */
-var CH1={};
-function M(def){CH1[def.id]=def;return def;}
+/* ===================== THE CAMPAIGN =====================
+   Six chapters, section 10, written as data on the runtime above. Registration
+   order is play order: M() appends to ORDERED and to the chapter it declares,
+   so the mission list, the unlock rule and "what comes next" all read from one
+   place and cannot disagree with each other.
+
+   CH1 remains as an alias because the arena code and the hangar board both
+   reach into the table by name. */
+var MISSIONS={}, CH1=MISSIONS, ORDERED=[];
+var CHAPTERS=[
+  {name:'ROOKIE WINGS',   missions:[]},
+  {name:'THE OPEN SKIES', missions:[]},
+  {name:'RIVAL ACES',     missions:[]},
+  {name:'BROKEN ALLIANCE',missions:[]},
+  {name:'THE SKY WAR',    missions:[]},
+  {name:'WINGS UNITED',   missions:[]}
+];
+function M(def){
+  MISSIONS[def.id]=def;
+  ORDERED.push(def.id);
+  var ch=CHAPTERS[(def.chapter||1)-1];
+  if(ch)ch.missions.push(def.id);
+  return def;
+}
+function missionIndex(id){var i=ORDERED.indexOf(id);return i<0?-1:i;}
+/* A mission is reachable once the one before it has been flown. Nothing is
+   gated on reputation or on a build: the bible's failure design (15.4) is
+   "fly it again", never "come back when you are strong enough". */
+function missionUnlocked(id){
+  var i=missionIndex(id);
+  if(i<0)return false;
+  if(i===0||missionDone(id))return true;
+  return missionDone(ORDERED[i-1]);
+}
+/* The furthest unflown mission that can be entered — what CONTINUE means. */
+function nextPlayableMission(){
+  if(SAVE.mission&&MISSIONS[SAVE.mission]&&!missionDone(SAVE.mission)&&
+     missionUnlocked(SAVE.mission))return SAVE.mission;
+  for(var i=0;i<ORDERED.length;i++)
+    if(!missionDone(ORDERED[i])&&missionUnlocked(ORDERED[i]))return ORDERED[i];
+  return null;
+}
 
 /* --- Phase 2: First Flight --- */
-M({id:'ch1_m1', title:'FIRST FLIGHT', next:'ch1_m2',
+M({chapter:1, id:'ch1_m1', title:'FIRST FLIGHT', next:'ch1_m2',
   brief:'Take the Kestrel up, run the navigation gates, and put rounds on the practice drones.',
   intro:function(){
     say('MARA','Kestrel is fuelled. Take her up and stay off my roof.',3.6);
@@ -4962,7 +5329,7 @@ M({id:'ch1_m1', title:'FIRST FLIGHT', next:'ch1_m2',
     say('MARA','Not bad for a first sortie.',3.2);}});
 
 /* --- Phase 3: Distress Call --- */
-M({id:'ch1_m2', title:'DISTRESS CALL', next:'ch1_m3',
+M({chapter:1, id:'ch1_m2', title:'DISTRESS CALL', next:'ch1_m3',
   brief:'A cargo aircraft is under attack. Drive off the drones, recover the dropped Flight Core, and walk it home.',
   intro:function(){
     say('MARA','Mayday on the open channel. Cargo hauler, east of you.',3.8);
@@ -5004,7 +5371,7 @@ M({id:'ch1_m2', title:'DISTRESS CALL', next:'ch1_m3',
     say('MARA','That recording is already on three team channels. Brace yourself.',4.2);}});
 
 /* --- Mission 3: Recognition --- */
-M({id:'ch1_m3', title:'RECOGNITION', next:'ch1_m4',
+M({chapter:1, id:'ch1_m3', title:'RECOGNITION', next:'ch1_m4',
   brief:'All three teams have seen the rescue. Hear them out.',
   intro:function(){
     say('MARA','Three calls in an hour. That is a record for my strip.',3.6);
@@ -5019,7 +5386,7 @@ M({id:'ch1_m3', title:'RECOGNITION', next:'ch1_m4',
   reward:function(){SAVE.flags.invited=true;}});
 
 /* --- Phase 4: the three trials --- */
-M({id:'ch1_m4', title:'VANGUARD TRIAL — HOLD THE LINE', next:'ch1_m5',
+M({chapter:1, id:'ch1_m4', title:'VANGUARD TRIAL — HOLD THE LINE', next:'ch1_m5',
   brief:'Escort three transports. You are scored on survivors, not kills.',
   intro:function(){
     say('ARAS','Aras. Bulwark. Stay with the transports and we will get along.',4);
@@ -5046,7 +5413,7 @@ M({id:'ch1_m4', title:'VANGUARD TRIAL — HOLD THE LINE', next:'ch1_m5',
     say('ARAS',kept>=3?'All three home. Textbook.':'You brought some of them back. Some.',4);
     say('VALE','Guardian Field is what we would put on your aircraft. Think on it.',4.2);}});
 
-M({id:'ch1_m5', title:'TEMPEST TRIAL — CUT THE STORM', next:'ch1_m6',
+M({chapter:1, id:'ch1_m5', title:'TEMPEST TRIAL — CUT THE STORM', next:'ch1_m6',
   brief:'Race the canyon line. Kai Mercer is already out there.',
   intro:function(){
     say('MERCER','Mercer. Crosswind. Try not to redecorate the ridge.',3.8);
@@ -5077,7 +5444,7 @@ M({id:'ch1_m5', title:'TEMPEST TRIAL — CUT THE STORM', next:'ch1_m6',
     say('MERCER',t<70?'Alright. That was actually flying.':'You finished. Slowly.',3.8);
     say('KADE','Velocity Burst would suit you. Come and take it.',3.8);}});
 
-M({id:'ch1_m6', title:'INFERNO TRIAL — TRIAL BY FIRE', next:'ch1_m7',
+M({chapter:1, id:'ch1_m6', title:'INFERNO TRIAL — TRIAL BY FIRE', next:'ch1_m7',
   brief:'Two waves, then Serrano. Manage your heat.',
   intro:function(){
     say('CALDER','Calder. Targets first, then my champion. No cease signal games.',4.2);
@@ -5105,7 +5472,7 @@ M({id:'ch1_m6', title:'INFERNO TRIAL — TRIAL BY FIRE', next:'ch1_m7',
     say('CALDER','Weapons Overdrive. It is yours if you sign.',3.6);}});
 
 /* --- Phase 5: identity --- */
-M({id:'ch1_m7', title:'CHOOSE YOUR WINGS', next:'ch1_m8',
+M({chapter:1, id:'ch1_m7', title:'CHOOSE YOUR WINGS', next:'ch1_m8',
   brief:'Return to Breakwater Field and sign with a team.',
   intro:function(){say('MARA','Three offers on my table. Land, and choose your own way.',4.2);},
   objectives:[
@@ -5123,7 +5490,7 @@ M({id:'ch1_m7', title:'CHOOSE YOUR WINGS', next:'ch1_m8',
     SAVE.loadout.power=PILOT.team==='blue'?'guardian':'overdrive';
     SAVE.flags.signed=PILOT.team; saveGame();}});
 
-M({id:'ch1_m8', title:'BUILT, NOT GIVEN', next:'ch1_m9',
+M({chapter:1, id:'ch1_m8', title:'BUILT, NOT GIVEN', next:'ch1_m9',
   brief:'Fit the aircraft out. Every choice costs something.',
   intro:function(){say('MARA','Now build it. Nothing here is free — read the trade.',4);},
   objectives:[
@@ -5134,7 +5501,7 @@ M({id:'ch1_m8', title:'BUILT, NOT GIVEN', next:'ch1_m9',
   reward:function(){applyLoadout();say('MARA','She is yours now. Go and prove it.',3.6);}});
 
 /* --- Phase 6: arena and attack --- */
-M({id:'ch1_m9', title:'FIRST ARENA CORE MATCH', next:'ch1_m10',
+M({chapter:1, id:'ch1_m9', title:'FIRST ARENA CORE MATCH', next:'ch1_m10',
   brief:'Your league debut. Deliver the Arena Core.',
   intro:function(){say('ANNOUNCER','New name on the card tonight. Let us see it fly.',4);},
   objectives:[
@@ -5151,7 +5518,7 @@ M({id:'ch1_m9', title:'FIRST ARENA CORE MATCH', next:'ch1_m10',
     addRep(player.team==='blue'?'vanguard':'inferno',won?10:4);
     SAVE.flags.debut=won?'win':'loss';}});
 
-M({id:'ch1_m10', title:'BLACKOUT', next:null,
+M({chapter:1, id:'ch1_m10', title:'BLACKOUT', next:'ch2_m1', last:true,
   brief:'The arena has lost power. Something is in the airspace that should not be.',
   intro:function(){
     say('ANNOUNCER','We have lost the arena feed — stand by —',2.8);
@@ -5193,11 +5560,903 @@ M({id:'ch1_m10', title:'BLACKOUT', next:null,
        return mission.t>16;
      }}
   ],
+  chapterEnd:'The three teams are accusing each other of the security failure. '+
+    'Mara is sending you out over the wider region to find what the stolen '+
+    'technology is being used for.',
   reward:function(){
-    SAVE.flags.chapter1=true; SAVE.chapter=2;
+    SAVE.flags.chapter1=true;
+    addUnity(2);
     say('NYX','Tell them it was one of their own.',3.6);
     say('MARA','That attack was not meant to win. It was meant to make all three teams '+
       'look at each other instead of the sky.',6.5);}});
+
+/* ===================== CHAPTER 2 — THE OPEN SKIES =====================
+   Section 10. Black Wing is operating across civilian, criminal and faction
+   territory at once, and the player's job stops being "pass the trial" and
+   becomes "work the region". Every mission here is built from the three
+   primitives — gates, fliers, sites — because section 2.6 asks story missions
+   to grow out of systems that already earn their keep in the arena.        */
+
+M({chapter:2, id:'ch2_m1', title:'TOWER RAID', next:'ch2_m2',
+  brief:'Black Wing drones are working the Skyway navigation masts. Hold the towers.',
+  intro:function(){
+    say('MARA','Three navigation masts are being worked over at once. That is not opportunism.',4.6);
+    say('MARA','Nobody else is coming. The teams are still arguing about the arena.',4);
+  },
+  objectives:[
+    {text:function(){return 'DRIVE THE DRONES OFF THE MASTS ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       makeSite({at:new THREE.Vector3(-900,0,-1500),kind:'mast',hold:4,holdR:340,name:'MAST NORTH'});
+       makeSite({at:new THREE.Vector3(600,0,1600),kind:'mast',hold:4,holdR:340,name:'MAST SOUTH'});
+       makeSite({at:new THREE.Vector3(1500,0,-400),kind:'mast',hold:4,holdR:340,name:'MAST EAST'});
+       for(var i=0;i<5;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1200,1600),rnd(650,900),rnd(-1600,1600)),
+           hostile:true,hp:54,speed:106,name:'RAIDER'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:function(){return 'BRING THE MASTS BACK UP ('+sitesWorked()+'/'+sitesToWork()+')';},
+     setup:function(){say('MARA','Now fly a slow circuit over each one so the array can re-sync.',4.4);},
+     done:function(){return allWorked();}}
+  ],
+  reward:function(){
+    addRep('civilian',12); addRep('independent',10); addUnity(3); SAVE.credits+=700;
+    say('MARA','Three masts, one night, three regions apart. Somebody planned that.',5);}});
+
+M({chapter:2, id:'ch2_m2', title:'CONTRACT RUN', next:'ch2_m3',
+  brief:'A settlement the teams stopped servicing needs a delivery. Fly the corridor and get the hauler in.',
+  intro:function(){
+    say('MARA','Ridgemouth has been off the Vanguard supply list for two months.',4.2);
+    say('MARA','They pay in goodwill, which is worth more than it sounds.',3.8);
+  },
+  objectives:[
+    {text:function(){return 'FLY THE DELIVERY CORRIDOR ('+(gates.length-gatesLeft())+'/'+gates.length+')';},
+     setup:function(){
+       var pts=[[-1400,640,-700],[-500,700,-1200],[500,760,-1500],[1300,700,-1100]];
+       for(var i=0;i<pts.length;i++)makeGate(pts[i][0],pts[i][1],pts[i][2],72);
+     },
+     done:function(){return gatesLeft()===0;}},
+    {text:function(){return 'ESCORT THE HAULER IN ('+convoyAlive()+' ALIVE)';},
+     setup:function(){
+       say('CARGO','Hauler is behind you and slow. Keep them off my tail.',3.8);
+       spawnFlier({at:new THREE.Vector3(-1600,660,-600),big:true,hp:200,speed:76,name:'HAULER',
+         path:[new THREE.Vector3(-300,700,-1200),new THREE.Vector3(1300,700,-1100)]});
+       for(var i=0;i<3;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(700,1500),rnd(700,950),rnd(-1600,-600)),
+           hostile:true,hp:58,speed:104,name:'RAIDER'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'The hauler is down and Ridgemouth gets nothing. Again.',
+     done:function(){return convoyArrived();}}
+  ],
+  reward:function(){
+    addRep('civilian',16); addRep('independent',8); addUnity(3); SAVE.credits+=850;
+    SAVE.flags.ridgemouth=true;
+    say('MARA','Ridgemouth will remember that. Settlements have long memories.',4.2);}});
+
+M({chapter:2, id:'ch2_m3', title:'FALSE COLOURS', next:'ch2_m4',
+  brief:'Unmarked aircraft are flying with stolen team hardware. Take one down and read the wreck.',
+  weather:'overcast',
+  intro:function(){
+    say('MARA','Unmarked flight, no transponder, and it is turning like a Tempest airframe.',4.6);
+    say('MARA','If that is Tempest hardware in an unmarked hull, somebody is going to start a war over it.',5);
+  },
+  objectives:[
+    {text:function(){return 'DOWN THE UNMARKED FLIGHT ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       for(var i=0;i<4;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-600,900),rnd(750,1050),rnd(-900,900)),
+           hostile:true,hp:64,speed:114,name:'UNMARKED'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:function(){return 'SCAN THE WRECKAGE ('+sitesWorked()+'/'+sitesToWork()+')';},
+     setup:function(){
+       say('MARA','Get low and hold over the debris field. The array needs a few seconds.',4.4);
+       makeSite({at:new THREE.Vector3(200,0,300),kind:'slab',height:26,radius:22,
+         hold:6,holdR:300,name:'WRECK FIELD'});
+     },
+     done:function(){return allWorked();}}
+  ],
+  reward:function(){
+    addRep('independent',12); addRep('tempest',6); addUnity(2); SAVE.credits+=600;
+    SAVE.flags.sawStolenTech=true;
+    say('MARA','Vanguard command boards. Tempest engine governors. Inferno power cells. '+
+      'All three, in one unmarked hull.',6);}});
+
+M({chapter:2, id:'ch2_m4', title:'SHADE', next:'ch2_m5',
+  brief:'Nyx is flying escort over a civilian corridor. Intercept — and watch what they do.',
+  intro:function(){
+    say('MARA','Shade is up. Same corridor as the evening passenger run.',4);
+    say('NYX','You again. Stay off my wing and nobody down there gets hurt.',4.2);
+  },
+  objectives:[
+    {text:function(){return 'INTERCEPT SHADE — KEEP THE LINER ALIVE ('+convoyAlive()+')';},
+     setup:function(){
+       spawnFlier({at:new THREE.Vector3(-1700,700,400),big:true,hp:240,speed:72,name:'LINER',
+         path:[new THREE.Vector3(0,720,300),new THREE.Vector3(1600,680,200)]});
+       spawnFlier({at:new THREE.Vector3(1200,860,-300),hostile:true,hp:300,speed:122,name:'NYX'});
+       for(var i=0;i<2;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(900,1500),rnd(750,950),rnd(-700,700)),
+           hostile:true,hp:56,speed:108,name:'ESCORT'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'The liner is down. Nyx would not even have done that.',
+     step:function(){
+       if(mission.t>20&&!mission.obj._said){mission.obj._said=true;
+         say('NYX','You noticed. I have not fired at the liner once.',4.4);}
+     },
+     done:function(){return hostilesLeft()===0||convoyArrived();}}
+  ],
+  reward:function(){
+    addTrust('nyx',10); addRep('civilian',10); addUnity(2);
+    SAVE.flags.nyxSpared=true;
+    say('NYX','Cassian would have shot it down to make a point. I am not Cassian.',5);}});
+
+M({chapter:2, id:'ch2_m5', title:'THE FRAGMENT', next:'ch3_m1', last:true,
+  brief:'A Black Wing cache holds a piece of the control architecture. Take it, then decide who gets it.',
+  weather:'rain',
+  intro:function(){
+    say('MARA','Cache site, lightly held, and it is putting out a control signal.',4.4);
+  },
+  objectives:[
+    {text:function(){return 'CLEAR THE CACHE DEFENCES ('+sitesLeft()+' PLATFORMS)';},
+     setup:function(){
+       makeSite({at:new THREE.Vector3(1400,0,900),kind:'slab',height:90,radius:30,
+         hp:280,guns:true,name:'CACHE GUN'});
+       makeSite({at:new THREE.Vector3(1750,0,600),kind:'slab',height:90,radius:30,
+         hp:280,guns:true,name:'CACHE GUN'});
+       for(var i=0;i<3;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(1200,1900),rnd(650,900),rnd(400,1100)),
+           hostile:true,hp:60,speed:106,name:'GUARD'});
+     },
+     done:function(){return sitesLeft()===0&&hostilesLeft()===0;}},
+    {text:'RECOVER THE WARDEN FRAGMENT',
+     setup:function(){
+       say('MARA','There it is. Fly it through, same as a Core.',3.6);
+       coreGroup.visible=true;
+       core.carrier=null; core.lockout=null; core.charge=100;
+       core.pos.set(1550,700,760); core.vel.set(0,0,0);
+     },
+     step:function(){stepCore(1/60);},
+     done:function(){return core.carrier===player;}},
+    {text:'CARRY IT HOME TO BREAKWATER',
+     step:function(){stepCore(1/60);},
+     done:function(){return player.pos.distanceTo(BREAKWATER)<420;}},
+    {text:'DECIDE WHO GETS THE FRAGMENT',
+     setup:function(){
+       openChoice('THE WARDEN FRAGMENT',
+         'It is control architecture, and it is not finished. Whoever holds it '+
+         'holds a piece of whatever Black Wing is building.',
+         [{k:'share',label:'SHARE IT WITH ALL THREE TEAMS',
+           apply:function(){
+             addUnity(14); addRep('vanguard',8); addRep('tempest',8); addRep('inferno',8);
+             SAVE.flags.fragment='share';
+             say('MARA','All three, at once, in the open. Brave. Possibly stupid.',4.4);}},
+          {k:'team',label:'GIVE IT TO YOUR TEAM',
+           apply:function(){
+             addUnity(-6); addRep(PILOT.team==='blue'?'vanguard':'inferno',16);
+             SAVE.flags.fragment='team';
+             say('MARA','Your team will love you for it. The other two will not forget.',4.6);}},
+          {k:'hide',label:'HIDE A COPY WITH MARA',
+           apply:function(){
+             addUnity(4); addRep('independent',16); addRep('civilian',6);
+             SAVE.flags.fragment='hide';
+             say('MARA','In my floor, under the compressor. Nobody looks under a compressor.',4.6);}}]);
+     },
+     done:function(){return !!mission.choice;}}
+  ],
+  chapterEnd:'You are a known quantity now. All three teams want to see how you '+
+    'fly against their best.',
+  reward:function(){
+    addRep('independent',10); SAVE.credits+=1400;
+    say('MARA','Whatever that thing is part of, it needs all three teams to build it. '+
+      'Think about what that means.',6);}});
+
+/* ===================== CHAPTER 3 — RIVAL ACES =====================
+   Section 10 and 17.3. Trust moves on decisions, not on repetition: each ace
+   gets one mission that tests the thing they actually care about, and the
+   chapter closes on a choice about which of them you cover.               */
+
+M({chapter:3, id:'ch3_m1', title:'HOLD WITH ARAS', next:'ch3_m2',
+  brief:'Lena Aras is running a civilian evacuation into contested air. She wants a wing, not a hero.',
+  intro:function(){
+    say('ARAS','Aras. Four transports, one corridor, and I am not losing any of them.',4.6);
+    say('ARAS','Kills are yours if you want them. Survivors are mine.',4);
+  },
+  objectives:[
+    {text:function(){return 'HOLD THE EVACUATION ('+convoyAlive()+'/4 ALIVE)';},
+     setup:function(){
+       var dest=new THREE.Vector3(-1900,620,0);
+       for(var i=0;i<4;i++)
+         spawnFlier({at:new THREE.Vector3(1500,640+i*40,(i-1.5)*160),big:true,hp:160,speed:78,
+           name:'EVAC',path:[new THREE.Vector3(200,660,(i-1.5)*160),
+                             dest.clone().setZ((i-1.5)*160)]});
+       for(var k=0;k<5;k++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1600,600),rnd(700,950),rnd(-800,800)),
+           hostile:true,hp:58,speed:108,name:'RAIDER'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'All four gone. Aras will not say a word about it, which is worse.',
+     done:function(){return convoyArrived();}}
+  ],
+  reward:function(){
+    var kept=convoyAlive();
+    SAVE.trials.aras=kept;
+    addTrust('aras',kept>=4?22:(kept>=2?10:-6));
+    addRep('vanguard',6+kept*2); addRep('civilian',kept*3); addUnity(kept>=3?4:0);
+    say('ARAS',kept>=4?'Four out of four. You fly like somebody who has lost people before.'
+                      :'We brought some of them home. I will take some.',5);}});
+
+M({chapter:3, id:'ch3_m2', title:'RUN WITH MERCER', next:'ch3_m3',
+  brief:'Kai Mercer has found a route nobody has flown. He wants a witness who can keep up.',
+  weather:'overcast',
+  intro:function(){
+    say('MERCER','Mercer. I found a line through the ridge nobody has flown clean.',4.4);
+    say('MERCER','Beat me or do not, but do not fly it like a checklist.',4);
+  },
+  objectives:[
+    {text:function(){return 'FLY MERCER’S LINE ('+(gates.length-gatesLeft())+'/'+gates.length+')';},
+     setup:function(){
+       var pts=[[-1500,540,1100],[-800,480,900],[-100,440,700],[600,470,300],
+                [900,520,-300],[300,560,-900],[-600,600,-1100],[-1500,660,-500]];
+       for(var i=0;i<pts.length;i++)makeGate(pts[i][0],pts[i][1],pts[i][2],58);
+       spawnFlier({at:new THREE.Vector3(-1550,580,1080),hp:420,speed:124,name:'MERCER',
+         tint:0x6fe3d0,
+         path:[new THREE.Vector3(-800,480,900),new THREE.Vector3(-100,440,700),
+               new THREE.Vector3(600,470,300),new THREE.Vector3(900,520,-300),
+               new THREE.Vector3(300,560,-900),new THREE.Vector3(-1500,660,-500)]});
+     },
+     step:function(){
+       if(mission.t>26&&!mission.obj._nag){mission.obj._nag=true;
+         say('MERCER','You are flying it safe. Safe is slow.',3.6);}
+     },
+     done:function(){return gatesLeft()===0;}}
+  ],
+  reward:function(){
+    var t=Math.round(mission.t);
+    SAVE.trials.mercer=t;
+    addTrust('mercer',t<95?20:8);
+    addRep('tempest',12); addUnity(2);
+    say('MERCER',t<95?'That was flying. Come and find me when this all goes wrong.'
+                     :'You finished it. Most people do not finish it.',4.8);}});
+
+M({chapter:3, id:'ch3_m3', title:'BURN WITH SERRANO', next:'ch3_m4',
+  brief:'Niko Serrano wants a straight fight, and then wants you to see what Inferno is protecting.',
+  intro:function(){
+    say('SERRANO','Serrano. One pass, no wingmen, no cease signal.',4);
+  },
+  objectives:[
+    {text:'DUEL NIKO "CINDER" SERRANO',
+     setup:function(){
+       spawnFlier({at:new THREE.Vector3(1500,820,0),hostile:true,hp:300,speed:118,name:'SERRANO'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:function(){return 'DEFEND THE FOUNDRY LINE ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       say('SERRANO','Good. Now the part I actually called you for.',3.8);
+       say('SERRANO','That foundry feeds four settlements. Black Wing has been circling it for a week.',5);
+       makeSite({at:new THREE.Vector3(2000,0,700),kind:'slab',height:110,radius:36,
+         hold:5,holdR:400,name:'FOUNDRY'});
+       for(var i=0;i<5;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(1600,2400),rnd(650,950),rnd(200,1400)),
+           hostile:true,hp:60,speed:110,name:'RAIDER'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:function(){return 'HOLD OVER THE FOUNDRY ('+sitesWorked()+'/'+sitesToWork()+')';},
+     done:function(){return allWorked();}}
+  ],
+  reward:function(){
+    SAVE.trials.serrano=Math.round(player.hp);
+    addTrust('serrano',18);
+    addRep('inferno',14); addRep('civilian',8); addUnity(3);
+    say('SERRANO','Everyone thinks Inferno is the fist. Nobody asks what the fist is around.',5.4);}});
+
+M({chapter:3, id:'ch3_m4', title:'ACE HUNT', next:'ch4_m1', last:true,
+  brief:'Black Wing is removing ace pilots. Two are down at once. You can only reach one first.',
+  weather:'storm',
+  intro:function(){
+    say('MARA','Two distress beacons. Both aces. Both being worked over right now.',4.6);
+    say('MARA','Whoever you reach second is going to be on their own for a while.',4.4);
+  },
+  objectives:[
+    {text:'CHOOSE WHO YOU REACH FIRST',
+     setup:function(){
+       openChoice('TWO BEACONS',
+         'Both will survive the night if you are quick. Only one of them will '+
+         'remember that you came for them first.',
+         [{k:'aras',label:'REACH ARAS'},{k:'mercer',label:'REACH MERCER'},
+          {k:'serrano',label:'REACH SERRANO'}]);
+     },
+     done:function(){return !!mission.choice;}},
+    {text:function(){return 'BREAK THE AMBUSH ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       var who=(mission.choice||'aras').toUpperCase();
+       say(who,'You came. Get them off me and I will do the rest.',4);
+       spawnFlier({at:new THREE.Vector3(-400,760,900),big:true,hp:200,speed:88,name:who,
+         path:[BREAKWATER.clone()]});
+       for(var i=0;i<6;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1000,600),rnd(700,1050),rnd(400,1500)),
+           hostile:true,hp:62,speed:112,name:'HUNTER'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'You did not get there in time. Nobody is going to say it out loud.',
+     done:function(){return hostilesLeft()<=1;}},
+    {text:'SEE THEM HOME',
+     setup:function(){say('MARA','Walk them back. The other beacon went quiet on its own.',4.2);},
+     fail:function(){return convoyAlive()===0;},
+     failText:'You lost them on the way home. That is the worst way to lose someone.',
+     done:function(){return convoyArrived();}}
+  ],
+  chapterEnd:'Black Wing has stopped pretending this is about the Arena. '+
+    'Faction bases are being hit next, with each other’s signatures.',
+  reward:function(){
+    var k=mission.choice||'aras';
+    addTrust(k,24);
+    /* the two you did not reach do not hate you for it, but they noticed */
+    TRUST_KEYS.forEach(function(t){ if(t!==k&&t!=='nyx')addTrust(t,-4); });
+    addRep('independent',10); addUnity(4); SAVE.credits+=1200;
+    SAVE.flags.rescuedAce=k;
+    say('MARA','They are picking off the people who could organise a defence. '+
+      'That is not a raid. That is a campaign.',6);}});
+
+/* ===================== CHAPTER 4 — BROKEN ALLIANCE =====================
+   Section 10. The rivalry becomes a political crisis, and the reveal lands:
+   the Warden Network needs all three teams' technology, which is why all
+   three have been robbed.                                                 */
+
+M({chapter:4, id:'ch4_m1', title:'FALSE FLAG', next:'ch4_m2',
+  brief:'A faction base is under attack by aircraft wearing somebody else’s colours.',
+  intro:function(){
+    say('MARA','Base under attack, and the attackers are squawking Tempest identifiers.',4.6);
+    say('KADE','Tempest has nothing in that airspace. Nothing. Somebody is wearing our name.',5);
+  },
+  objectives:[
+    {text:function(){return 'BREAK THE ATTACK ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       for(var i=0;i<6;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-2400,-1400),rnd(650,1000),rnd(-900,900)),
+           hostile:true,hp:62,speed:112,name:'FALSE FLAG'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:function(){return 'READ THE DOWNED HULLS ('+sitesWorked()+'/'+sitesToWork()+')';},
+     setup:function(){
+       say('MARA','Hold over each wreck. I want the identifiers on record before anyone tidies up.',4.8);
+       makeSite({at:new THREE.Vector3(-1900,0,-500),kind:'slab',height:24,radius:20,
+         hold:5,holdR:300,name:'HULL A'});
+       makeSite({at:new THREE.Vector3(-1500,0,600),kind:'slab',height:24,radius:20,
+         hold:5,holdR:300,name:'HULL B'});
+     },
+     done:function(){return allWorked();}}
+  ],
+  reward:function(){
+    addRep('tempest',10); addRep('independent',8); addUnity(5); SAVE.credits+=900;
+    SAVE.flags.falseFlagProof=true;
+    say('VALE','Vanguard has the same recording. We are still deciding whether to believe it.',5);}});
+
+M({chapter:4, id:'ch4_m2', title:'THE SHIPMENT', next:'ch4_m3',
+  brief:'Follow a covert transport to whatever it is feeding. Do not shoot it down.',
+  weather:'overcast',
+  intro:function(){
+    say('MARA','Do not kill it. A wreck tells you what it was carrying. A landing tells you who wanted it.',5.2);
+  },
+  objectives:[
+    {text:'STAY WITH THE SHIPMENT',
+     setup:function(){
+       spawnFlier({at:new THREE.Vector3(-2100,700,-800),big:true,hp:400,speed:80,name:'SHIPMENT',
+         path:[new THREE.Vector3(-600,760,-1400),new THREE.Vector3(900,800,-1200),
+               new THREE.Vector3(2000,720,-600)]});
+     },
+     step:function(dt){
+       var sh=namedFlier('SHIPMENT');
+       if(sh&&sh.alive&&player.alive&&player.pos.distanceTo(sh.pos)>1500)
+         banner('SHIPMENT DRIFTING OUT OF RANGE',.9);
+     },
+     fail:function(){
+       var sh=namedFlier('SHIPMENT');
+       return !!sh&&!sh.alive;
+     },
+     failText:'You shot it down. Whatever it was going to, it is not going there now.',
+     done:function(){return convoyArrived();}},
+    {text:function(){return 'TAKE THE RELAY SITE ('+sitesLeft()+' STANDING)';},
+     setup:function(){
+       say('MARA','There. A relay nobody filed and nobody is admitting to.',4.4);
+       makeSite({at:new THREE.Vector3(2100,0,-700),kind:'mast',height:150,radius:34,
+         hp:340,guns:true,name:'RELAY MAST'});
+       makeSite({at:new THREE.Vector3(2350,0,-350),kind:'slab',height:80,radius:28,
+         hp:240,guns:true,name:'RELAY GUN'});
+       for(var i=0;i<3;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(1900,2500),rnd(700,950),rnd(-1100,-200)),
+           hostile:true,hp:62,speed:110,name:'GUARD'});
+     },
+     done:function(){return sitesLeft()===0;}}
+  ],
+  reward:function(){
+    addRep('independent',12); addUnity(4); SAVE.credits+=1000;
+    SAVE.flags.foundRelay=true;
+    say('MARA','Vanguard command architecture. Tempest governors. Inferno power. '+
+      'All three, in one relay, wired together.',6);}});
+
+M({chapter:4, id:'ch4_m3', title:'WITNESS', next:'ch4_m4',
+  brief:'A Black Wing engineer wants out and will testify. Everyone would rather she did not arrive.',
+  weather:'rain',
+  intro:function(){
+    say('MARA','She built part of it. She will say so on an open channel if she lives to reach us.',5);
+    say('VEYR','You are carrying a defector through my airspace. Consider what that says about your judgement.',5.4);
+  },
+  objectives:[
+    {text:function(){return 'GET THE WITNESS THROUGH ('+convoyAlive()+' ALIVE)';},
+     setup:function(){
+       spawnFlier({at:new THREE.Vector3(2200,700,900),big:true,hp:180,speed:82,name:'WITNESS',
+         path:[new THREE.Vector3(600,720,500),new THREE.Vector3(-900,680,200),
+               BREAKWATER.clone()]});
+       for(var i=0;i<4;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(600,2000),rnd(700,1000),rnd(-600,1200)),
+           hostile:true,hp:60,speed:114,name:'INTERCEPT'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'The witness is dead and the recording died with her.',
+     step:function(dt){
+       if(mission.t>30&&!mission.obj._wave){mission.obj._wave=true;
+         say('VEYR','Last chance to be somewhere else.',3.4);
+         for(var i=0;i<3;i++)
+           spawnFlier({at:new THREE.Vector3(rnd(-1400,200),rnd(750,1050),rnd(-900,900)),
+             hostile:true,hp:60,speed:114,name:'INTERCEPT'});
+       }
+     },
+     done:function(){return convoyArrived();}}
+  ],
+  reward:function(){
+    addRep('civilian',14); addRep('independent',14); addUnity(6); SAVE.credits+=1300;
+    SAVE.flags.witness=true;
+    say('MARA','She named the schism. Cassian did not leave Vanguard. He was asked to.',5.4);}});
+
+M({chapter:4, id:'ch4_m4', title:'THE LEDGER', next:'ch5_m1', last:true,
+  brief:'The evidence implicates your own team as well. Cassian would very much like you to sit on it.',
+  intro:function(){
+    say('VEYR','Cassian Veyr. You have been thorough. I would like to make you an offer.',5);
+    say('VEYR','Publish all of it and your own team burns with the rest. Publish half and you stay a hero.',5.6);
+  },
+  objectives:[
+    {text:function(){return 'SURVIVE VEYR’S ESCORT ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       say('VEYR','I will let you think about it. My flight will keep you company.',4.2);
+       for(var i=0;i<5;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-900,900),rnd(800,1150),rnd(-1200,1200)),
+           hostile:true,hp:66,speed:116,name:'NOCTURNE'});
+     },
+     done:function(){return hostilesLeft()<=1;}},
+    {text:'DECIDE WHAT TO PUBLISH',
+     setup:function(){
+       openChoice('THE LEDGER',
+         'The full record proves Black Wing manufactured this war. It also '+
+         'proves your own team looked away while it happened.',
+         [{k:'all',label:'PUBLISH ALL OF IT',
+           apply:function(){
+             addUnity(18); addRep('civilian',16); addRep('independent',12);
+             addRep(PILOT.team==='blue'?'vanguard':'inferno',-14);
+             SAVE.flags.ledger='all';
+             say('MARA','Your own team will not speak to you for a month. The other two just started listening.',5.4);}},
+          {k:'half',label:'PROTECT YOUR TEAM',
+           apply:function(){
+             addUnity(-12); addRep(PILOT.team==='blue'?'vanguard':'inferno',18);
+             addRep('civilian',-6);
+             SAVE.flags.ledger='half';
+             say('MARA','Your team is safe. So is the part of this that made it possible.',5);}},
+          {k:'veyr',label:'HAND IT TO CASSIAN',
+           apply:function(){
+             addUnity(-24); addRep('blackwing',24); addRep('civilian',-14);
+             SAVE.flags.ledger='veyr';
+             say('VEYR','A pragmatist. I did not expect that. I am not sure I am pleased.',5.4);}}]);
+     },
+     done:function(){return !!mission.choice;}}
+  ],
+  chapterEnd:'It is proven, and it is too late — the shooting has already '+
+    'started in three regions at once.',
+  reward:function(){
+    addRep('independent',8); SAVE.credits+=1500;
+    say('MARA','Everyone knows now. Everyone is also already shooting. '+
+      'Knowing was never going to be enough on its own.',6);}});
+
+/* ===================== CHAPTER 5 — THE SKY WAR =====================
+   Section 10. The player stops taking assignments and starts choosing where
+   the effort goes. Every mission here is a place that can be held or lost.  */
+
+M({chapter:5, id:'ch5_m1', title:'RECLAIM', next:'ch5_m2',
+  brief:'A forward base has been taken. Take it back — guns first, then the mast.',
+  intro:function(){
+    say('MARA','They hold the west field. Guns, mast, the lot.',4);
+  },
+  objectives:[
+    {text:function(){return 'TAKE THE FIELD APART ('+sitesLeft()+' LEFT)';},
+     setup:function(){
+       for(var i=0;i<3;i++){
+         var a=Math.PI*2*i/3+0.5;
+         makeSite({at:new THREE.Vector3(-2200+Math.cos(a)*320,0,Math.sin(a)*320),
+           kind:'slab',height:70,radius:26,hp:220,guns:true,name:'CAPTURED AA'});
+       }
+       makeSite({at:new THREE.Vector3(-2200,0,0),kind:'mast',height:150,radius:34,
+         hp:360,name:'CAPTURED MAST'});
+       for(var k=0;k<4;k++)
+         spawnFlier({at:new THREE.Vector3(rnd(-2600,-1600),rnd(650,950),rnd(-900,900)),
+           hostile:true,hp:62,speed:110,name:'OCCUPIER'});
+     },
+     done:function(){return sitesLeft()===0&&hostilesLeft()===0;}},
+    {text:'HOLD THE FIELD',
+     setup:function(){
+       say('MARA','Now stay on it. They will try to come back for it once.',4.2);
+       for(var i=0;i<4;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1200,400),rnd(700,1000),rnd(-1100,1100)),
+           hostile:true,hp:60,speed:114,name:'COUNTER'});
+     },
+     done:function(){return hostilesLeft()===0;}}
+  ],
+  reward:function(){
+    addRep(PILOT.team==='blue'?'vanguard':'inferno',12); addRep('independent',8);
+    addUnity(3); SAVE.credits+=1100;
+    SAVE.flags.westField=true;
+    say('MARA','West field is ours. That is one region that still has a working mast.',4.6);}});
+
+M({chapter:5, id:'ch5_m2', title:'DOWNED WINGS', next:'ch5_m3',
+  brief:'Four pilots are down in contested air, and two of them fly for the wrong team.',
+  weather:'storm',
+  intro:function(){
+    say('MARA','Four beacons. Two are yours. Two are not.',4.2);
+    say('MARA','Nobody is going to check which is which except you.',4.4);
+  },
+  objectives:[
+    {text:function(){return 'COVER THE RECOVERY FLIGHTS ('+convoyAlive()+'/4 ALIVE)';},
+     setup:function(){
+       for(var i=0;i<4;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1600,1600),640+i*30,rnd(-1400,1400)),
+           big:true,hp:150,speed:74,name:i<2?'RECOVERY':'RIVAL RECOVERY',
+           path:[BREAKWATER.clone()]});
+       for(var k=0;k<5;k++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1400,1400),rnd(750,1050),rnd(-1400,1400)),
+           hostile:true,hp:60,speed:112,name:'HUNTER'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'All four recovery flights lost. Every one of those beacons went quiet.',
+     done:function(){return convoyArrived()||hostilesLeft()===0;}}
+  ],
+  reward:function(){
+    var kept=convoyAlive();
+    addUnity(kept>=4?12:kept*2);
+    addRep('civilian',kept*2); addRep('independent',8);
+    TRUST_KEYS.forEach(function(t){if(t!=='nyx'&&kept>=3)addTrust(t,6);});
+    SAVE.credits+=900;
+    say('MARA',kept>=4?'You went back for the ones flying the wrong colours. That is going to travel.'
+                      :'You got some of them out. It is more than anyone else managed today.',5.4);}});
+
+M({chapter:5, id:'ch5_m3', title:'WARDEN NODES', next:'ch5_m4',
+  brief:'The control network has physical nodes. Take enough of them offline and it cannot finish.',
+  intro:function(){
+    say('MARA','Four nodes, spread wide on purpose so nobody can hit them all at once.',4.6);
+    say('MARA','Prove them wrong.',2.6);
+  },
+  objectives:[
+    {text:function(){return 'DESTROY THE WARDEN NODES ('+sitesLeft()+' LEFT)';},
+     setup:function(){
+       var at=[[-1800,-1600],[1900,-1400],[1700,1500],[-1600,1700]];
+       for(var i=0;i<at.length;i++)
+         makeSite({at:new THREE.Vector3(at[i][0],0,at[i][1]),kind:'slab',
+           height:100,radius:32,hp:300,guns:true,name:'WARDEN NODE'});
+       for(var k=0;k<4;k++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1800,1800),rnd(750,1050),rnd(-1800,1800)),
+           hostile:true,hp:64,speed:114,name:'NODE GUARD'});
+     },
+     done:function(){return sitesLeft()===0;}}
+  ],
+  reward:function(){
+    addRep('independent',14); addUnity(6); SAVE.credits+=1400;
+    SAVE.flags.nodesDown=true;
+    say('MARA','That will slow it. It will not stop it — the carrier is the network now.',5);}});
+
+M({chapter:5, id:'ch5_m4', title:'TASK FORCE', next:'ch6_m1', last:true,
+  brief:'Black Wing’s carrier is running for the central sky city. Decide who flies against it.',
+  intro:function(){
+    say('MARA','The carrier turned for the city an hour ago. Whatever you are going to build, build it now.',5.4);
+  },
+  objectives:[
+    {text:'DECIDE WHO FLIES WITH YOU',
+     setup:function(){
+       openChoice('THE TASK FORCE',
+         'Vanguard, Tempest and Inferno will all send aircraft. They will not '+
+         'all take orders from the same person.',
+         [{k:'united',label:'ONE JOINT TASK FORCE',
+           apply:function(){
+             addUnity(20); addRep('vanguard',8); addRep('tempest',8); addRep('inferno',8);
+             SAVE.flags.taskforce='united';
+             say('VALE','Under an independent. Twenty years ago I would have refused. Go.',5.2);}},
+          {k:'faction',label:'LEAD YOUR OWN TEAM',
+           apply:function(){
+             addUnity(-10); addRep(PILOT.team==='blue'?'vanguard':'inferno',20);
+             SAVE.flags.taskforce='faction';
+             say('MARA','Your team, your way. The other two will hold their own line and no more.',5);}}]);
+     },
+     done:function(){return !!mission.choice;}},
+    {text:function(){return 'CLEAR THE CARRIER’S PATH ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       say('MARA','Screen first. They always put the screen out ahead.',3.8);
+       for(var i=0;i<7;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-600,1800),rnd(800,1200),rnd(-1400,1400)),
+           hostile:true,hp:64,speed:116,name:'SCREEN'});
+     },
+     done:function(){return hostilesLeft()===0;}}
+  ],
+  chapterEnd:'The Warden Network went live while you were flying. Navigation, '+
+    'drones and half the automated defences across the central regions answer '+
+    'to the carrier now.',
+  reward:function(){
+    addRep('independent',12); SAVE.credits+=1800;
+    say('NYX','It is on. Everything is on. Whatever you are going to do, do it fast.',4.8);}});
+
+/* ===================== CHAPTER 6 — WINGS UNITED =====================
+   Section 10, the final sequence, flown in the order the bible lists it. The
+   ending is chosen by the player and gated by what the campaign has actually
+   recorded — unity, allied aces, civilian standing, Nyx.                   */
+
+M({chapter:6, id:'ch6_m1', title:'THE CITY', next:'ch6_m2',
+  brief:'Defend the central sky city while its own systems fight it.',
+  weather:'storm',
+  intro:function(){
+    say('MARA','The city is flying blind. Its own defences are shooting at its own traffic.',5);
+  },
+  objectives:[
+    {text:function(){return 'BREAK THE FIRST WAVE ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       for(var i=0;i<6;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1200,1200),rnd(800,1200),rnd(-1400,-600)),
+           hostile:true,hp:62,speed:116,name:'WARDEN DRONE'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:function(){return 'BREAK THE SECOND WAVE ('+hostilesLeft()+' LEFT)';},
+     setup:function(){
+       say('MARA','Another wave. They are being fed straight off the network.',4.2);
+       for(var i=0;i<7;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1400,1400),rnd(850,1250),rnd(600,1500)),
+           hostile:true,hp:66,speed:118,name:'WARDEN DRONE'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:function(){return 'GET THE CIVILIAN TRAFFIC OUT ('+convoyAlive()+' ALIVE)';},
+     setup:function(){
+       say('MARA','Three passenger hulls still up there with no navigation. Walk them out.',4.8);
+       for(var i=0;i<3;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(-500,500),700+i*40,rnd(-400,400)),
+           big:true,hp:170,speed:76,name:'CITY TRAFFIC',path:[BREAKWATER.clone()]});
+       for(var k=0;k<3;k++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1200,1200),rnd(800,1100),rnd(-1200,1200)),
+           hostile:true,hp:62,speed:116,name:'WARDEN DRONE'});
+     },
+     fail:function(){return convoyAlive()===0;},
+     failText:'All three passenger hulls are gone. That is what the network was for.',
+     done:function(){return convoyArrived();}}
+  ],
+  reward:function(){
+    addRep('civilian',18); addUnity(8); SAVE.credits+=1600;
+    SAVE.flags.cityHeld=convoyAlive()>0;
+    say('VALE','The city is still up there. Say what you like about the three of us — '+
+      'nobody flew home tonight.',5.4);}});
+
+M({chapter:6, id:'ch6_m2', title:'LIGHTS ON', next:'ch6_m3',
+  brief:'The Warden Network only works because it is the only navigation left. Bring the independent masts back.',
+  intro:function(){
+    say('MARA','Independent masts. Old, stubborn, and not on their network.',4.4);
+    say('MARA','Fly a slow circuit over each one and they will come up on their own.',4.4);
+  },
+  objectives:[
+    {text:function(){return 'RESTORE THE INDEPENDENT MASTS ('+sitesWorked()+'/'+sitesToWork()+')';},
+     setup:function(){
+       var at=[[-2100,-1200],[0,-2000],[2100,-900],[1200,1800],[-1400,1600]];
+       for(var i=0;i<at.length;i++)
+         makeSite({at:new THREE.Vector3(at[i][0],0,at[i][1]),kind:'mast',
+           height:150,radius:30,hold:5,holdR:360,name:'MAST '+(i+1)});
+       for(var k=0;k<4;k++)
+         spawnFlier({at:new THREE.Vector3(rnd(-1800,1800),rnd(750,1100),rnd(-1800,1800)),
+           hostile:true,hp:62,speed:114,name:'WARDEN DRONE'});
+     },
+     done:function(){return allWorked();}}
+  ],
+  reward:function(){
+    addRep('civilian',14); addRep('independent',16); addUnity(8); SAVE.credits+=1200;
+    SAVE.flags.mastsUp=true;
+    say('MARA','Five masts, all independent, all live. The sky has its own eyes again.',5);}});
+
+M({chapter:6, id:'ch6_m3', title:'THE CORRIDOR', next:'ch6_m4',
+  brief:'The carrier sits behind a storm corridor and a defence line. Fly one, break the other.',
+  weather:'storm',
+  intro:function(){
+    say('MERCER','Mercer. I have flown this corridor twice and I would not recommend it once.',5);
+  },
+  objectives:[
+    {text:function(){return 'FLY THE STORM CORRIDOR ('+(gates.length-gatesLeft())+'/'+gates.length+')';},
+     setup:function(){
+       var pts=[[-1800,700,-1600],[-1000,620,-1900],[0,560,-2100],[900,600,-1900],
+                [1600,680,-1500],[2100,760,-900]];
+       for(var i=0;i<pts.length;i++)makeGate(pts[i][0],pts[i][1],pts[i][2],66);
+     },
+     done:function(){return gatesLeft()===0;}},
+    {text:function(){return 'DESTROY THE DEFENCE PLATFORMS ('+sitesLeft()+' LEFT)';},
+     setup:function(){
+       say('MARA','Platforms. They are the carrier’s outer ring — nothing gets past them.',4.6);
+       var at=[[2300,-1200],[2500,-500],[2300,300]];
+       for(var i=0;i<at.length;i++)
+         makeSite({at:new THREE.Vector3(at[i][0],900,at[i][1]),flying:true,kind:'slab',
+           height:110,radius:38,hp:340,guns:true,name:'DEFENCE PLATFORM'});
+       for(var k=0;k<4;k++)
+         spawnFlier({at:new THREE.Vector3(rnd(1800,2600),rnd(850,1200),rnd(-1400,600)),
+           hostile:true,hp:66,speed:118,name:'PLATFORM GUARD'});
+     },
+     done:function(){return sitesLeft()===0;}}
+  ],
+  reward:function(){
+    addRep('tempest',10); addTrust('mercer',8); addUnity(4); SAVE.credits+=1500;
+    say('MERCER','You flew it clean. I am putting that in writing where Kade can see it.',5);}});
+
+M({chapter:6, id:'ch6_m4', title:'THE CARRIER', next:'ch6_m5',
+  brief:'Engines, drone bays, command relays. In that order.',
+  weather:'storm',
+  intro:function(){
+    say('VEYR','You are inside my ship’s envelope. That is not the achievement you think it is.',5);
+  },
+  objectives:[
+    {text:function(){return 'KILL THE ENGINES ('+sitesLeft()+' SECTIONS LEFT)';},
+     setup:function(){
+       makeSite({at:new THREE.Vector3(2600,880,-260),flying:true,kind:'slab',height:120,
+         radius:40,hp:420,guns:true,name:'CARRIER ENGINE'});
+       makeSite({at:new THREE.Vector3(2600,880,260),flying:true,kind:'slab',height:120,
+         radius:40,hp:420,guns:true,name:'CARRIER ENGINE'});
+     },
+     done:function(){return sitesLeft()===0;}},
+    {text:function(){return 'KILL THE DRONE BAYS ('+sitesLeft()+' LEFT)';},
+     setup:function(){
+       say('VEYR','Launch everything.',2.4);
+       makeSite({at:new THREE.Vector3(2900,900,-160),flying:true,kind:'slab',height:100,
+         radius:36,hp:360,guns:true,name:'DRONE BAY'});
+       makeSite({at:new THREE.Vector3(2900,900,160),flying:true,kind:'slab',height:100,
+         radius:36,hp:360,guns:true,name:'DRONE BAY'});
+       for(var i=0;i<6;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(2400,3000),rnd(850,1150),rnd(-600,600)),
+           hostile:true,hp:60,speed:118,name:'WARDEN DRONE'});
+     },
+     done:function(){return sitesLeft()===0;}},
+    {text:function(){return 'KILL THE COMMAND RELAYS ('+sitesLeft()+' LEFT)';},
+     setup:function(){
+       makeSite({at:new THREE.Vector3(3150,960,0),flying:true,kind:'mast',height:130,
+         radius:32,hp:400,guns:true,name:'COMMAND RELAY'});
+     },
+     done:function(){return sitesLeft()===0;}}
+  ],
+  reward:function(){
+    addRep('independent',16); addUnity(6); SAVE.credits+=2000;
+    SAVE.flags.carrierCrippled=true;
+    say('VEYR','You have taken my engines. You have not taken the network. '+
+      'It does not need me any more than it needs you.',6);}});
+
+M({chapter:6, id:'ch6_m5', title:'THE WARDEN CORE', next:null, last:true,
+  brief:'Nyx, then Cassian, then the core. Then get off the ship.',
+  weather:'storm',
+  start:new THREE.Vector3(2400,900,0),
+  intro:function(){
+    say('NYX','I am on the bow. You knew I would be.',3.8);
+  },
+  objectives:[
+    {text:'MEET NYX',
+     setup:function(){
+       /* Section 10: fight Nyx or fly beside them, decided by what the player
+          actually did in Chapters 2 and 3 rather than by a menu here. */
+       if(SAVE.trust.nyx>=10&&SAVE.flags.nyxSpared){
+         say('NYX','I am not going to fight you. I never was.',4);
+         say('NYX','Cassian is on the command deck. I will hold the bay doors.',4.4);
+         SAVE.flags.nyxAlly=true;
+       } else {
+         say('NYX','You never gave me a reason to do anything else.',4);
+         spawnFlier({at:new THREE.Vector3(3000,950,0),hostile:true,hp:380,speed:124,name:'NYX'});
+         SAVE.flags.nyxAlly=false;
+       }
+     },
+     done:function(){return SAVE.flags.nyxAlly?mission.t>6:hostilesLeft()===0;}},
+    {text:function(){return 'REACH CASSIAN ('+hostilesLeft()+' IN THE WAY)';},
+     setup:function(){
+       say('VEYR','Everything you have proved about me is true. It is also beside the point.',5.2);
+       say('VEYR','Somebody was always going to build this. I would rather it was somebody who has flown.',5.6);
+       for(var i=0;i<5;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(2800,3400),rnd(880,1150),rnd(-500,500)),
+           hostile:true,hp:66,speed:120,name:'NOCTURNE'});
+     },
+     done:function(){return hostilesLeft()===0;}},
+    {text:function(){return 'DISABLE THE WARDEN CORE ('+sitesWorked()+'/'+sitesToWork()+')';},
+     setup:function(){
+       say('MARA','Hold station over the core. Do not let anything push you off it.',4.4);
+       makeSite({at:new THREE.Vector3(3300,940,0),flying:true,kind:'mast',height:140,
+         radius:34,hold:10,holdR:340,name:'WARDEN CORE'});
+       for(var i=0;i<3;i++)
+         spawnFlier({at:new THREE.Vector3(rnd(3000,3600),rnd(900,1150),rnd(-600,600)),
+           hostile:true,hp:62,speed:118,name:'WARDEN DRONE'});
+     },
+     done:function(){return allWorked();}},
+    {text:'GET CLEAR — THE CARRIER IS COMING DOWN',
+     setup:function(){
+       say('MARA','It is losing height. Get west and do not look back.',4);
+       banner('CARRIER GOING DOWN',2.4);
+     },
+     done:function(){return player.pos.x<600;}},
+    {text:'DECIDE WHAT HAPPENS TO THE NETWORK',
+     setup:function(){
+       var opts=[
+         {k:'council',label:'JOINT CIVILIAN COUNCIL',
+          apply:function(){addUnity(14);addRep('civilian',14);}},
+         {k:'faction',label:'GIVE IT TO YOUR TEAM',
+          apply:function(){addRep(PILOT.team==='blue'?'vanguard':'inferno',20);addUnity(-8);}},
+         {k:'break',label:'BREAK IT APART',
+          apply:function(){addRep('independent',20);addRep('civilian',10);}},
+         {k:'limited',label:'KEEP A LIMITED EMERGENCY NETWORK',
+          apply:function(){addUnity(6);addRep('independent',10);}}];
+       openChoice('THE WARDEN CORE IS YOURS',
+         'It works. That is the problem. Whoever holds it decides who flies, '+
+         'and every one of these choices is somebody’s idea of safe.',opts);
+     },
+     done:function(){return !!mission.choice;}}
+  ],
+  finale:function(){return decideEnding(mission.choice);},
+  reward:function(){
+    SAVE.flags.chapter6=true;
+    SAVE.credits+=3000;
+    addRep('independent',10);}});
+
+/* Section 18.2. The ending is picked from what the campaign recorded, with the
+   final choice as the strongest single signal — a player who spent the whole
+   campaign sharing evidence and protecting settlements is not handed a faction
+   ending for one button press, and a player who never did cannot buy United
+   Skies with one either. */
+function decideEnding(choice){
+  SAVE.ending=choice||'limited'; saveGame();
+  var unity=SAVE.unity, aces=alliedAces(), civ=SAVE.rep.civilian,
+      team=PILOT.team==='blue'?'VANGUARD':'INFERNO';
+  if(SAVE.flags.ledger==='veyr'&&SAVE.rep.blackwing>=20&&choice==='faction')
+    return {title:'THE QUIET SKY',
+      text:'The network survives, and so does the arrangement that built it. '+
+        'Traffic moves on time. Nobody files a complaint, because the system '+
+        'that would hear it is the system that would be complained about. You '+
+        'are the most trusted pilot in a sky that no longer asks anyone’s '+
+        'permission — including yours.'};
+  if(choice==='break')
+    return {title:'INDEPENDENT SKYWAYS',
+      text:'The Warden architecture comes apart into a hundred local agreements '+
+        'and not one central authority. The Skyways are slower, patchier and '+
+        'harder to abuse. Breakwater Field runs the northern coalition out of '+
+        'Mara’s office, which she claims to resent. The three teams are '+
+        'still powerful. They are no longer the only ones who decide.'};
+  if(choice==='council'&&unity>=40&&aces>=2)
+    return {title:'UNITED SKIES',
+      text:'Vanguard, Tempest and Inferno stay distinct and sit on the same '+
+        'council, with civilian seats they cannot outvote. You are its first '+
+        'field commander, which everyone involved finds slightly ridiculous and '+
+        'nobody contests. '+(SAVE.flags.nyxAlly
+          ?'Nyx testifies, serves eighteen months, and flies again.'
+          :'Nyx’s name is on the memorial with the rest of them.')};
+  if(choice==='council')
+    return {title:'A COUNCIL, OF SORTS',
+      text:'The council forms, and it argues. Without the trust to back it, it '+
+        'is three delegations watching each other across a table and one '+
+        'independent trying to keep the floor. It holds — barely, and only '+
+        'because the alternative is still burning on the seabed.'};
+  if(choice==='faction')
+    return {title:team+' ASCENDANCY',
+      text:team==='VANGUARD'
+        ? 'Vanguard takes primary responsibility for airspace security. The '+
+          'skies get measurably safer and measurably more watched. You are the '+
+          'best-known pilot in the service, which makes you the one person who '+
+          'can still argue with it from the inside.'
+        : 'Inferno secures the major routes through sheer deterrence. Attacks '+
+          'fall away almost overnight. Strength becomes the language the whole '+
+          'region negotiates in, and you spend the rest of your career deciding '+
+          'what that strength is pointed at.'};
+  return {title:'A LIMITED NETWORK',
+    text:'What survives is an emergency system under independent oversight — '+
+      'small, auditable, and switched off by default. It is nobody’s '+
+      'victory and everybody’s compromise, which is why it lasts. '+
+      (civ>=40?'The settlements that were written off vote to fund it first.'
+              :'The settlements watch it carefully, and say nothing yet.')};
+}
 
 /* ===================== campaign UI ===================== */
 var rEl={};['radio','radioWho','radioText','objPanel','objTitle','objList','debrief',
@@ -5214,6 +6473,18 @@ function renderObjective(){
     var t=(i===mission.i)?objText():(typeof o.text==='function'?'—':o.text);
     html+='<div class="obj '+cls+'">'+t+'</div>';
   }
+  /* Checkpoint progress is reported here rather than in each mission's text,
+     so it cannot be forgotten by one of them — which is exactly what happened
+     to the first mission of the campaign, where flying a ring changed nothing
+     on screen and the objective read the same either way. */
+  if(gates.length){
+    var flown=gates.length-gatesLeft();
+    html+='<div class="objMeta">CHECKPOINTS <b>'+flown+' / '+gates.length+'</b>';
+    if(gateNext&&player.alive)
+      html+='<br>NEXT <b>'+(player.pos.distanceTo(gateNext.pos)/1000).toFixed(2)+' KM</b>';
+    else if(!gateNext)html+='<br><b>ALL CHECKPOINTS FLOWN</b>';
+    html+='</div>';
+  }
   rEl.objList.innerHTML=html;
   rEl.objPanel.classList.add('on');
 }
@@ -5224,56 +6495,179 @@ function openChoice(title,body,opts){
   opts.forEach(function(o){
     var b=document.createElement('button');
     b.className='actionBtn'; b.textContent=o.label;
-    b.addEventListener('click',function(){
-      mission.choice=o.k; rEl.choiceCard.classList.remove('on');
-      if(!IS_TOUCH)lock();
+    bindBtn(b,function(){
+      mission.choice=o.k;
+      if(o.apply)o.apply();
+      rEl.choiceCard.classList.remove('on');
+      if(!IS_TOUCH&&st.started)lock();
     });
     rEl.choiceOpts.appendChild(b);
   });
   rEl.choiceCard.classList.add('on');
   if(document.exitPointerLock)document.exitPointerLock();
 }
-function showDebrief(def){
-  if(!rEl.debrief)return;
-  rEl.debriefT.textContent=def.title+' — COMPLETE';
-  var rows=[['CREDITS',SAVE.credits],['CIVILIAN',SAVE.rep.civilian],
-            ['VANGUARD',SAVE.rep.vanguard],['TEMPEST',SAVE.rep.tempest],
-            ['INFERNO',SAVE.rep.inferno],['INDEPENDENT',SAVE.rep.independent]];
+function repRows(){
+  return [['CREDITS',SAVE.credits],['UNITY',SAVE.unity],['CIVILIAN',SAVE.rep.civilian],
+          ['VANGUARD',SAVE.rep.vanguard],['TEMPEST',SAVE.rep.tempest],
+          ['INFERNO',SAVE.rep.inferno],['INDEPENDENT',SAVE.rep.independent],
+          ['BLACK WING',SAVE.rep.blackwing]];
+}
+function statHtml(rows){
   var h='';
   for(var i=0;i<rows.length;i++)
     h+='<div class="endStat"><b>'+rows[i][1]+'</b><span>'+rows[i][0]+'</span></div>';
-  rEl.debriefStats.innerHTML=h;
-  var nx=def.next&&CH1[def.next];
-  rEl.debriefB.textContent=nx?nx.brief:'Chapter 1 complete. The Open Skies is next.';
+  return h;
+}
+function showDebrief(def){
+  if(!rEl.debrief)return;
+  rEl.debriefT.textContent=def.title+' — COMPLETE';
+  rEl.debriefStats.innerHTML=statHtml(repRows());
+  var nx=def.next&&MISSIONS[def.next];
+  var body='';
+  /* the last mission of a chapter says where the story has arrived before it
+     says what to fly next, so a chapter reads as a chapter */
+  if(def.chapterEnd)body=def.chapterEnd+(nx?'  '+nx.brief:'');
+  else body=nx?nx.brief:'The campaign is flown out. Breakwater Field is yours, '+
+    'and the Arena is open for as many free Core Runs as you want.';
+  rEl.debriefB.textContent=body;
   rEl.debriefNext.textContent=nx?'FLY '+nx.title:'RETURN TO BREAKWATER';
+  rEl.debriefNext.disabled=!nx;
   rEl.debrief.classList.add('on');
   if(document.exitPointerLock)document.exitPointerLock();
 }
+/* The ending is not a debrief: nothing follows it, and what it reports is the
+   whole campaign rather than one sortie. */
+function showFinale(ending){
+  var card=document.getElementById('finaleCard');
+  if(!card)return;
+  if(rEl.debrief)rEl.debrief.classList.remove('on');
+  document.getElementById('finaleT').textContent=ending.title;
+  document.getElementById('finaleB').textContent=ending.text;
+  document.getElementById('finaleStats').innerHTML=statHtml(
+    repRows().concat([['MISSIONS',SAVE.completed.length]]));
+  card.classList.add('on');
+  if(rEl.objPanel)rEl.objPanel.classList.remove('on');
+  if(document.exitPointerLock)document.exitPointerLock();
+  stingSfx([392,523,659,784],.22);
+}
 function advanceCampaign(){
   if(rEl.debrief)rEl.debrief.classList.remove('on');
-  var nextId=SAVE.mission;
-  if(nextId&&CH1[nextId]&&!missionDone(nextId)){
+  var nextId=nextPlayableMission();
+  if(nextId){
     startMission(nextId);
     if(!IS_TOUCH)lock();
   } else {
     st.mode='arena'; parkArena(false); enterHangar();
   }
 }
-/* Missions 7 and 8 happen on foot, so they hand control back to the hangar and
-   pick up again the moment the player walks out. */
+/* On-foot missions hand control back to the hangar and pick up again the moment
+   the player walks out. */
 function toCampaignHangar(){enterHangar();}
+/* Leaving a mission by any door — END SORTIE, the hangar button, the mission
+   list — has to tear the mission down, or its convoy keeps flying and its
+   fail() keeps firing behind whatever the player did next. */
+function abandonMission(){
+  mission.running=false; mission.def=null; mission.obj=null;
+  mission.token++;
+  clearGates(); clearConvoy(); clearSites(); clearRadio();
+  if(rEl.objPanel)rEl.objPanel.classList.remove('on');
+  if(rEl.choiceCard)rEl.choiceCard.classList.remove('on');
+}
+function toHangarFromMission(){
+  if(rEl.debrief)rEl.debrief.classList.remove('on');
+  var f=document.getElementById('finaleCard'); if(f)f.classList.remove('on');
+  abandonMission();
+  st.mode='arena'; parkArena(false); enterHangar();
+}
 
 buildSlots();
-if(rEl.debriefNext)rEl.debriefNext.addEventListener('click',advanceCampaign);
-if(rEl.debrief){
-  var dh=document.getElementById('debriefHangar');
-  if(dh)dh.addEventListener('click',function(){
-    rEl.debrief.classList.remove('on');
-    mission.running=false; st.mode='arena'; parkArena(false); enterHangar();
+bindBtn(rEl.debriefNext,advanceCampaign);
+bindBtn('debriefHangar',toHangarFromMission);
+bindBtn('finaleHangar',toHangarFromMission);
+bindBtn('finaleAgain',function(){
+  SAVE=freshSave(); saveGame();
+  toHangarFromMission();
+  toast('NEW CAMPAIGN — CHAPTER 1, ROOKIE WINGS',3);
+});
+
+/* ===================== mission select =====================
+   Thirty-two missions across six chapters is more than a single CONTINUE
+   button can represent. This is the one screen that states what exists, what
+   has been flown, and what is reachable — and it is the same screen on a
+   phone, because it is built out of the same buttons everything else uses. */
+function openMissions(){
+  var card=document.getElementById('missionCard');
+  if(!card)return;
+  renderMissions();
+  card.classList.add('on');
+  if(document.exitPointerLock)document.exitPointerLock();
+}
+function closeMissions(){
+  var card=document.getElementById('missionCard');
+  if(card)card.classList.remove('on');
+  if(!IS_TOUCH&&st.started&&!st.paused&&st.phase!=='hangar')lock();
+}
+function renderMissions(){
+  var list=document.getElementById('missionList'),
+      meta=document.getElementById('missionMeta');
+  if(!list)return;
+  if(meta){
+    var ch=CHAPTERS[clamp(SAVE.chapter,1,CHAPTERS.length)-1];
+    meta.textContent='CHAPTER '+SAVE.chapter+' — '+ch.name+
+      '  ·  '+SAVE.completed.length+' / '+ORDERED.length+' FLOWN'+
+      '  ·  UNITY '+SAVE.unity;
+  }
+  list.innerHTML='';
+  CHAPTERS.forEach(function(ch,ci){
+    var hd=document.createElement('div');
+    hd.className='chapHd';
+    hd.textContent='CHAPTER '+(ci+1)+' — '+ch.name;
+    list.appendChild(hd);
+    ch.missions.forEach(function(id){
+      var def=MISSIONS[id]; if(!def)return;
+      var done=missionDone(id), open=missionUnlocked(id), now=(SAVE.mission===id&&!done);
+      var b=document.createElement('button');
+      b.className='misRow'+(now?' now':'')+(open?'':' locked');
+      b.disabled=!open;
+      b.innerHTML='<span class="mk">'+(done?'✓':(open?'▸':'✕'))+'</span>'+
+        '<span class="mt"></span><span class="mn">'+
+        (done?'FLOWN':(open?(now?'NEXT':'REPLAY'):'LOCKED'))+'</span>';
+      b.querySelector('.mt').textContent=def.title;
+      if(open)bindBtn(b,function(){
+        closeMissions();
+        flyMission(id);
+      });
+      list.appendChild(b);
+    });
   });
 }
+/* Replaying a mission must not rewind the campaign: the story position is only
+   ever moved forward by finishing the furthest mission reached. */
+function flyMission(id){
+  if(!MISSIONS[id])return;
+  if(rEl.debrief)rEl.debrief.classList.remove('on');
+  var f=document.getElementById('finaleCard'); if(f)f.classList.remove('on');
+  el.end.classList.remove('on');
+  document.getElementById('pause').classList.remove('on');
+  st.paused=false;
+  if(st.phase==='hangar')leaveHangar();
+  st.started=true;
+  el.brief.classList.add('gone');
+  el.hud.classList.add('live');
+  document.body.classList.add('playing');
+  audioInit(); audioResume(); applyLoadout();
+  startMission(id);
+  if(!IS_TOUCH)lock(); else goFullscreen();
+}
+bindBtn('missionClose',closeMissions);
+bindBtn('missionReset',function(){
+  SAVE=freshSave(); saveGame();
+  renderMissions();
+  toast('CAMPAIGN RESET — CHAPTER 1, ROOKIE WINGS',3);
+});
+
 function startCampaign(){
-  var id=SAVE.mission&&CH1[SAVE.mission]?SAVE.mission:'ch1_m1';
+  var id=nextPlayableMission()||ORDERED[0];
   leaveHangar();
   st.started=true;
   el.brief.classList.add('gone');
@@ -5530,6 +6924,11 @@ function step(dt){
   stepStructs(dt);
   stepDrones(dt);
   if(st.mode==='arena'){stepGoalRings(dt);stepCore(dt);}
+  stepSites(dt);
+  /* The radio steps outside stepMission because the last lines of a mission are
+     queued by its reward(), which runs after mission.running has already gone
+     false — those lines used to be written and never spoken. */
+  stepRadio(dt);
   if(mission.running)stepMission(dt);
   stepLock(dt);
   gpwsCheck(dt);
@@ -5570,6 +6969,22 @@ function stepBullets(dt){
         if(sdx*sdx+sdz*sdz<sc.radius*sc.radius&&
            b.p.y>sc.pos.y-10&&b.p.y<sc.pos.y+sc.height){
           hurtStruct(sc,b.dmg||BULLET_DMG,b.owner);
+          if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
+          boom(b.p,16); dead=true; break;
+        }
+      }
+    }
+    /* mission installations — towers, relays, platforms, carrier sections.
+       Same fat cylinder the league structures get, and only league rounds
+       count: a defence platform cannot shoot its own carrier apart. */
+    if(!dead&&b.team!=='blackwing'){
+      for(var si=0;si<sites.length;si++){
+        var sit=sites[si];
+        if(!sit.alive||sit.hold)continue;
+        var idx=b.p.x-sit.pos.x,idz=b.p.z-sit.pos.z;
+        if(idx*idx+idz*idz<sit.radius*sit.radius&&
+           b.p.y>sit.pos.y-10&&b.p.y<sit.pos.y+sit.height){
+          hurtSite(sit,b.dmg||BULLET_DMG,b.owner);
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
           boom(b.p,16); dead=true; break;
         }
@@ -5872,9 +7287,10 @@ function endMatch(){
      something specific rather than a second "play again" */
   var sb=document.getElementById('endStoryBtn');
   if(sb){
-    var nid=(typeof SAVE!=='undefined'&&SAVE&&SAVE.mission&&CH1[SAVE.mission])?SAVE.mission:'ch1_m1';
-    sb.textContent=missionDone(nid)?'BREAKWATER HANGAR':
-      ((SAVE&&SAVE.completed&&SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+CH1[nid].title);
+    var nid=nextPlayableMission();
+    sb.textContent=nid
+      ? ((SAVE&&SAVE.completed&&SAVE.completed.length?'CONTINUE — ':'BEGIN — ')+MISSIONS[nid].title)
+      : 'BREAKWATER HANGAR';
   }
   el.end.classList.add('on');
   /* which chord plays depends on whether YOU won, not on which colour did —

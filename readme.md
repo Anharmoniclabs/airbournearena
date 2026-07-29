@@ -11,6 +11,20 @@ no sign-in, works on a phone.
 
 ![The Arena Core briefing](Airbourne-Arena/assets/case-run-briefing-v2.webp)
 
+## The campaign
+
+Behind the Arena is a six-chapter, 32-mission story: an unknown pilot with an
+old Kestrel flies trials for all three teams, signs with one, and works out who
+has been manufacturing a war between them. The **CAMPAIGN** button — on the
+hangar bar, the briefing card and the pause menu — lists every chapter, marks
+what has been flown, and lets any reachable mission be replayed without
+rewinding your place in the story.
+
+Faction reputation, rival trust and a unity score are tracked across the whole
+run, and they, not a single final prompt, decide which of the six endings you
+get. The setting, cast and chapter beats are in
+[`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md).
+
 ## The whole game is one HTML file
 
 [`Airbourne-Arena/index.html`](Airbourne-Arena/index.html) is the game — markup,
@@ -46,6 +60,9 @@ your own velocity, so a hard turn throws them wide.
 | **SPACE** | Cannon · **TAB** lock next bandit · **F** pass the core |
 | **Q** / **E** | Barrel roll — corkscrews the flight path out of a gunsight |
 | **C** / **M** / **P** / **O** | Camera · map · pause · settings |
+
+The briefing card keeps this list behind its **CONTROLS** button rather than on
+screen, and the hangar, pause and campaign menus are buttons on every device.
 
 A connected **gamepad** takes over automatically. On **touch**, the left thumb
 gets a floating stick and the right gets fire, pass, boost and roll — in

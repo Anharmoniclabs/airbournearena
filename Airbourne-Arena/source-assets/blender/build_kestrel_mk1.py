@@ -6,9 +6,11 @@ from mathutils import Vector
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SOURCE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-ASSET_OUT = os.path.join(ROOT, "assets", "kestrel-mk1-authored-v1.glb")
-BLEND_OUT = os.path.join(SOURCE_ROOT, "blender", "kestrel-mk1-authored-v1.blend")
-PREVIEW_OUT = os.path.join(SOURCE_ROOT, "previews", "kestrel-mk1-authored-v1.png")
+ASSET_OUT = os.path.join(ROOT, "assets", "kestrel-mk1-authored-v3.glb")
+PUBLIC_ASSET_OUT = os.path.join(ROOT, "source", "public", "assets", "kestrel-mk1-authored-v3.glb")
+BLEND_OUT = os.path.join(SOURCE_ROOT, "blender", "kestrel-mk1-authored-v3.blend")
+PREVIEW_OUT = os.path.join(SOURCE_ROOT, "previews", "kestrel-mk1-authored-v3.png")
+ALBEDO_PATH = os.path.join(ROOT, "assets", "kestrel-mk1-tileable-albedo-diffusion-v2.png")
 
 
 def material(name, color, metallic=0.0, roughness=0.45, emission=None):
@@ -24,6 +26,19 @@ def material(name, color, metallic=0.0, roughness=0.45, emission=None):
         emission_input.default_value = (*emission, 1.0)
         bsdf.inputs["Emission Strength"].default_value = 2.0
     return mat
+
+
+def apply_uv_albedo(mat, path):
+    """Attach a real UV texture to the closed mesh; imagery never defines shape."""
+    image = bpy.data.images.load(path, check_existing=True)
+    image.colorspace_settings.name = "sRGB"
+    nodes = mat.node_tree.nodes
+    texture = nodes.new("ShaderNodeTexImage")
+    texture.name = "Kestrel tileable ceramic albedo"
+    texture.image = image
+    texture.extension = "REPEAT"
+    bsdf = nodes.get("Principled BSDF")
+    mat.node_tree.links.new(texture.outputs["Color"], bsdf.inputs["Base Color"])
 
 
 def finish(obj, bevel=0.04, smooth=True):
@@ -106,15 +121,16 @@ bpy.ops.object.select_all(action="SELECT")
 bpy.ops.object.delete(use_global=False)
 
 hull = material("Kestrel weathered ceramic", (0.58, 0.61, 0.60), 0.62, 0.28)
+apply_uv_albedo(hull, ALBEDO_PATH)
 graphite = material("Graphite composite", (0.035, 0.045, 0.055), 0.28, 0.32)
 metal = material("Heat stained engine metal", (0.17, 0.19, 0.21), 0.88, 0.23)
 accent = material("Faction accent", (0.02, 0.38, 0.52), 0.5, 0.22, (0.0, 0.10, 0.16))
-canopy = material("Cyan canopy", (0.025, 0.20, 0.28), 0.15, 0.08, (0.0, 0.08, 0.12))
+canopy = material("Smoked cyan canopy", (0.018, 0.070, 0.095), 0.20, 0.06)
 panel = material("Ceramic service panels", (0.26, 0.30, 0.32), 0.48, 0.36)
 sensor = material("Sensor glass", (0.015, 0.055, 0.070), 0.22, 0.10, (0.0, 0.05, 0.08))
 warning = material("Maintenance warning", (0.72, 0.25, 0.035), 0.35, 0.38)
 engine_inner = material("Engine internal ceramic", (0.018, 0.022, 0.026), 0.70, 0.24)
-canopy.diffuse_color = (0.025, 0.20, 0.28, 0.72)
+canopy.diffuse_color = (0.018, 0.070, 0.095, 0.88)
 if hasattr(canopy, "surface_render_method"):
     canopy.surface_render_method = "DITHERED"
 else:
@@ -124,12 +140,13 @@ root = bpy.data.objects.new("Kestrel_Mk1", None)
 bpy.context.collection.objects.link(root)
 
 body = loft("Continuous fuselage", [
-    (-6.3, .04, .04, 0.00), (-5.8, .34, .28, 0.00),
-    (-4.8, .72, .50, 0.02), (-3.2, 1.06, .66, 0.08),
-    (-1.0, 1.28, .69, 0.02), (1.2, 1.36, .62, -0.02),
-    (3.2, 1.12, .54, -0.02), (4.5, .74, .44, -0.01),
-    (5.05, .48, .38, 0.00)
-], 40, hull)
+    (-6.7, .025, .025, -0.04), (-6.15, .30, .25, -0.02),
+    (-5.35, .58, .43, 0.00), (-4.25, .82, .58, 0.04),
+    (-2.80, 1.02, .72, 0.08), (-1.10, 1.17, .78, 0.06),
+    (0.70, 1.22, .72, 0.02), (2.30, 1.12, .63, 0.00),
+    (3.65, .92, .54, 0.00), (4.65, .62, .43, 0.00),
+    (5.35, .36, .30, 0.00)
+], 56, hull)
 body.parent = root
 
 # A separate faceted radome and chin sensor prevent the nose from reading as
@@ -154,9 +171,10 @@ finish(chin_sensor, .012, True)
 chin_sensor.parent = root
 
 main_wing = prism("Blended main wing", [
-    (-.72, -2.82), (-7.25, .12), (-6.55, 1.62), (-1.38, 2.62),
-    (1.38, 2.62), (6.55, 1.62), (7.25, .12), (.72, -2.82)
-], .20, hull, -0.08)
+    (-.78, -2.72), (-7.35, .15), (-6.72, 1.34), (-2.20, 2.58),
+    (-1.18, 3.05), (1.18, 3.05), (2.20, 2.58), (6.72, 1.34),
+    (7.35, .15), (.78, -2.72)
+], .12, hull, -0.12)
 main_wing.parent = root
 
 for side in (-1, 1):
@@ -165,38 +183,19 @@ for side in (-1, 1):
         (side * 1.55, 2.02), (side * 5.95, .98)
     ], .055, graphite, .05)
     control.parent = root
-    root_panel = prism(f"Graphite wing root panel {'L' if side < 0 else 'R'}", [
-        (side * .95, -1.95), (side * 2.55, -.98),
-        (side * 2.30, -.20), (side * .92, -.52)
-    ], .035, graphite, .045)
-    root_panel.parent = root
     tip_mark = prism(f"Faction wing identification {'L' if side < 0 else 'R'}", [
         (side * 6.72, .25), (side * 6.36, .48),
         (side * 5.98, 1.28), (side * 6.42, 1.18)
     ], .04, accent, .05)
     tip_mark.parent = root
-    # Raised armor panels and leading-edge caps hold highlights independently
-    # from the main wing, giving the top surface readable construction.
-    armor = prism(f"Wing service armor {'L' if side < 0 else 'R'}", [
-        (side * 1.18, -1.40), (side * 3.20, -.54),
-        (side * 2.76, .18), (side * 1.12, -.35)
-    ], .045, panel, .075)
-    armor.parent = root
+    # Leading-edge caps affect material response and remain flush with the
+    # lifting surface. Panel seams and access hatches stay in the UV material;
+    # raised slab greebles made the airframe look assembled from toy blocks.
     leading = prism(f"Heat resistant leading edge {'L' if side < 0 else 'R'}", [
         (side * .82, -2.67), (side * 7.18, .10),
         (side * 6.92, .28), (side * .96, -2.28)
-    ], .048, metal, .045)
+    ], .014, metal, -.052)
     leading.parent = root
-    access = prism(f"Outboard access hatch {'L' if side < 0 else 'R'}", [
-        (side * 3.72, .52), (side * 5.10, .86),
-        (side * 4.78, 1.22), (side * 3.48, .91)
-    ], .035, graphite, .065)
-    access.parent = root
-    caution = prism(f"Maintenance warning panel {'L' if side < 0 else 'R'}", [
-        (side * 2.58, -.04), (side * 3.14, .18),
-        (side * 2.98, .43), (side * 2.42, .20)
-    ], .038, warning, .078)
-    caution.parent = root
 
 tailplane = prism("Tailplane", [
     (-.55, 3.18), (-3.0, 4.12), (-2.58, 4.72),
@@ -205,26 +204,26 @@ tailplane = prism("Tailplane", [
 tailplane.parent = root
 
 for side in (-1, 1):
-    nacelle = cylinder(f"Engine nacelle {'L' if side < 0 else 'R'}", .58, 3.7,
-                       (side * 1.72, 2.45, -.18), metal, 40)
+    nacelle = cylinder(f"Engine nacelle {'L' if side < 0 else 'R'}", .40, 2.45,
+                       (side * 1.58, 3.45, -.08), metal, 48)
     nacelle.parent = root
-    exhaust = cylinder(f"Exhaust {'L' if side < 0 else 'R'}", .48, .86,
-                       (side * 1.72, 4.50, -.18), metal, 40)
+    exhaust = cylinder(f"Exhaust {'L' if side < 0 else 'R'}", .37, .62,
+                       (side * 1.58, 4.92, -.08), metal, 48)
     exhaust.parent = root
-    intake = cylinder(f"Intake lip {'L' if side < 0 else 'R'}", .67, .28,
-                      (side * 1.72, .56, -.18), graphite, 40)
+    intake = cylinder(f"Intake lip {'L' if side < 0 else 'R'}", .45, .20,
+                      (side * 1.58, 2.20, -.08), graphite, 48)
     intake.parent = root
-    intake_dark = cylinder(f"Intake throat {'L' if side < 0 else 'R'}", .51, .18,
-                           (side * 1.72, .74, -.18), engine_inner, 32)
+    intake_dark = cylinder(f"Intake throat {'L' if side < 0 else 'R'}", .35, .14,
+                           (side * 1.58, 2.32, -.08), engine_inner, 40)
     intake_dark.parent = root
-    intake_cone = cylinder(f"Intake centerbody {'L' if side < 0 else 'R'}", .17, .42,
-                           (side * 1.72, .66, -.18), metal, 24)
+    intake_cone = cylinder(f"Intake centerbody {'L' if side < 0 else 'R'}", .12, .28,
+                           (side * 1.58, 2.24, -.08), metal, 24)
     intake_cone.parent = root
-    nozzle_ring = cylinder(f"Exhaust ceramic ring {'L' if side < 0 else 'R'}", .54, .18,
-                           (side * 1.72, 4.93, -.18), graphite, 40)
+    nozzle_ring = cylinder(f"Exhaust ceramic ring {'L' if side < 0 else 'R'}", .42, .16,
+                           (side * 1.58, 5.22, -.08), graphite, 48)
     nozzle_ring.parent = root
-    nozzle_core = cylinder(f"Exhaust internal core {'L' if side < 0 else 'R'}", .37, .12,
-                           (side * 1.72, 5.02, -.18), engine_inner, 32)
+    nozzle_core = cylinder(f"Exhaust internal core {'L' if side < 0 else 'R'}", .29, .10,
+                           (side * 1.58, 5.31, -.08), engine_inner, 40)
     nozzle_core.parent = root
     fin = prism(f"Canted fin {'L' if side < 0 else 'R'}", [
         (side * .82, 2.55), (side * 1.45, 4.42),
@@ -233,32 +232,21 @@ for side in (-1, 1):
     fin.rotation_euler.y = side * math.radians(18)
     fin.parent = root
 
-bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=24, location=(0, -2.62, .66))
-cockpit = bpy.context.object
-cockpit.name = "Framed canopy"
-cockpit.scale = (.58, 1.42, .36)
-bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-cockpit.data.materials.append(canopy)
-finish(cockpit, 0.015, True)
+cockpit = loft("Framed canopy", [
+    (-4.30, .03, .02, .50), (-4.02, .25, .13, .58),
+    (-3.58, .38, .21, .70), (-2.95, .43, .24, .76),
+    (-2.32, .37, .19, .72), (-1.88, .18, .08, .61),
+    (-1.68, .03, .02, .54)
+], 48, canopy)
 cockpit.parent = root
 
-for x in (-.46, .46):
-    frame = cube("Canopy longitudinal frame", (x * .78, -2.58, .86), (.028, 1.02, .026), graphite, .012)
-    frame.rotation_euler.y = math.radians(-5)
-    frame.parent = root
-
-for y, width in ((-3.42, .54), (-2.58, .62), (-1.78, .52)):
-    cross = cube("Canopy transverse frame", (0, y, .84), (width, .024, .025), graphite, .012)
+for y, width, z in ((-3.95, .27, .72), (-2.90, .43, .995), (-1.92, .22, .76)):
+    cross = cube("Canopy transverse frame", (0, y, z), (width, .012, .012), graphite, .005)
     cross.parent = root
 
-# Dorsal service spine, avionics hatches and a recessed refuelling port. These
-# pieces are deliberately shallow: they catch light without changing the
-# aircraft's aerodynamic silhouette.
-for y, sx, sy in ((-1.02, .42, .52), (.08, .50, .38), (1.02, .45, .34), (1.90, .38, .30)):
-    hatch = cube("Dorsal avionics access panel", (0, y, .735), (sx, sy, .022), panel, .025)
-    hatch.parent = root
-spine = cube("Dorsal systems spine", (0, 2.70, .58), (.24, 1.05, .16), graphite, .06)
-spine.parent = root
+# A recessed refuelling port remains genuine service hardware; the surrounding
+# hatches are represented in the UV surface so they cannot float above the
+# tapered fuselage.
 bpy.ops.mesh.primitive_torus_add(major_radius=.18, minor_radius=.035,
                                  major_segments=24, minor_segments=8,
                                  location=(-.46, .18, .77))
@@ -282,17 +270,29 @@ for side in (-1, 1):
     finish(lamp, .008, True)
     lamp.parent = root
 
-for y in (-2.9, -1.6, -.2, 1.35, 2.8):
-    seam = cube("Dorsal panel seam", (0, y, .79), (.64, .018, .012), graphite, .004)
-    seam.parent = root
-
 for side in (-1, 1):
-    for y in (-1.35, -.55, .38, 1.25):
-        seam = cube(f"Wing panel joint {'L' if side < 0 else 'R'}",
-                    (side * (1.65 + (y + 1.35) * .55), y, .085),
-                    (.012, .44, .013), graphite, .003)
-        seam.rotation_euler.z = side * math.radians(24)
-        seam.parent = root
+    # Recessed heat-exchanger slots, inspection fasteners, and a real pitot
+    # housing give the close hangar camera the same secondary-detail density as
+    # the pilot suit without altering the clean combat silhouette.
+    for slot_i in range(6):
+        vent = cube(
+            f"Dorsal heat exchanger slot {'L' if side < 0 else 'R'} {slot_i + 1:02d}",
+            (side * (1.00 + slot_i * .105), 1.70, .765),
+            (.032, .22, .018), engine_inner, .008
+        )
+        vent.parent = root
+    for fastener_i, (fx, fy) in enumerate(((1.35, -1.62), (2.45, -.82), (3.65, .18), (4.75, .82))):
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=12, radius=.045, depth=.018,
+            location=(side * fx, fy, .105)
+        )
+        fastener = bpy.context.object
+        fastener.name = f"Flush wing fastener {'L' if side < 0 else 'R'} {fastener_i + 1:02d}"
+        fastener.data.materials.append(metal)
+        fastener.parent = root
+
+pitot = cylinder("Nose pitot probe", .035, .72, (0, -6.62, .04), metal, 16)
+pitot.parent = root
 
 for obj in bpy.context.scene.objects:
     if obj.type == "MESH":
@@ -387,6 +387,9 @@ bpy.ops.export_scene.gltf(
     export_apply=True,
     export_yup=True
 )
+os.makedirs(os.path.dirname(PUBLIC_ASSET_OUT), exist_ok=True)
+with open(ASSET_OUT, "rb") as source_file, open(PUBLIC_ASSET_OUT, "wb") as public_file:
+    public_file.write(source_file.read())
 if os.environ.get("BLENDER_RENDER_PREVIEW") == "1":
     bpy.ops.render.render(write_still=True)
 print(f"BLEND={BLEND_OUT}")

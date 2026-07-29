@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "project": "Airbourne Arena — Starter Coast",
+  "units": "meters",
+  "runtime": {
+    "engine": "Three.js r128",
+    "format": "GLB",
+    "up_axis": "Y",
+    "canonical_scene": "Airbourne-Arena/index.html"
+  },
+  "masterplan": {
+    "reference": "../concepts/starter-coast-masterplan-v1.png",
+    "status": "reference_layout_requires_authored_full-island_mesh",
+    "layout_zones": [
+      {
+        "id": "arena_core",
+        "center": [0, 0],
+        "shape": "radial_civic_ring",
+        "required_geometry": [
+          "central objective platform",
+          "eight radial bridge approaches",
+          "water-separated inner sectors",
+          "operations buildings"
+        ]
+      },
+      {
+        "id": "vanguard_airbase",
+        "center": [-2800, 0],
+        "shape": "western_airfield",
+        "required_geometry": [
+          "runway deck",
+          "two hangars",
+          "control tower",
+          "maintenance apron",
+          "perimeter road"
+        ]
+      },
+      {
+        "id": "inferno_airbase",
+        "center": [2800, 0],
+        "shape": "eastern_airfield",
+        "required_geometry": [
+          "runway deck",
+          "two hangars",
+          "control tower",
+          "maintenance apron",
+          "perimeter road"
+        ]
+      },
+      {
+        "id": "north_sensor_island",
+        "center": [0, 2100],
+        "shape": "raised_radar_plateau",
+        "required_geometry": [
+          "radar compound",
+          "cliff plateau",
+          "loop road",
+          "bridge connection"
+        ]
+      },
+      {
+        "id": "south_harbor",
+        "center": [0, -2200],
+        "shape": "industrial_harbor",
+        "required_geometry": [
+          "dock fingers",
+          "harbor control",
+          "warehouse district",
+          "seawalls"
+        ]
+      }
+    ]
+  },
+  "authoring_sources": [
+    {
+      "script": "build_starter_coast_story_masterplan.py",
+      "blend_output": "starter-coast-story-masterplan-authored-v1.blend",
+      "runtime_output": "starter-coast-story-masterplan-authored-v1.glb",
+      "status": "source_ready_requires_blender_generation_and_rendered_validation",
+      "coverage": [
+        "six campaign chapters",
+        "thirty-two campaign missions through named anchors and routes",
+        "central Arena Core city",
+        "paired faction airbases",
+        "northern sensor plateau",
+        "southern harbor",
+        "residential, industrial, city and relay islands",
+        "Skyway and independent navigation masts",
+        "Ridgemouth settlement",
+        "Black Wing cache and covert relay",
+        "Warden nodes",
+        "final storm corridor, defence platforms and carrier"
+      ]
+    }
+  ],
+  "runtime_meshes": [
+    {
+      "asset": "breakwater-hangar-detail-authored-v1.glb",
+      "class": "rigid_architecture_overlay",
+      "triangles": 6556,
+      "texture_policy": "runtime_role_assignment",
+      "collision": "existing procedural hangar shell",
+      "approved_surface_inputs": [
+        "breakwater-field-surface-diffusion-4k-v1.webp",
+        "hangar-floor-diffusion-4k-v1.webp",
+        "hangar-metal-diffusion-v1.webp",
+        "aviation-hardware-diffusion-4k-v1.webp",
+        "ready-room-equipment-diffusion-4k-v1.webp"
+      ]
+    },
+    {
+      "asset": "starter-coast-district-authored-v1.glb",
+      "class": "rigid_architecture",
+      "triangles": 72932,
+      "texture_policy": "runtime_role_assignment",
+      "collision": "separate simplified gameplay bodies when required",
+      "approved_surface_inputs": [
+        "city-facades-diffusion-v1.webp",
+        "city-roofs-diffusion-v1.webp",
+        "factory-facade-diffusion-v1.webp",
+        "residential-facade-diffusion-v1.webp",
+        "bunker-concrete-diffusion-v1.webp",
+        "rooftop-equipment-diffusion-v1.webp",
+        "aviation-hardware-diffusion-4k-v1.webp"
+      ]
+    },
+    {
+      "asset": "kestrel-mk1-authored-v1.glb",
+      "class": "rigid_aircraft",
+      "triangles": 24292,
+      "texture_policy": "uv_bake_required_for_final",
+      "collision": "existing simplified flight body",
+      "approved_surface_inputs": [
+        "kestrel-mk1-surface-diffusion-4k-v1.webp",
+        "aviation-hardware-diffusion-4k-v1.webp"
+      ]
+    },
+    {
+      "asset": "starter-coast-pilot-rig-v1.glb",
+      "class": "skinned_character",
+      "triangles": 11376,
+      "skins": 2,
+      "animations": ["Idle", "Walk", "Run"],
+      "texture_policy": "existing_embedded_uv_texture",
+      "approved_surface_inputs": [
+        "starter-coast-pilot-albedo-diffusion-v2.png"
+      ]
+    }
+  ],
+  "surface_families": [
+    {
+      "family": "terrain",
+      "images": [
+        "volcanic-terrain-v2.webp",
+        "breakwater-field-surface-diffusion-4k-v1.webp"
+      ],
+      "geometry": "closed terrain mesh with terrain-conforming roads",
+      "mapping": "world-scale tiled UV",
+      "must_not_contain": ["baked buildings", "baked roads that conflict with geometry"]
+    },
+    {
+      "family": "ocean",
+      "images": ["starter-coast-ocean-diffusion-4k-v1.webp"],
+      "geometry": "runtime water plane",
+      "mapping": "world-scale tiled UV",
+      "must_not_contain": ["shoreline silhouettes", "boats", "buildings"]
+    },
+    {
+      "family": "roads_and_airbases",
+      "images": [
+        "road-surface-diffusion-v1.webp",
+        "airbase-deck-diffusion-4k-v1.webp",
+        "blue-airstrip-v1.webp",
+        "red-airstrip-v1.webp"
+      ],
+      "geometry": "terrain-conforming road ribbons and closed airbase decks",
+      "mapping": "longitudinal trim UV for roads; unique radial UV for decks"
+    },
+    {
+      "family": "vegetation",
+      "images": ["conifer-foliage-diffusion-v1.webp"],
+      "geometry": "instanced trunks and clustered foliage volumes",
+      "mapping": "species-scale tiled UV",
+      "must_not_use": ["foliage texture as terrain color", "tree billboard as closed trunk geometry"]
+    },
+    {
+      "family": "architecture",
+      "images": [
+        "city-facades-diffusion-v1.webp",
+        "city-roofs-diffusion-v1.webp",
+        "factory-facade-diffusion-v1.webp",
+        "residential-facade-diffusion-v1.webp",
+        "bunker-concrete-diffusion-v1.webp",
+        "industrial-tank-diffusion-v1.webp",
+        "rooftop-equipment-diffusion-v1.webp",
+        "hangar-metal-diffusion-v1.webp",
+        "skyway-navigation-surface-diffusion-4k-v1.webp"
+      ],
+      "geometry": "closed modular building meshes",
+      "mapping": "trim sheets and role-specific tiled UVs",
+      "must_not_use": ["camera-facing building cards", "one square projection over an entire building"]
+    },
+    {
+      "family": "aircraft",
+      "images": [
+        "vanguard-surface-diffusion-4k-v1.webp",
+        "tempest-surface-diffusion-4k-v1.webp",
+        "inferno-surface-diffusion-4k-v1.webp",
+        "black-wing-surface-diffusion-4k-v1.webp",
+        "kestrel-mk1-surface-diffusion-4k-v1.webp"
+      ],
+      "geometry": "closed aircraft meshes",
+      "mapping": "unique UV bake with faction mask",
+      "must_not_use": ["billboard aircraft", "unretopologized diffusion mesh"]
+    }
+  ],
+  "non_mesh_assets": [
+    {
+      "class": "vfx",
+      "images": [
+        "aviation-explosion-vfx-diffusion-4k-v1.webp",
+        "storm-cloud-vfx-diffusion-4k-v1.webp",
+        "storm-cloud-vfx-diffusion-4k-v2.webp"
+      ],
+      "use": "particles, soft impostors, or shader inputs",
+      "reason": "effects are not structural closed objects"
+    },
+    {
+      "class": "ui_and_briefing",
+      "images": [
+        "case-run-briefing-v2.webp",
+        "flight-briefing-board-diffusion-4k-v1.webp",
+        "touch-control-pill-v1.webp",
+        "touch-control-round-v1.webp",
+        "airbourne-icon-v2-192.png",
+        "airbourne-icon-v2-512.png"
+      ],
+      "use": "HTML/CSS interface or in-world display surface",
+      "reason": "screen graphics should not become structural geometry"
+    },
+    {
+      "class": "character_reference",
+      "images": [
+        "independent-pilot-rear-diffusion-4k-v1.webp",
+        "mara-switch-voss-diffusion-4k-v1.webp"
+      ],
+      "use": "concept reference until matching skinned meshes exist",
+      "reason": "a portrait does not provide topology, hidden surfaces, skeleton, or weights"
+    }
+  ],
+  "release_gates": [
+    "full-island layout compared against the masterplan from top, chase, and low-flight cameras",
+    "all structural silhouettes represented by closed geometry",
+    "checker inspection shows no stretched building, runway, or road UVs",
+    "diffusion mesh sources retopologized before runtime use",
+    "normal, AO, and surface detail baked from high resolution to controlled runtime topology",
+    "desktop and mobile triangle, draw-call, texture-memory, and frame-time budgets recorded",
+    "canonical and public GLBs synchronized",
+    "desktop hangar, desktop flight, mobile hangar, and mobile flight frames visually approved"
+  ]
+}
