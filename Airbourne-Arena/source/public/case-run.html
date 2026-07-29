@@ -988,6 +988,53 @@ function vnoise(x,y){
 }
 function fbm(x,y,o){var s=0,a=.5,f=1;o=o||5;for(var i=0;i<o;i++){s+=a*vnoise(x*f,y*f);f*=2.03;a*=.5;}return s;}
 
+/* ===================== buttons =====================
+   One binder for every button in the game, because the two devices used to be
+   wired differently and each menu got whichever half its author remembered.
+   Menus bound `click`, which a phone delivers 300ms late or not at all when a
+   pointerdown handler below has already claimed the gesture; the touch cluster
+   bound `pointerdown`, which fires on a scroll that happens to start on a
+   button. This does both jobs once:
+
+     · pointerdown captures the pointer, paints a press state and swallows the
+       event so nothing underneath (the briefing's launch, the canvas) sees it
+     · pointerup inside the button's own box is the activation, so a thumb that
+       slides off cancels the press exactly like a mouse does
+     · Enter and Space activate, so the keyboard and screen readers still work
+
+   Every activation is a real user gesture, which is what the audio context and
+   pointer lock both require. */
+function bindBtn(target,fn){
+  var b=(typeof target==='string')?document.getElementById(target):target;
+  if(!b)return null;
+  var armed=false;
+  var off=function(){armed=false;b.classList.remove('press');};
+  b.addEventListener('pointerdown',function(e){
+    if(b.disabled)return;
+    e.preventDefault(); e.stopPropagation();
+    armed=true; b.classList.add('press');
+    try{b.setPointerCapture(e.pointerId);}catch(err){}
+    if(typeof IS_TOUCH!=='undefined'&&IS_TOUCH&&navigator.vibrate)navigator.vibrate(8);
+  });
+  b.addEventListener('pointerup',function(e){
+    e.preventDefault(); e.stopPropagation();
+    var was=armed; off();
+    if(!was||b.disabled)return;
+    var r=b.getBoundingClientRect(),pad=14;
+    if(e.clientX<r.left-pad||e.clientX>r.right+pad||
+       e.clientY<r.top-pad||e.clientY>r.bottom+pad)return;
+    fn(e);
+  });
+  b.addEventListener('pointercancel',off);
+  b.addEventListener('lostpointercapture',off);
+  b.addEventListener('keydown',function(e){
+    if(b.disabled)return;
+    if(e.key==='Enter'||e.key===' '||e.code==='Space'){e.preventDefault();fn(e);}
+  });
+  if(!b.hasAttribute('tabindex')&&b.tagName!=='BUTTON')b.setAttribute('tabindex','0');
+  return b;
+}
+
 /* ===================== settings =====================
    Everything the player can tune, persisted across sessions. Defaults
    reproduce the original feel, except reduced motion, which follows the
@@ -1117,24 +1164,14 @@ function audioEngine(){
 var coarse=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
 var fine=window.matchMedia&&matchMedia('(any-pointer:fine)').matches;
 var IS_TOUCH=(coarse&&!fine)||(('ontouchstart' in window)&&!fine);
-var hangarHintKeys=null;
 function setTouchMode(on){
   IS_TOUCH=on;
   document.body.classList.toggle('touch',on);
   var gl=document.getElementById('goLine'),mb=document.getElementById('modeBtn');
-  if(gl)gl.textContent=on?'TAP ANYWHERE TO LAUNCH':'CLICK TO CAPTURE THE MOUSE AND LAUNCH';
+  /* the card is a menu, so the backdrop — not the panel — is the tap target */
+  if(gl)gl.textContent=on?'TAP OUTSIDE THIS PANEL TO LAUNCH'
+                         :'CLICK OUTSIDE THIS PANEL TO CAPTURE THE MOUSE AND LAUNCH';
   if(mb)mb.textContent=on?'SWITCH TO MOUSE + KEYBOARD':'SWITCH TO TOUCH CONTROLS';
-  /* The hangar hint lists WASD, MOUSE, ESC, SHIFT, E and F — none of which a
-     phone has. Keep the markup as the desktop copy and stash it on the first
-     call so switching modes back restores it verbatim. */
-  var hh=document.getElementById('hangarHint');
-  if(hh){
-    if(hangarHintKeys===null)hangarHintKeys=hh.innerHTML;
-    hh.innerHTML=on
-      ? '<b>LEFT</b> WALK &nbsp;·&nbsp; <b>RIGHT</b> LOOK &nbsp;·&nbsp; '+
-        '<b>FIT OUT</b> FLIGHT AND KESTREL &nbsp;·&nbsp; <b>BEGIN</b> CAMPAIGN'
-      : hangarHintKeys;
-  }
 }
 setTouchMode(IS_TOUCH);
 var LOW=IS_TOUCH;   /* trim the scene for phone GPUs */
@@ -1253,7 +1290,7 @@ loadManager.onError=function(url){
   assetErrors.push(url);
   if(window.console&&console.warn)console.warn('airbourne: asset failed to load',url);
 };
-if(bootGo)bootGo.addEventListener('click',bootLift);
+bindBtn(bootGo,bootLift);
 /* A request that neither resolves nor errors — a hung connection, a proxy that
    swallows it — must not leave the player staring at a bar that never fills. */
 setTimeout(function(){ if(!assetsReady){bootTimedOut=true; bootFinish();} },25000);
