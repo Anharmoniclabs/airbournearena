@@ -59,6 +59,25 @@ async function enterMission(page, missionId, position, target) {
 }
 
 const desktop = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+if (reviewCase === "gamepad") {
+  await desktop.addInitScript(() => {
+    const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+    const controller = {
+      axes: [0, 0, 0, 0],
+      buttons,
+      connected: true,
+      id: "Airbourne Test Controller (STANDARD GAMEPAD)",
+      index: 0,
+      mapping: "standard",
+      timestamp: 1,
+    };
+    Object.defineProperty(navigator, "getGamepads", {
+      configurable: true,
+      value: () => [controller],
+    });
+    Object.defineProperty(window, "__AIRBOURNE_TEST_PAD__", { value: controller });
+  });
+}
 if (reviewCase === "all" || reviewCase === "hangar") {
   const hangar = await openPage(desktop, "desktop hangar");
   await hangar.screenshot({ path: `${output}/airbourne-v2-hangar.png`, timeout: 120_000 });
@@ -92,6 +111,63 @@ if (reviewCase === "all" || reviewCase === "carrier") {
   await enterMission(carrier, "ch6_m4", [2100, 1080, -620], [2850, 900, 0]);
   await carrier.screenshot({ path: `${output}/airbourne-v2-carrier.png`, timeout: 120_000 });
   await carrier.close();
+}
+if (reviewCase === "gamepad") {
+  const controller = await openPage(desktop, "desktop gamepad");
+  const before = await controller.evaluate(() => window.__AIRBOURNE_CAPTURE__.getWalk());
+  await controller.evaluate(() => {
+    window.__AIRBOURNE_TEST_PAD__.axes[1] = -1;
+    for (let index = 0; index < 5; index++) {
+      window.__AIRBOURNE_CAPTURE__.tickController(0.1);
+    }
+  });
+  await controller.evaluate(() => {
+    window.__AIRBOURNE_TEST_PAD__.axes[1] = 0;
+    window.__AIRBOURNE_CAPTURE__.tickController(0.1);
+  });
+  const after = await controller.evaluate(() => window.__AIRBOURNE_CAPTURE__.getWalk());
+  if (!(after.z < before.z - 0.05)) {
+    throw new Error(`gamepad hangar movement did not advance: ${before.z} -> ${after.z}`);
+  }
+  await controller.evaluate(() => {
+    const button = window.__AIRBOURNE_TEST_PAD__.buttons[9];
+    button.pressed = true;
+    button.value = 1;
+    window.__AIRBOURNE_CAPTURE__.tickController(0.1);
+  });
+  await controller.evaluate(() => {
+    const button = window.__AIRBOURNE_TEST_PAD__.buttons[9];
+    button.pressed = false;
+    button.value = 0;
+    window.__AIRBOURNE_CAPTURE__.tickController(0.1);
+  });
+  await controller.waitForTimeout(900);
+  const phase = await controller.evaluate(() => window.__AIRBOURNE_CAPTURE__.getPhase());
+  if (phase === "hangar") {
+    const debug = await controller.evaluate(() => ({
+      button: window.__AIRBOURNE_TEST_PAD__.buttons[9],
+      pad: window.__AIRBOURNE_CAPTURE__.getPad(),
+    }));
+    throw new Error(`gamepad Start did not leave the hangar: ${JSON.stringify(debug)}`);
+  }
+  await controller.evaluate(() => {
+    window.__AIRBOURNE_TEST_PAD__.axes[0] = 0.72;
+    // Some browser/controller pairs report trigger value without `pressed`.
+    window.__AIRBOURNE_TEST_PAD__.buttons[7].value = 1;
+    window.__AIRBOURNE_CAPTURE__.tickController(0.1);
+  });
+  await controller.waitForTimeout(180);
+  const result = await controller.evaluate(() => ({
+    bullets: window.__AIRBOURNE_CAPTURE__.getBulletCount(),
+    pad: window.__AIRBOURNE_CAPTURE__.getPad(),
+  }));
+  if (!result.pad.on) throw new Error("gamepad was not marked connected");
+  if (result.bullets < 1) throw new Error("analog right trigger did not fire");
+  await controller.screenshot({
+    path: `${output}/airbourne-v2-gamepad.png`,
+    timeout: 120_000,
+  });
+  await controller.close();
 }
 await desktop.close();
 

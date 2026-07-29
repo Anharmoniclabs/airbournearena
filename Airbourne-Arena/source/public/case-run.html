@@ -343,6 +343,9 @@
 
   .card p.gp{display:none}
   body.pad .card p.gp{display:block}
+  body.pad button:focus,body.pad [role="button"]:focus,body.pad input:focus{
+    outline:2px solid var(--teal);outline-offset:3px;
+    box-shadow:0 0 0 1px rgba(111,227,208,.24),0 0 18px rgba(111,227,208,.28)}
 
   /* First Sortie coaching + pause layer */
   #coach{position:fixed;left:14px;top:112px;width:min(292px,42vw);padding:11px 13px;
@@ -980,7 +983,8 @@
         </div>
       </div>
       <div class="row"><b>TOUCH</b><span>Left thumb flies, right thumb fires, passes, boosts and rolls</span></div>
-      <div class="row"><b>GAMEPAD</b><span>Connect one and it takes over automatically</span></div>
+      <div class="row"><b>GAMEPAD</b><span>Left stick steer · RT/R2 fire · A/Cross boost · B/Circle lock · bumpers roll</span></div>
+      <div class="row"><b>HANGAR PAD</b><span>Sticks move/look · D-pad selects · A/Cross interact · Start/Options begin</span></div>
       <div class="btnRow"><button class="actionBtn" id="modeBtn">SWITCH TO TOUCH CONTROLS</button></div>
     </div>
   </div>
@@ -3799,18 +3803,30 @@ function gpwsCheck(dt){
 /* ===================== gamepad =====================
    Standard mapping. The left stick drives the same aim vector the mouse and
    the touch stick drive, so the flight path stays identical across devices. */
-var pad={on:false,prev:{}};
+var pad={on:false,prev:{},axisPrev:{},index:-1,id:'',hangarFocus:0};
 var PAD_DEAD=0.16;
 function padAxis(v){return Math.abs(v)<PAD_DEAD?0:(v-Math.sign(v)*PAD_DEAD)/(1-PAD_DEAD);}
+function padOff(notify){
+  var wasOn=pad.on;
+  pad.on=false;pad.index=-1;pad.id='';pad.prev={};pad.axisPrev={};
+  document.body.classList.remove('pad');
+  if(notify&&wasOn)toast('CONTROLLER DISCONNECTED',1.8);
+}
 function padGet(){
-  if(!cfg.pad||!navigator.getGamepads)return null;
+  if(!cfg.pad||!navigator.getGamepads){padOff(false);return null;}
   var list=navigator.getGamepads(),gp=null;
-  for(var i=0;i<list.length;i++)if(list[i]&&list[i].connected){gp=list[i];break;}
+  if(pad.index>=0&&list[pad.index]&&list[pad.index].connected)gp=list[pad.index];
+  if(!gp)for(var i=0;i<list.length;i++)if(list[i]&&list[i].connected){gp=list[i];break;}
   if(!gp){
-    if(pad.on){pad.on=false;document.body.classList.remove('pad');}
+    padOff(true);
     return null;
   }
-  if(!pad.on){pad.on=true;document.body.classList.add('pad');toast('GAMEPAD CONNECTED');}
+  if(!pad.on||pad.index!==gp.index){
+    pad.on=true;pad.index=gp.index;pad.id=gp.id||'Controller';
+    pad.prev={};pad.axisPrev={};
+    document.body.classList.add('pad');
+    toast('CONTROLLER READY — '+pad.id.replace(/\s*\([^)]*\)\s*/g,' ').slice(0,38),2.4);
+  }
   return gp;
 }
 /* Rising edge only — held buttons must not retrigger a toggle every frame. */
@@ -3819,21 +3835,122 @@ function padTap(gp,index){
   var was=!!pad.prev[index]; pad.prev[index]=down;
   return down&&!was;
 }
-function padHeld(gp,index){return !!(gp.buttons[index]&&gp.buttons[index].pressed);}
+function padHeld(gp,index){
+  var b=gp.buttons[index];
+  return !!(b&&(b.pressed||b.value>.18));
+}
+function padAxisTap(gp,index,direction,key){
+  var down=direction*(gp.axes[index]||0)>.62,was=!!pad.axisPrev[key];
+  pad.axisPrev[key]=down;
+  return down&&!was;
+}
+function padFocusable(scope){
+  if(!scope)return [];
+  return [].slice.call(scope.querySelectorAll(
+    'button:not([disabled]),[role="button"]:not([aria-disabled="true"]),input:not([type="hidden"])'
+  )).filter(function(node){
+    var style=getComputedStyle(node);
+    return style.display!=='none'&&style.visibility!=='hidden'&&style.pointerEvents!=='none';
+  });
+}
+function padFocusMove(nodes,delta){
+  if(!nodes.length)return;
+  var at=nodes.indexOf(document.activeElement);
+  if(at<0)at=delta>0?-1:0;
+  at=(at+delta+nodes.length)%nodes.length;
+  nodes[at].focus({preventScroll:true});
+}
+function padMenuScope(){
+  var ids=['settings','pause','fitCard','missionCard','debrief','choiceCard','finaleCard'];
+  for(var i=0;i<ids.length;i++){
+    var node=document.getElementById(ids[i]);
+    if(node&&node.classList.contains('on'))return node;
+  }
+  if(st.phase!=='hangar'&&!st.started&&!el.brief.classList.contains('gone'))return el.brief;
+  return null;
+}
+function padCancelMenu(scope){
+  if(!scope)return;
+  if(scope.id==='settings')setOpen(false);
+  else if(scope.id==='pause')setPaused(false);
+  else if(scope.id==='fitCard')closeFit();
+  else if(scope.id==='missionCard')closeMissions();
+}
+function padMenuTick(gp,scope){
+  var nodes=padFocusable(scope);
+  var back=padTap(gp,12)||padTap(gp,14)||
+    padAxisTap(gp,1,-1,'menuUp')||padAxisTap(gp,0,-1,'menuLeft');
+  var next=padTap(gp,13)||padTap(gp,15)||
+    padAxisTap(gp,1,1,'menuDown')||padAxisTap(gp,0,1,'menuRight');
+  if(back)padFocusMove(nodes,-1);
+  if(next)padFocusMove(nodes,1);
+  if(padTap(gp,0)){
+    var active=document.activeElement;
+    if(nodes.indexOf(active)<0){padFocusMove(nodes,1);active=document.activeElement;}
+    if(active&&typeof active.click==='function')active.click();
+  }
+  if(padTap(gp,1))padCancelMenu(scope);
+  if(scope.id==='pause'&&padTap(gp,9))setPaused(false);
+}
+function padHangarTick(gp,dt){
+  var lx=padAxis(gp.axes[0]||0),ly=padAxis(gp.axes[1]||0);
+  var rx=padAxis(gp.axes[2]||0),ry=padAxis(gp.axes[3]||0);
+  hWalk.active=!!(lx||ly);hWalk.x=lx;hWalk.y=ly;
+  if(rx||ry){
+    st.padSeen=true;
+    walk.yaw-=rx*dt*2.7;
+    walk.pitch=clamp(walk.pitch-ry*dt*2.1,-1.05,1.05);
+  }
+  var buttons=padFocusable(document.getElementById('hangarTouch'));
+  var previous=padTap(gp,14)||padTap(gp,12);
+  var following=padTap(gp,15)||padTap(gp,13);
+  if((previous||following)&&buttons.length){
+    pad.hangarFocus=(pad.hangarFocus+(following?1:-1)+buttons.length)%buttons.length;
+    if(buttons[pad.hangarFocus])buttons[pad.hangarFocus].focus({preventScroll:true});
+  }
+  if(padTap(gp,0)){
+    if(hangarNear)hangarInteract();
+    else if(buttons.indexOf(document.activeElement)>=0)document.activeElement.click();
+    else if(buttons.length){buttons[pad.hangarFocus].focus({preventScroll:true});}
+  }
+  if(padTap(gp,2))openFit();
+  if(padTap(gp,3))openMissions();
+  if(padTap(gp,9)){
+    var begin=document.getElementById('hGo');
+    if(begin)begin.click();
+  }
+}
+addEventListener('gamepadconnected',function(e){
+  if(!cfg.pad)return;
+  pad.index=e.gamepad.index;pad.on=false;padGet();
+});
+addEventListener('gamepaddisconnected',function(e){
+  if(e.gamepad.index===pad.index)padOff(true);
+});
 
 var padIn={aimX:0,aimY:0,fire:false,boost:false,idle:false,thrUp:false,thrDn:false};
 var padAimT=0;
 /* Polled from the render loop rather than from step(), so Start still unpauses
    and A still starts a rematch while the simulation is frozen. */
-function padTick(){
+function padTick(dt){
   var gp=padGet();
   if(!gp){
     padIn.fire=padIn.boost=padIn.idle=padIn.thrUp=padIn.thrDn=false;
     padIn.aimX=padIn.aimY=0;
+    if(typeof hWalk!=='undefined'&&hWalk){
+      hWalk.active=false;hWalk.x=0;hWalk.y=0;
+    }
     return;
   }
   var anyButton=false;
-  for(var b=0;b<gp.buttons.length;b++)if(gp.buttons[b]&&gp.buttons[b].pressed){anyButton=true;break;}
+  for(var b=0;b<gp.buttons.length;b++)if(padHeld(gp,b)){anyButton=true;break;}
+
+  var menu=padMenuScope();
+  if(menu){
+    if(st.phase==='hangar'){hWalk.active=false;hWalk.x=0;hWalk.y=0;}
+    padMenuTick(gp,menu);return;
+  }
+  if(st.phase==='hangar'){padHangarTick(gp,dt);return;}
 
   padIn.aimX=padAxis(gp.axes[0]||0);
   padIn.aimY=padAxis(gp.axes[1]||0);
@@ -5069,6 +5186,15 @@ if(new URLSearchParams(location.search).has('capture')){
     renderer:renderer,camera:camera,st:st,hangarPlanes:hangarPlanes,
     getPlayer:function(){return player;},
     getWorld:function(){return authoredWorld;},
+    getPhase:function(){return st.phase;},
+    getWalk:function(){return {x:walk.x,z:walk.z,yaw:walk.yaw,pitch:walk.pitch};},
+    getBulletCount:function(){return bullets.length;},
+    getPad:function(){return {on:pad.on,index:pad.index,id:pad.id};},
+    tickController:function(dt){
+      padTick(dt);
+      if(st.phase==='hangar')hangarStep(dt);
+      else if(st.started&&!st.paused)playerControl(dt);
+    },
     getStoryTemplateCount:function(){return Object.keys(storyTemplates||{}).length;},
     leaveHangar:leaveHangar,launch:launch,startMission:startMission,
     settleFlightCamera:function(){
@@ -7184,7 +7310,7 @@ var prevT=performance.now();
 requestAnimationFrame(function loop(now){
   requestAnimationFrame(loop);
   var dt=(now-prevT)/1000; prevT=now; if(dt>.05)dt=.05;
-  padTick();
+  padTick(dt);
   /* the hangar owns the frame entirely while you are in it */
   if(st.phase==='hangar'){hangarStep(dt);renderer.render(hangarScene,hangarCam);return;}
   if(st.started&&!st.paused)step(dt); else env(Math.min(dt,.016));

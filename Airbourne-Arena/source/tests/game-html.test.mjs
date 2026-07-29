@@ -110,6 +110,18 @@ test("chase flight stays readable during hard banks on desktop and mobile", () =
   assert.match(canonical, /st\.camMode===2\?1:\(LOW\?\.08:\.18\+turnPivot\*\.10\)/);
 });
 
+test("a connected standard controller works in menus, the hangar, and flight", () => {
+  assert.match(canonical, /addEventListener\('gamepadconnected'/);
+  assert.match(canonical, /addEventListener\('gamepaddisconnected'/);
+  assert.match(canonical, /function padMenuTick\(gp,scope\)/);
+  assert.match(canonical, /function padHangarTick\(gp,dt\)/);
+  assert.match(canonical, /hWalk\.active=!!\(lx\|\|ly\)/);
+  assert.match(canonical, /walk\.yaw-=rx\*dt\*2\.7/);
+  assert.match(canonical, /return !!\(b&&\(b\.pressed\|\|b\.value>\.18\)\)/);
+  assert.match(canonical, /padIn\.fire=padHeld\(gp,7\)/);
+  assert.match(canonical, /if\(padTap\(gp,9\)\)\{/);
+});
+
 test("the three-faction story fallback cannot recurse", () => {
   assert.match(
     canonical,
