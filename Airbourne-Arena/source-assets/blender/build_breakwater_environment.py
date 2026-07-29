@@ -65,6 +65,40 @@ def export(root_obj, filename):
                               export_apply=True, export_yup=True)
 
 
+def consolidate_for_export(root_obj, building_names=()):
+    """Apply modifiers and batch meshes by building/material for WebGL.
+
+    The editable .blend is saved before this runs, so source modules stay
+    separate. The exported GLB avoids one draw call for every mullion and lamp.
+    """
+    meshes = [o for o in root_obj.children_recursive if o.type == "MESH"]
+    for obj in meshes:
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        for modifier in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+        obj.select_set(False)
+    groups = {}
+    for obj in meshes:
+        tag = root_obj.name
+        low = obj.name.lower()
+        for building_name in building_names:
+            if low.startswith(building_name.lower()):
+                tag = building_name
+                break
+        material = obj.data.materials[0] if obj.data.materials else None
+        groups.setdefault((tag, material.name if material else "unmaterialed"), []).append(obj)
+    for (tag, material_name), objects in groups.items():
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objects:
+            obj.select_set(True)
+        active = objects[0]
+        bpy.context.view_layer.objects.active = active
+        bpy.ops.object.join()
+        active.name = tag + " — " + material_name + " batch"
+        active.parent = root_obj
+
+
 def window_grid(parent, center, width, depth, height, rows, cols, material):
     x0, y0, z0 = center
     for side in (-1, 1):
@@ -72,6 +106,30 @@ def window_grid(parent, center, width, depth, height, rows, cols, material):
             z = z0 - height / 2 + (row + .65) * height / rows
             cube("Recessed glazing band", (x0, y0 + side * (depth / 2 + .035), z),
                  (width / 2, .045, height / rows * .22), material, parent, .015)
+        # The old generator accepted a column count but never used it, leaving
+        # every elevation as one stretched strip. These real mullions give each
+        # facade a readable structural bay at flight and street distances.
+        for col in range(cols + 1):
+            x = x0 - width / 2 + col * width / cols
+            cube("Facade vertical mullion", (x, y0 + side * (depth / 2 + .085), z0),
+                 (.11, .075, height / 2), dark, parent, .025)
+
+
+def roof_cluster(parent, name, x, y, z, frame, accent, kind):
+    """Low-cost roof silhouette kit: plant, service spine, tanks and antenna."""
+    cube(name + " roof service spine", (x, y, z + .55), (5.2, 1.0, .55),
+         frame, parent, .12)
+    for unit in range(2 + kind):
+        ux = x + (unit - (1 + kind) / 2) * 3.2
+        cube(name + " rooftop HVAC", (ux, y, z + 1.6), (1.15, 1.5, .7),
+             frame, parent, .12)
+        cube(name + " HVAC intake grille", (ux, y - 1.54, z + 1.6),
+             (.72, .035, .38), accent, parent, .02)
+    cyl(name + " roof antenna mast", (x - 4.2, y, z + 4.0), .13, 7.0,
+         frame, parent, vertices=12)
+    for dish_z, dish_r in ((z + 5.9, .65), (z + 7.1, .42)):
+        cyl(name + " antenna collar", (x - 4.2, y, dish_z), dish_r, .18,
+             accent, parent, vertices=16)
 
 
 def detailed_building(parent, name, loc, size, floors, shell, frame, glass, roof, ident, kind=0):
@@ -79,11 +137,26 @@ def detailed_building(parent, name, loc, size, floors, shell, frame, glass, roof
     w, d, h = size
     base = cube(name + " structural shell", (x, y, z + h / 2), (w / 2, d / 2, h / 2),
                 shell, parent, .35)
+    cube(name + " foundation plinth", (x, y, z + .8), (w / 2 + 1.4, d / 2 + 1.4, .8),
+         frame, parent, .18)
     window_grid(parent, (x, y, z + h / 2), w * .88, d, h * .82,
-                max(2, floors), max(3, int(w / 6)), glass)
+                max(2, floors), max(4, int(w / 8)), glass)
+    # Floor plates and corner piers break the shell into constructed modules.
+    # Their depth is enough to cast shadows instead of reading as painted lines.
+    for floor in range(1, floors):
+        fz = z + floor * h / floors
+        for side in (-1, 1):
+            cube(name + " projecting floor plate",
+                 (x, y + side * (d / 2 + .12), fz),
+                 (w / 2 + .35, .16, .13), frame, parent, .035)
     for side in (-1, 1):
         cube(name + " corner pier", (x + side * (w / 2 + .12), y, z + h / 2),
              (.28, d / 2 + .12, h / 2 + .12), frame, parent, .05)
+    for side in (-1, 1):
+        for bay in (-.28, .28):
+            cube(name + " side buttress",
+                 (x + side * (w / 2 + .22), y + bay * d, z + h * .42),
+                 (.30, .55, h * .42), frame, parent, .06)
     cube(name + " roof parapet", (x, y, z + h + .35), (w / 2 + .25, d / 2 + .25, .35),
          roof, parent, .12)
     # Physical identification bands break the gray mass at gameplay distance;
@@ -91,13 +164,24 @@ def detailed_building(parent, name, loc, size, floors, shell, frame, glass, roof
     cube(name + " identification band",
          (x, y - d / 2 - .08, z + h * .68),
          (w * .34, .08, .42), ident, parent, .03)
-    for unit in range(2 + kind):
-        ux = x + (unit - (1 + kind) / 2) * 3.2
-        cube(name + " rooftop HVAC", (ux, y, z + h + 1.15), (1.15, 1.5, .7),
-             frame, parent, .12)
+    # Every building gets a recessed entrance, projecting canopy and service
+    # lights; this establishes player scale when seen from low flight.
+    cube(name + " recessed entrance", (x, y - d / 2 - .16, z + 2.7),
+         (2.5, .12, 2.7), glass, parent, .04)
+    cube(name + " entrance frame", (x, y - d / 2 - .32, z + 5.5),
+         (4.2, 1.3, .22), ident, parent, .07)
+    for lamp_x in (-3.1, 3.1):
+        cube(name + " entrance work light",
+             (x + lamp_x, y - d / 2 - .42, z + 5.1),
+             (.28, .10, .18), light, parent, .03)
+    roof_cluster(parent, name, x, y, z + h, frame, ident, kind)
     if kind == 1:
         cyl(name + " exhaust stack", (x + w * .28, y, z + h + 3.1), .48, 5.5,
              frame, parent)
+        for pipe_y in (-d * .22, d * .22):
+            cyl(name + " exterior process pipe",
+                 (x + w / 2 + .55, y + pipe_y, z + h * .42),
+                 .24, h * .70, ident, parent, vertices=12)
     if kind == 2:
         cube(name + " armored entry", (x, y - d / 2 - .9, z + 2.0), (2.5, 1.0, 2.0),
              frame, parent, .12)
@@ -153,9 +237,27 @@ detailed_building(district, "League offices", (335, 420, 0), (78, 60, 78), 5,
                   concrete, teal, glass, steel, teal, 0)
 detailed_building(district, "Harbor control", (0, 720, 0), (96, 64, 72), 4,
                   steel, dark, glass, concrete, orange, 0)
+# Four mid-rise service blocks fill the dead quadrants while leaving the
+# cardinal and diagonal road spokes clear. They make the authored core read as
+# a district rather than eight isolated monuments.
+detailed_building(district, "Transit depot north", (-210, 575, 0), (66, 44, 42), 3,
+                  steel, dark, glass, concrete, teal, 1)
+detailed_building(district, "Civic archive north", (210, 575, 0), (62, 46, 54), 4,
+                  concrete, dark, glass, steel, orange, 0)
+detailed_building(district, "Transit depot south", (-210, -575, 0), (66, 44, 42), 3,
+                  steel, dark, glass, concrete, orange, 1)
+detailed_building(district, "Emergency services south", (210, -575, 0), (62, 46, 50), 4,
+                  concrete, teal, glass, steel, teal, 0)
 
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SOURCE_ROOT, "blender",
                                                   "breakwater-environment-authored-v1.blend"))
+consolidate_for_export(hangar)
+consolidate_for_export(district, (
+    "Operations block", "Repair factory", "Barracks A", "Barracks B",
+    "Hardened bunker", "Radar utility", "League offices", "Harbor control",
+    "Transit depot north", "Civic archive north", "Transit depot south",
+    "Emergency services south",
+))
 export(hangar, "breakwater-hangar-detail-authored-v1.glb")
 export(district, "starter-coast-district-authored-v1.glb")
 print("Authored Breakwater environment GLBs exported")
