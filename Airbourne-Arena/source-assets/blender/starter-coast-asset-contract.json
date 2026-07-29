@@ -118,8 +118,8 @@
     {
       "asset": "starter-coast-world-authored-v2.glb",
       "class": "full_island_world_lod0",
-      "triangles": 84292,
-      "texture_policy": "runtime_role_assignment_over_authored_uvs_and_vertex_colors",
+      "triangles": 125780,
+      "texture_policy": "runtime_role_assignment_over_meter_scaled box cylindrical longitudinal and world UVs plus vertex colors",
       "collision": "matching deterministic terrainHeight plus existing simplified gameplay bodies",
       "approved_surface_inputs": [
         "volcanic-terrain-v2.webp",
@@ -136,8 +136,8 @@
     {
       "asset": "starter-coast-world-authored-v2-lod1.glb",
       "class": "full_island_world_lod1_mobile",
-      "triangles": 12700,
-      "texture_policy": "runtime_role_assignment_over_authored_uvs_and_vertex_colors",
+      "triangles": 22940,
+      "texture_policy": "runtime_role_assignment_over_meter_scaled box cylindrical longitudinal and world UVs plus vertex colors",
       "collision": "matching deterministic terrainHeight plus existing simplified gameplay bodies",
       "approved_surface_inputs": [
         "volcanic-terrain-v2.webp",
@@ -318,6 +318,8 @@
   "release_gates": [
     "full-island layout compared against the masterplan from top, chase, and low-flight cameras",
     "all structural silhouettes represented by closed geometry",
+    "ray-cast terrain contact audit passes every occupied footprint below one meter of visible variation",
+    "runtime terrain collision reproduces Blender construction pads and bathymetry exactly",
     "checker inspection shows no stretched building, runway, or road UVs",
     "diffusion mesh sources retopologized before runtime use",
     "normal, AO, and surface detail baked from high resolution to controlled runtime topology",

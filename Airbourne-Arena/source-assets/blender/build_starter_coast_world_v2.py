@@ -35,6 +35,29 @@ STORY_OUT = ASSETS / "starter-coast-story-kit-authored-v2.glb"
 
 WORLD_SIZE = 8000.0
 WORLD_HALF = WORLD_SIZE / 2
+SEA_LEVEL = 0.0
+SEABED_LEVEL = -32.0
+TERRAIN_TILE_METERS = 180.0
+
+# Each occupied footprint gets an engineered level pad before the render mesh
+# is sampled. Values are center X/Y, half-width, half-depth and the feather
+# distance into the natural terrain. Keeping this list numeric lets the exact
+# same contract live in the Three.js collision function.
+CONSTRUCTION_PADS = (
+    (0, 2100, 285, 220, 110),          # North sensor compound
+    (-430, -410, 65, 52, 70),          # Civic Operations
+    (430, -410, 62, 50, 70),           # League Offices
+    (-430, 410, 62, 50, 70),           # Transit Authority
+    (430, 410, 64, 52, 70),            # Emergency Control
+    (-1560, 1300, 72, 55, 85),         # Residential West
+    (-1360, 1380, 65, 51, 80),         # Residential East
+    (1630, 1205, 190, 150, 120),        # Industrial / Black Wing terrace
+    (-1520, -1303, 175, 125, 110),      # Ridgemouth civic terrace
+    (2225, -525, 67, 54, 85),          # Covert Relay
+    (0, -2150, 68, 53, 70),            # Harbor control
+    (-280, -2070, 112, 67, 90),        # Harbor warehouse west
+    (280, -2070, 112, 67, 90),         # Harbor warehouse east
+)
 
 
 def clamp(value, low, high):
@@ -104,10 +127,10 @@ def island_mask(x, y):
     return clamp(best, 0.0, 1.0)
 
 
-def terrain_height(x, y):
+def terrain_base_height(x, y):
     mask = island_mask(x, y)
     if mask <= 0.001:
-        return -7.0
+        return SEABED_LEVEL
     # Broad hills plus sharper ridgelines. Values are deliberately lower than
     # the previous repeating heightfield so roads and installations can sit on
     # believable engineered grades.
@@ -131,8 +154,29 @@ def terrain_height(x, y):
         if pad > 0:
             target = 34.0 + hash2(cx * 0.01, cy * 0.01) * 24.0
             height += (target - height) * pad
-    # Coastal falloff exposes real cliffs instead of a vertical cylinder wall.
-    return -7.0 + (height + 7.0) * smooth(0.02, 0.82, mask)
+    # A real submerged shelf keeps the water surface separated from the seabed.
+    # The old -7 m floor sat almost coplanar with the review ocean and made the
+    # sea look tiled, noisy and spatially disconnected from the islands.
+    return SEABED_LEVEL + (height - SEABED_LEVEL) * smooth(0.02, 0.82, mask)
+
+
+# Resolve pad elevations once from the unmodified landscape. Re-evaluating the
+# center inside terrain_height would multiply the FBM work for every vertex.
+CONSTRUCTION_PAD_TARGETS = tuple(
+    (*pad, terrain_base_height(pad[0], pad[1])) for pad in CONSTRUCTION_PADS
+)
+
+
+def terrain_height(x, y):
+    height = terrain_base_height(x, y)
+    for cx, cy, half_x, half_y, feather, target in CONSTRUCTION_PAD_TARGETS:
+        dx = max(abs(x - cx) - half_x, 0.0)
+        dy = max(abs(y - cy) - half_y, 0.0)
+        distance = math.hypot(dx, dy)
+        weight = 1.0 - smooth(0.0, feather, distance)
+        if weight > 0:
+            height += (target - height) * weight
+    return height
 
 
 def reset_scene():
@@ -172,6 +216,69 @@ def make_material(name, color, metallic=0.0, roughness=0.6, emission=None):
     return material
 
 
+def material_tile_size(material):
+    """Return a physical texture repeat size in meters."""
+    name = material.name.lower()
+    if "terrain" in name:
+        return TERRAIN_TILE_METERS
+    if "road" in name or "runway" in name:
+        return 12.0
+    if "airbase deck" in name:
+        return 16.0
+    if "foliage" in name or "tree bark" in name:
+        return 5.0
+    if "glazing" in name or "identity" in name or "orange" in name:
+        return 6.0
+    if "hardware" in name or "graphite" in name:
+        return 4.0
+    return 8.0
+
+
+def box_project_uv(obj, tile_meters):
+    """Project each box face at a stable meter scale before objects are joined."""
+    mesh = obj.data
+    uv_layer = mesh.uv_layers.get("UVMap") or mesh.uv_layers.new(name="UVMap")
+    for polygon in mesh.polygons:
+        normal = polygon.normal
+        axis = max(range(3), key=lambda index: abs(normal[index]))
+        for loop_index in polygon.loop_indices:
+            co = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            if axis == 0:
+                uv = (co.y / tile_meters, co.z / tile_meters)
+            elif axis == 1:
+                uv = (co.x / tile_meters, co.z / tile_meters)
+            else:
+                uv = (co.x / tile_meters, co.y / tile_meters)
+            uv_layer.data[loop_index].uv = uv
+
+
+def cylindrical_project_uv(obj, tile_meters):
+    """Give tank/tower sides and caps the same physical texel density."""
+    mesh = obj.data
+    uv_layer = mesh.uv_layers.get("UVMap") or mesh.uv_layers.new(name="UVMap")
+    radius = max(obj.dimensions.x, obj.dimensions.y) * 0.5
+    circumference = max(math.tau * radius, tile_meters)
+    for polygon in mesh.polygons:
+        if abs(polygon.normal.z) > 0.72:
+            for loop_index in polygon.loop_indices:
+                co = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+                uv_layer.data[loop_index].uv = (
+                    co.x / tile_meters, co.y / tile_meters
+                )
+            continue
+        values = []
+        for loop_index in polygon.loop_indices:
+            co = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            values.append((math.atan2(co.y, co.x) / math.tau) % 1.0)
+        if values and max(values) - min(values) > 0.5:
+            values = [value + 1.0 if value < 0.5 else value for value in values]
+        for loop_index, angle in zip(polygon.loop_indices, values):
+            co = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            uv_layer.data[loop_index].uv = (
+                angle * circumference / tile_meters, co.z / tile_meters
+            )
+
+
 def cube(name, location, dimensions, material, owner, bevel=0.0, parent=None):
     bpy.ops.mesh.primitive_cube_add(location=location)
     obj = move_to(bpy.context.object, owner)
@@ -179,6 +286,8 @@ def cube(name, location, dimensions, material, owner, bevel=0.0, parent=None):
     obj.dimensions = dimensions
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     obj.data.materials.append(material)
+    box_project_uv(obj, material_tile_size(material))
+    obj["uv_policy"] = f"box projected {material_tile_size(material):g} meter tiles"
     if bevel:
         modifier = obj.modifiers.new("Edge bevel", "BEVEL")
         modifier.width = bevel
@@ -195,6 +304,8 @@ def cylinder(name, location, radius, depth, material, owner, vertices=16, parent
     obj = move_to(bpy.context.object, owner)
     obj.name = name
     obj.data.materials.append(material)
+    cylindrical_project_uv(obj, material_tile_size(material))
+    obj["uv_policy"] = f"cylindrical {material_tile_size(material):g} meter tiles"
     if parent:
         obj.parent = parent
     return obj
@@ -208,6 +319,8 @@ def cone(name, location, radius1, radius2, depth, material, owner, vertices=16, 
     obj = move_to(bpy.context.object, owner)
     obj.name = name
     obj.data.materials.append(material)
+    cylindrical_project_uv(obj, material_tile_size(material))
+    obj["uv_policy"] = f"conical {material_tile_size(material):g} meter tiles"
     if parent:
         obj.parent = parent
     return obj
@@ -229,7 +342,7 @@ def terrain_mesh(name, resolution, owner, material):
             x = -WORLD_HALF + col * step
             z = terrain_height(x, y)
             vertices.append((x, y, z))
-            uvs.append((x / 520.0, y / 520.0))
+            uvs.append((x / TERRAIN_TILE_METERS, y / TERRAIN_TILE_METERS))
             mask = island_mask(x, y)
             urban = 1.0 - smooth(650, 1900, math.hypot(x, y))
             if mask < 0.08:
@@ -264,7 +377,7 @@ def terrain_mesh(name, resolution, owner, material):
     owner.objects.link(obj)
     obj.data.materials.append(material)
     obj["collision_policy"] = "runtime deterministic height function"
-    obj["uv_policy"] = "world tiled 520 meters"
+    obj["uv_policy"] = f"world tiled {TERRAIN_TILE_METERS:g} meters"
     return obj
 
 
@@ -325,7 +438,10 @@ def road_ribbon(name, points, width, owner, material, bridge_owner=None, closed=
             (point[0] + nx * width / 2, point[1] + ny * width / 2, deck_z),
             (point[0] - nx * width / 2, point[1] - ny * width / 2, deck_z),
         ))
-        uvs.extend(((0, distance / 90.0), (1, distance / 90.0)))
+        uvs.extend((
+            (-width / 24.0, distance / 12.0),
+            (width / 24.0, distance / 12.0),
+        ))
         if index < len(sampled) - 1:
             base = index * 2
             faces.append((base, base + 2, base + 3, base + 1))
@@ -339,7 +455,7 @@ def road_ribbon(name, points, width, owner, material, bridge_owner=None, closed=
     obj = bpy.data.objects.new(name, mesh)
     owner.objects.link(obj)
     obj.data.materials.append(material)
-    obj["uv_policy"] = "longitudinal trim"
+    obj["uv_policy"] = "physical 12 meter road tiles"
     return obj
 
 
@@ -350,8 +466,8 @@ def detailed_building(name, x, y, width, depth, height, floors, owner, identity)
         (width, depth, height), concrete_mat, owner, 1.2
     )
     cube(
-        name + "__plinth", (x, y, z + 1.2),
-        (width + 5, depth + 5, 2.4), dark_mat, owner, 0.4
+        name + "__plinth", (x, y, z - 1.9),
+        (width + 5, depth + 5, 6.2), dark_mat, owner, 0.4
     )
     cube(
         name + "__roof", (x, y, z + height + 1.8),
@@ -411,6 +527,11 @@ def harbor(owner, simplified=False):
             f"South_Harbor__dock_{index:02d}", (x, -2500, 6),
             (118, 480, 12), concrete_mat, owner, 1.6
         )
+        for pier_y in (-2660, -2500, -2340):
+            cylinder(
+                f"South_Harbor__dock_pier_{index:02d}", (x, pier_y, -16),
+                5.5, 32, hardware_mat, owner, 12
+            )
         for crane in (-80, 70):
             cube(
                 f"South_Harbor__crane_{index:02d}", (x, -2500 + crane, 32),
@@ -470,6 +591,21 @@ def apply_modifiers_and_batch(owner, prefix):
     # exporter marks the entire mesh invalid, so remove them deterministically.
     for obj in [item for item in owner.all_objects if item.type == "MESH"]:
         if "Terrain surface" in obj.name:
+            # Reassert the world projection after Blender's collection/batch
+            # operations. Blender 4 can preserve the UV layer name while
+            # normalizing generated grid faces back to 0..1 per cell.
+            uv_layer = obj.data.uv_layers.get("UVMap") or obj.data.uv_layers.new(
+                name="UVMap"
+            )
+            for polygon in obj.data.polygons:
+                for loop_index in polygon.loop_indices:
+                    co = obj.data.vertices[
+                        obj.data.loops[loop_index].vertex_index
+                    ].co
+                    uv_layer.data[loop_index].uv = (
+                        co.x / TERRAIN_TILE_METERS,
+                        co.y / TERRAIN_TILE_METERS,
+                    )
             continue
         bm = bmesh.new()
         bm.from_mesh(obj.data)
@@ -763,9 +899,9 @@ story = make_collection("STORY_TEMPLATES", source)
 guides = make_collection("AUTHORING_GUIDES", source)
 
 print("world-v2: building LOD0", flush=True)
-build_world(lod0, 129, True)
+build_world(lod0, 193, True)
 print("world-v2: building LOD1", flush=True)
-build_world(lod1, 65, False)
+build_world(lod1, 97, False)
 print("world-v2: building story templates", flush=True)
 build_nav_mast(story)
 build_warden_node(story)

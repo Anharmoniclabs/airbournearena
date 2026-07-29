@@ -39,7 +39,9 @@ for name in ("WORLD_LOD1", "STORY_TEMPLATES", "AUTHORING_GUIDES"):
     if collection:
         collection.hide_render = True
 
-bpy.ops.mesh.primitive_plane_add(size=18000, location=(0, 0, -7.5))
+# Match the runtime waterline exactly. The former -7.5 m review plane sat
+# nearly on the old seabed and produced a noisy false impression of the coast.
+bpy.ops.mesh.primitive_plane_add(size=18000, location=(0, 0, 0))
 ocean = bpy.context.object
 ocean.name = "Review_Ocean"
 ocean_material = bpy.data.materials.new("Review ocean")

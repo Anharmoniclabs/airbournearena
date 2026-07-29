@@ -1231,7 +1231,7 @@ function arenaDistance(x,z){
   return Math.hypot(x-cx,z);
 }
 
-var SN=0.00075;
+var SN=0.00075,SEA_LEVEL=0,SEABED_LEVEL=-32;
 /* Starter Coast v2 uses the same deterministic island mask in Blender and in
    the flight runtime. That keeps collision, grounded objectives and the
    authored GLB on one coastline instead of flying over a repeating height
@@ -1259,9 +1259,9 @@ function islandMask(x,z){
   }
   return clamp(best,0,1);
 }
-function terrainHeight(x,z){
+function terrainBaseHeight(x,z){
   var mask=islandMask(x,z);
-  if(mask<=.001)return -7;
+  if(mask<=.001)return SEABED_LEVEL;
   var base=Math.pow(fbm(x*.00072,z*.00072,5),1.72);
   var ridge=1-Math.abs(vnoise(x*.0018+31.3,z*.0018+17.7)*2-1);
   var h=18+base*210+ridge*ridge*105;
@@ -1284,9 +1284,39 @@ function terrainHeight(x,z){
       h+=(target-h)*pad;
     }
   }
-  return -7+(h+7)*smooth(.02,.82,mask);
+  return SEABED_LEVEL+(h-SEABED_LEVEL)*smooth(.02,.82,mask);
 }
-function ground(x,z){return Math.max(terrainHeight(x,z),0);}
+/* Engineered pads are shared with the Blender source as
+   [centerX,centerZ,halfWidth,halfDepth,feather]. Their targets are sampled
+   once from the natural landscape, then the occupied footprint is made truly
+   planar. Buildings no longer balance on a single center-point height while
+   their corners float over or disappear into a hill. */
+var CONSTRUCTION_PADS=[
+  [0,2100,285,220,110],
+  [-430,-410,65,52,70],[430,-410,62,50,70],
+  [-430,410,62,50,70],[430,410,64,52,70],
+  [-1560,1300,72,55,85],[-1360,1380,65,51,80],
+  [1630,1205,190,150,120],[-1520,-1303,175,125,110],
+  [2225,-525,67,54,85],[0,-2150,68,53,70],
+  [-280,-2070,112,67,90],[280,-2070,112,67,90]
+];
+for(var cp=0;cp<CONSTRUCTION_PADS.length;cp++){
+  CONSTRUCTION_PADS[cp].push(
+    terrainBaseHeight(CONSTRUCTION_PADS[cp][0],CONSTRUCTION_PADS[cp][1])
+  );
+}
+function terrainHeight(x,z){
+  var h=terrainBaseHeight(x,z);
+  for(var i=0;i<CONSTRUCTION_PADS.length;i++){
+    var p=CONSTRUCTION_PADS[i],
+        dx=Math.max(Math.abs(x-p[0])-p[2],0),
+        dz=Math.max(Math.abs(z-p[1])-p[3],0),
+        weight=1-smooth(0,p[4],Math.hypot(dx,dz));
+    if(weight>0)h+=(p[5]-h)*weight;
+  }
+  return h;
+}
+function ground(x,z){return Math.max(terrainHeight(x,z),SEA_LEVEL);}
 
 /* ===================== scene ===================== */
 var scene=new THREE.Scene();
@@ -1550,7 +1580,7 @@ function updateTerrain(px,pz){
 var sea=new THREE.Mesh(new THREE.PlaneGeometry(40000,40000),
   new THREE.MeshPhongMaterial({map:oceanSkin,color:0x7f9ead,shininess:110,
     transparent:true,opacity:.94}));
-sea.rotation.x=-Math.PI/2; scene.add(sea);
+sea.rotation.x=-Math.PI/2;sea.position.y=SEA_LEVEL;scene.add(sea);
 
 /* ===================== weather ===================== */
 var WX={clear:{name:'CLEAR',fog:.00012,cover:.10,rain:0,wind:8,gust:2},
@@ -2097,6 +2127,12 @@ var proceduralRoads=new THREE.Group();scene.add(proceduralRoads);
    hanging hard bodies on several hundred boxes would turn every low pass into
    a coin flip; the terrain underneath is still the thing that kills you. */
 var cityMat=null,cityRoofMat=null,cityNightMats=[];
+/* Legacy instanced blocks remain available only if the authored world fails.
+   Per-instance box scaling cannot preserve meter-accurate UV density, and the
+   old terrain-center placement left pale roof slabs where towers intersected
+   hills. Keep the fallback recoverable without layering it over approved
+   Blender architecture. */
+var proceduralCity=new THREE.Group();scene.add(proceduralCity);
 (function buildCity(){
   var lots=[],span=Math.round(CITY_REACH/CITY_BLOCK);
   for(var ix=-span;ix<=span;ix++){
@@ -2177,7 +2213,7 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
     }
     city.instanceMatrix.needsUpdate=true;
     if(city.instanceColor)city.instanceColor.needsUpdate=true;
-    scene.add(city);
+    proceduralCity.add(city);
   }
   var tierMats=[officeMat,officeMat,cityRoofMat,officeMat,officeMat,officeMat];
   var tiers=new THREE.InstancedMesh(geo,tierMats,upperTiers.length);
@@ -2189,7 +2225,7 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
   }
   tiers.instanceMatrix.needsUpdate=true;
   if(tiers.instanceColor)tiers.instanceColor.needsUpdate=true;
-  scene.add(tiers);
+  proceduralCity.add(tiers);
   /* Dark recessed glazing bands are actual geometry. They preserve detail at
      oblique angles and night lighting instead of asking one facade bitmap to
      represent every differently proportioned tower. */
@@ -2200,7 +2236,7 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
     var W=windowBands[wi];pos.set(W[0],W[2],W[1]);scl.set(W[3],W[4],W[5]);
     m.compose(pos,q,scl);bands.setMatrixAt(wi,m);
   }
-  bands.instanceMatrix.needsUpdate=true;bands.frustumCulled=false;scene.add(bands);
+  bands.instanceMatrix.needsUpdate=true;bands.frustumCulled=false;proceduralCity.add(bands);
   /* Rooftop HVAC/generator boxes are separate geometry and keep their own
      texel scale, so the equipment reads as hardware instead of painted roofs. */
   var propMat=new THREE.MeshPhongMaterial({map:rooftopSkin,color:0xffffff,shininess:25});
@@ -2209,7 +2245,7 @@ var cityMat=null,cityRoofMat=null,cityNightMats=[];
     var P=roofProps[pi];pos.set(P[0],P[2],P[1]);scl.set(P[3],P[4],P[5]);
     m.compose(pos,q,scl);props.setMatrixAt(pi,m);
   }
-  props.instanceMatrix.needsUpdate=true;props.frustumCulled=false;scene.add(props);
+  props.instanceMatrix.needsUpdate=true;props.frustumCulled=false;proceduralCity.add(props);
 })();
 
 /* Blender-authored hero architecture occupies the deliberately reserved
@@ -2224,7 +2260,10 @@ function authoredScaledMap(source){
   /* One calibrated clone per source family—not per mesh—keeps authored UV
      transforms isolated from the procedural materials without multiplying
      uploads across buildings and set pieces. */
-  var t=source.clone();t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);
+  /* Blender exports meter-scaled box/cylindrical/terrain UVs. Preserve that
+     physical density here instead of multiplying every surface by a shared
+     2x transform that made a rooftop unit and a warehouse look identical. */
+  var t=source.clone();t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1,1);
   if('colorSpace' in t)t.colorSpace=THREE.SRGBColorSpace;
   if('encoding' in t)t.encoding=THREE.sRGBEncoding;
   t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
@@ -2324,7 +2363,7 @@ new THREE.GLTFLoader(loadManager).load(
   function(gltf){
     calibrateAuthoredWorld(gltf.scene);
     authoredWorld=gltf.scene;scene.add(authoredWorld);
-    terrain.visible=false;proceduralRoads.visible=false;
+    terrain.visible=false;proceduralRoads.visible=false;proceduralCity.visible=false;
   },undefined,function(err){console.error('Authored Starter Coast world failed to load.',err);}
 );
 

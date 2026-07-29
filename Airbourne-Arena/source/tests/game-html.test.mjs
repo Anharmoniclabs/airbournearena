@@ -78,7 +78,11 @@ test("the Blender world and campaign story kit are runtime assets", () => {
   assert.match(canonical, /starter-coast-world-authored-v2-lod1\.glb/);
   assert.match(canonical, /starter-coast-story-kit-authored-v2\.glb/);
   assert.match(canonical, /function islandMask\(x,z\)/);
-  assert.match(canonical, /terrain\.visible=false;proceduralRoads\.visible=false/);
+  assert.match(canonical, /SEABED_LEVEL=-32/);
+  assert.match(canonical, /function terrainBaseHeight\(x,z\)/);
+  assert.match(canonical, /var CONSTRUCTION_PADS=\[/);
+  assert.match(canonical, /terrain\.visible=false;proceduralRoads\.visible=false;proceduralCity\.visible=false/);
+  assert.match(canonical, /t\.repeat\.set\(1,1\)/);
   for (const template of [
     "Nav_Mast",
     "Warden_Node",
