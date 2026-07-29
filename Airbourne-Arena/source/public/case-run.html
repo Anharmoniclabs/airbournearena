@@ -16,7 +16,9 @@
   :root{
     --ink:#dff3ff; --teal:#6fe3d0; --amber:#ffb347; --alert:#ff5f56;
     --blue:#4fc3ff; --red:#ff6b5e;
-    --panel:rgba(6,14,20,.44); --line:rgba(111,227,208,.30);
+    --panel:rgba(6,14,20,.58); --panel-solid:rgba(5,12,18,.94);
+    --line:rgba(111,227,208,.30); --line-hot:rgba(111,227,208,.62);
+    --panel-shadow:0 24px 90px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.025);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:#05070d;color:var(--ink);
@@ -29,7 +31,8 @@
   .val{font-size:19px;font-weight:600;line-height:1;color:var(--teal);text-shadow:0 0 14px rgba(111,227,208,.3)}
   .val small{font-size:10px;letter-spacing:.12em;color:rgba(223,243,255,.45);margin-left:3px}
   .bracket{position:absolute;background:var(--panel);border:1px solid var(--line);padding:9px 13px;
-    border-radius:2px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+    border-radius:2px;box-shadow:inset 3px 0 rgba(111,227,208,.08);
+    backdrop-filter:blur(9px) saturate(1.12);-webkit-backdrop-filter:blur(9px) saturate(1.12)}
 
   #hud{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .5s}
   #hud.live{opacity:1}
@@ -77,7 +80,8 @@
     padding:2px 7px;border-radius:2px;display:inline-block}
 
   #mapWrap{position:absolute;bottom:14px;right:14px;width:186px;height:186px;
-    border:1px solid var(--line);border-radius:2px;overflow:hidden;background:rgba(6,14,20,.5)}
+    border:1px solid var(--line);border-radius:2px;overflow:hidden;background:rgba(6,14,20,.68);
+    box-shadow:0 14px 44px rgba(0,0,0,.34),inset 0 0 28px rgba(4,12,18,.72)}
   #mapWrap.big{width:min(70vh,70vw);height:min(70vh,70vw);bottom:50%;right:50%;
     transform:translate(50%,50%);border-color:var(--amber)}
   #mapWrap canvas{width:100%;height:100%}
@@ -149,14 +153,20 @@
     transition:opacity .5s}
   #brief.gone{opacity:0;pointer-events:none}
   .card{width:min(730px,92vw);max-height:92vh;overflow:auto;border:1px solid var(--line);
-    background:linear-gradient(135deg,rgba(5,12,18,.91),rgba(5,12,18,.72));
-    box-shadow:0 26px 100px rgba(0,0,0,.55);padding:26px 30px;border-radius:3px}
+    background:
+      linear-gradient(90deg,var(--teal),transparent 22%) top left/100% 2px no-repeat,
+      linear-gradient(135deg,rgba(7,17,24,.96),rgba(4,10,16,.82));
+    box-shadow:var(--panel-shadow);padding:26px 30px;border-radius:3px;position:relative}
+  .card:after,.setCard:after,.pauseCard:after{content:"";position:absolute;inset:8px;
+    border:1px solid rgba(223,243,255,.035);pointer-events:none}
   .card h1{font-size:30px;letter-spacing:.32em;color:var(--teal);text-shadow:0 0 26px rgba(111,227,208,.28)}
   .card .sub{font-size:10px;letter-spacing:.24em;color:rgba(223,243,255,.5);margin:9px 0 4px}
   .card p{font-size:11.5px;line-height:1.9;color:rgba(223,243,255,.72);margin:12px 0 14px}
   .card p b{color:var(--amber);font-weight:500}
-  .card p.tp{display:none}
-  body.touch .card p.tp{display:block}
+  /* the briefing is a menu, not a manual: the key list only exists when asked
+     for, and the card scrolls under a thumb like every other overlay */
+  #keyList{display:none;margin-top:6px}
+  #keyList.on{display:block}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
   @media (max-width:640px){.cols{grid-template-columns:1fr}}
   .hd{font-size:9px;letter-spacing:.26em;color:var(--amber);margin:10px 0 4px}
@@ -316,11 +326,6 @@
     body.touch .row{padding:4px 0}
   }
 
-  #modeBtn,#briefSetBtn{margin-top:10px;text-align:center;font-size:9px;letter-spacing:.22em;
-    color:rgba(223,243,255,.45);border:1px solid rgba(111,227,208,.22);border-radius:14px;
-    padding:7px 0;cursor:pointer}
-  #modeBtn{margin-top:14px}
-  #modeBtn:hover,#briefSetBtn:hover{color:var(--teal);border-color:var(--line)}
   .card p.gp{display:none}
   body.pad .card p.gp{display:block}
 
@@ -344,8 +349,9 @@
   #pause p{font-size:10px;letter-spacing:.14em;line-height:2;color:rgba(223,243,255,.58);margin:14px 0}
   .actionBtn{appearance:none;border:1px solid var(--line);background:rgba(111,227,208,.08);
     color:var(--teal);padding:10px 18px;font:600 10px/1 ui-monospace,monospace;letter-spacing:.18em;
-    cursor:pointer}
-  .actionBtn:hover{background:rgba(111,227,208,.18)}
+    cursor:pointer;position:relative;transition:background .16s,border-color .16s,transform .16s}
+  .actionBtn:hover,.actionBtn:focus-visible{background:rgba(111,227,208,.18);
+    border-color:var(--line-hot);outline:none;transform:translateY(-1px)}
   #sessionTag{position:fixed;left:14px;bottom:214px;font-size:8px;letter-spacing:.17em;
     color:rgba(223,243,255,.35);z-index:3;opacity:0;transition:.3s}
   #hud.live #sessionTag{opacity:1}
@@ -471,7 +477,10 @@
      or sliders cannot be dragged and the panel cannot be scrolled on a phone */
   #settings,#settings *{touch-action:auto}
   .setCard{width:min(460px,92vw);max-height:90vh;overflow:auto;border:1px solid var(--line);
-    background:rgba(6,14,20,.96);padding:24px 26px;overscroll-behavior:contain}
+    background:
+      linear-gradient(90deg,var(--teal),transparent 28%) top left/100% 2px no-repeat,
+      var(--panel-solid);padding:24px 26px;overscroll-behavior:contain;
+    box-shadow:var(--panel-shadow);position:relative}
   .setCard h2{letter-spacing:.3em;color:var(--teal);font-size:19px;text-align:center}
   .setRow{display:flex;align-items:center;gap:12px;margin-top:15px;font-size:10px;letter-spacing:.14em}
   .setRow>label{flex:1;color:rgba(223,243,255,.72)}
@@ -645,14 +654,10 @@
 <div id="hangarUI">
   <div id="hangarTitle">
     <h2>BREAKWATER FIELD</h2>
-    <p><b>MARA "SWITCH" VOSS:</b> Your Kestrel is patched, fueled, and still
-    yours. Vanguard and Inferno are running an <b>Arena League open trial</b>
-    off Starter Coast, and each needs one independent pilot. Pick the flight
-    you will support today, move the <b>Arena Core</b>, and bring my aircraft
-    home in one piece. This is a trial assignment—not your final allegiance.</p>
+    <p id="hangarChapter">CHAPTER 1 — ROOKIE WINGS</p>
   </div>
   <div id="hangarSign">
-    <span>OPEN-TRIAL FLIGHT</span>
+    <span>FLIGHT</span>
     <b id="hangarTeam">INDEPENDENT</b>
     <span id="hangarCall"></span>
   </div>
@@ -663,12 +668,9 @@
   </div>
   <div id="hangarTouch">
     <div class="pill" id="hFit" role="button" tabindex="0">FIT OUT</div>
+    <div class="pill" id="hMissions" role="button" tabindex="0">CAMPAIGN</div>
+    <div class="pill" id="hSet" role="button" tabindex="0">SETTINGS</div>
     <div class="pill" id="hGo" role="button" tabindex="0">BEGIN</div>
-  </div>
-  <div id="hangarHint">
-    <b>W A S D</b> WALK &nbsp;·&nbsp; <b>MOUSE</b> LOOK &nbsp;·&nbsp;
-    <b>CLICK</b> CAPTURE &nbsp;·&nbsp; <b>ESC</b> RELEASE &nbsp;·&nbsp;
-    <b>SHIFT</b> RUN &nbsp;·&nbsp; <b>E</b> INTERACT &nbsp;·&nbsp; <b>F</b> FIT OUT
   </div>
 </div>
 
@@ -873,51 +875,62 @@
 <div id="brief">
   <div class="card">
     <h1>ARENA CORE</h1>
-    <div class="sub">AIRBOURNE ARENA · 4 v 4 · VANGUARD WEST vs INFERNO EAST · FIRST TO 3</div>
-    <p>Four aircraft launch from the blue base in the west, four from the red base in the east.
-      Between them, hanging at midfield, is a hardened <b>Arena Core</b>.
-      Fly through it to pick it up, then run it to the ring at the <b>enemy end</b> to score. Shoot the
-      carrier down and the case drops where they died, free for anyone. Wrecks are back in the air off
-      their own base in <b>10 seconds</b>.</p>
-    <p>The aircraft flies on a real velocity vector — thrust, lift, drag and gravity, with angle of
-      attack driving the lift curve. Point the nose up and the jet keeps going the way it was going
-      until the wing turns it. Pull too hard and the wing stalls. <b>Trade height for speed</b>.</p>
-    <p>Gunnery is solved, not guessed. The amber box marks the bandit the aircraft is tracking, the
-      red circle is where they will be when your rounds arrive, and the pipper is where those rounds
-      will actually be at that moment. <b>Put the pipper on the circle</b> — when the solution is
-      good both go green. Rounds carry your own velocity, so a hard turn throws them wide.</p>
-    <p class="tp">On a phone the left thumb gets a floating stick, the right thumb gets
-      FIRE, PASS, BOOST and ROLL. Works in whichever way you're holding it — no rotating required.
-      <b>ROLL</b> snaps a barrel roll that corkscrews the flight path sideways and drags you
-      out of somebody's gunsight.</p>
-    <div class="cols">
-      <div>
-        <div class="hd">FLYING</div>
-        <div class="row"><b>MOUSE</b><span>Steer — the nose chases the teal reticle</span></div>
-        <div class="row"><b>A / D</b><span>Turn left / right — tap to correct, hold to tighten</span></div>
-        <div class="row"><b>W / S</b><span>Throttle up / down</span></div>
-        <div class="row"><b>&uarr; &darr;</b><span>Pitch · &larr; &rarr; also turn</span></div>
-        <div class="row"><b>SHIFT</b><span>Firewall the throttle</span></div>
-        <div class="row"><b>CTRL</b><span>Idle / airbrake</span></div>
-      </div>
-      <div>
-        <div class="hd">FIGHTING</div>
-        <div class="row"><b>SPACE</b><span>Nose cannon (or left-click)</span></div>
-        <div class="row"><b>TAB</b><span>Lock the next bandit ahead</span></div>
-        <div class="row"><b>X</b><span>Release the lock (auto resumes)</span></div>
-        <div class="row"><b>F</b><span>Pass / throw the core forward</span></div>
-        <div class="row"><b>C</b><span>Camera: chase / close / cockpit</span></div>
-        <div class="row"><b>M / V / T</b><span>Map · weather · clock</span></div>
-        <div class="row"><b>Q / E</b><span>Barrel roll left / right</span></div>
-        <div class="row"><b>P / O</b><span>Pause · settings</span></div>
-        <div class="row"><b>ESC</b><span>Release the mouse</span></div>
-      </div>
+    <div class="sub">AIRBOURNE ARENA · 4 v 4 · FIRST TO 3</div>
+    <p>Fly through the <b>Arena Core</b> at midfield to pick it up, then run it to the ring at the
+      <b>enemy end</b>. Shoot the carrier down and it drops where they died, free for anyone.</p>
+    <div class="btnRow">
+      <button class="actionBtn" id="briefGoBtn">LAUNCH</button>
+      <button class="actionBtn" id="briefStoryBtn">CAMPAIGN</button>
+      <button class="actionBtn" id="briefSetBtn">SETTINGS</button>
+      <button class="actionBtn" id="briefKeysBtn">CONTROLS</button>
     </div>
-    <p class="gp">A connected <b>gamepad</b> takes over automatically — left stick flies,
-      triggers are throttle and guns, and the face buttons handle pass, roll and boost.</p>
     <div class="go" id="goLine">CLICK TO CAPTURE THE MOUSE AND LAUNCH</div>
-    <div id="modeBtn">SWITCH TO TOUCH CONTROLS</div>
-    <div id="briefSetBtn">SETTINGS</div>
+    <div id="keyList">
+      <div class="cols">
+        <div>
+          <div class="hd">FLYING</div>
+          <div class="row"><b>MOUSE</b><span>Steer — the nose chases the teal reticle</span></div>
+          <div class="row"><b>A / D</b><span>Turn left / right — tap to correct, hold to tighten</span></div>
+          <div class="row"><b>W / S</b><span>Throttle up / down</span></div>
+          <div class="row"><b>SHIFT / CTRL</b><span>Firewall · idle</span></div>
+        </div>
+        <div>
+          <div class="hd">FIGHTING</div>
+          <div class="row"><b>SPACE</b><span>Nose cannon (or left-click)</span></div>
+          <div class="row"><b>TAB</b><span>Lock the next bandit ahead</span></div>
+          <div class="row"><b>F / Q / E</b><span>Pass the core · barrel roll</span></div>
+          <div class="row"><b>C / M / P / O</b><span>Camera · map · pause · settings</span></div>
+        </div>
+      </div>
+      <div class="row"><b>TOUCH</b><span>Left thumb flies, right thumb fires, passes, boosts and rolls</span></div>
+      <div class="row"><b>GAMEPAD</b><span>Connect one and it takes over automatically</span></div>
+      <div class="btnRow"><button class="actionBtn" id="modeBtn">SWITCH TO TOUCH CONTROLS</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="missionCard">
+  <div class="setCard">
+    <h2>CAMPAIGN</h2>
+    <div id="missionMeta"></div>
+    <div id="missionList"></div>
+    <div class="btnRow">
+      <button class="actionBtn" id="missionClose">CLOSE</button>
+      <button class="actionBtn" id="missionReset">RESTART CAMPAIGN</button>
+    </div>
+  </div>
+</div>
+
+<div id="finaleCard">
+  <div class="setCard">
+    <h2 id="finaleT">THE SKIES AFTER</h2>
+    <p style="font-size:11.5px;line-height:1.9;color:rgba(223,243,255,.72);margin:14px 0 0"
+       id="finaleB"></p>
+    <div id="finaleStats"></div>
+    <div class="btnRow">
+      <button class="actionBtn" id="finaleHangar">BREAKWATER HANGAR</button>
+      <button class="actionBtn" id="finaleAgain">NEW CAMPAIGN</button>
+    </div>
   </div>
 </div>
 
@@ -1150,6 +1163,11 @@ try{
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.15:2));
 renderer.setSize(innerWidth,innerHeight);
+/* Filmic output keeps sunlit concrete from clipping to flat white while
+   retaining the teal/orange cockpit language in dusk and storm conditions. */
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=LOW?.98:1.04;
 document.getElementById('app').appendChild(renderer.domElement);
 scene.fog=new THREE.FogExp2(0x9ec7e8,0.00022);
 
@@ -1309,13 +1327,20 @@ var moonLight=new THREE.DirectionalLight(0x9fb8ff,0); scene.add(moonLight,moonLi
 var hemi=new THREE.HemisphereLight(0x9ec7e8,0x3a3524,.45); scene.add(hemi);
 
 var skyU={top:{value:new THREE.Color(0x2b6fc9)},bottom:{value:new THREE.Color(0xa9d6f2)},
-  sunDir:{value:new THREE.Vector3(0,1,0)},sunCol:{value:new THREE.Color(0xfff3d6)},glow:{value:1}};
+  sunDir:{value:new THREE.Vector3(0,1,0)},sunCol:{value:new THREE.Color(0xfff3d6)},
+  glow:{value:1},cover:{value:.1},time:{value:0}};
 var sky=new THREE.Mesh(new THREE.SphereGeometry(14000,32,20),new THREE.ShaderMaterial({
   uniforms:skyU,side:THREE.BackSide,depthWrite:false,fog:false,
   vertexShader:'varying vec3 vD;void main(){vD=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-  fragmentShader:'uniform vec3 top,bottom,sunDir,sunCol;uniform float glow;varying vec3 vD;'+
-   'void main(){float h=clamp(vD.y*.5+.5,0.,1.);vec3 c=mix(bottom,top,pow(h,.85));'+
-   'float d=max(dot(vD,normalize(sunDir)),0.);c+=sunCol*pow(d,220.)*3.2;c+=sunCol*pow(d,7.)*.3*glow;'+
+  fragmentShader:'uniform vec3 top,bottom,sunDir,sunCol;uniform float glow,cover,time;varying vec3 vD;'+
+   'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}'+
+   'float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}'+
+   'void main(){float h=clamp(vD.y*.5+.5,0.,1.);vec3 c=mix(bottom,top,pow(h,.78));'+
+   'float horizon=pow(1.-abs(vD.y),7.);c=mix(c,bottom*1.08,horizon*.46);'+
+   'float d=max(dot(vD,normalize(sunDir)),0.);c+=sunCol*pow(d,240.)*3.0;c+=sunCol*pow(d,7.)*.28*glow;'+
+   'vec2 cp=vD.xz/max(.12,vD.y+.38)*2.4+vec2(time*.004,time*.0015);'+
+   'float cirrus=noise(cp)+.52*noise(cp*2.07+4.1);cirrus=smoothstep(1.02,1.46,cirrus)*smoothstep(.42,.72,vD.y);'+
+   'c=mix(c,mix(bottom,vec3(1.),.28),cirrus*(.06+cover*.18));'+
    'gl_FragColor=vec4(c,1.);}'
 })); scene.add(sky);
 
@@ -3481,6 +3506,37 @@ var baseMap=document.createElement('canvas'); baseMap.width=baseMap.height=MM;
     else if(h<190)col='#4a5a45'; else col='#8e8f8a';
     b.fillStyle=col;b.fillRect(ix*cell,iy*cell,cell+1,cell+1);
   }
+  /* Bake the circulation hierarchy into the chart. The terrain raster alone
+     hid the civic ring and made the authored district look like empty ground. */
+  function line(points,width,color){
+    b.beginPath();
+    for(var i=0;i<points.length;i++){
+      var p=w2m(points[i][0],points[i][1]);
+      if(i)b.lineTo(p.x,p.y);else b.moveTo(p.x,p.y);
+    }
+    b.strokeStyle=color;b.lineWidth=width;b.stroke();
+  }
+  b.lineCap='round';b.lineJoin='round';
+  var avenues=[[-CITY_REACH,0,CITY_REACH,0],[0,-CITY_REACH,0,CITY_REACH],
+    [-CITY_REACH,-670,CITY_REACH,-670],[-CITY_REACH,670,CITY_REACH,670],
+    [-670,-CITY_REACH,-670,CITY_REACH],[670,-CITY_REACH,670,CITY_REACH]];
+  for(var ai=0;ai<avenues.length;ai++){
+    var a=avenues[ai];line([[a[0],a[1]],[a[2],a[3]]],2.8,'rgba(5,12,16,.76)');
+    line([[a[0],a[1]],[a[2],a[3]]],.8,'rgba(172,194,188,.42)');
+  }
+  var ring=[];
+  for(var ri=0;ri<=64;ri++){var ra=ri/64*Math.PI*2;ring.push([Math.cos(ra)*ROAD_RING_R,Math.sin(ra)*ROAD_RING_R]);}
+  line(ring,4.2,'rgba(5,12,16,.82)');line(ring,1.2,'rgba(111,227,208,.48)');
+  /* Reserved central blocks contain the authored Blender district. */
+  var heroLots=[[-520,-420],[-350,-420],[430,-420],[500,420],[-520,420],
+    [-365,420],[335,420],[0,720],[-210,575],[210,575],[-210,-575],[210,-575]];
+  b.fillStyle='rgba(160,187,181,.44)';b.strokeStyle='rgba(223,243,255,.34)';b.lineWidth=.8;
+  for(var hi=0;hi<heroLots.length;hi++){
+    var hp=w2m(heroLots[hi][0],heroLots[hi][1]);
+    b.fillRect(hp.x-2.8,hp.y-2.2,5.6,4.4);b.strokeRect(hp.x-2.8,hp.y-2.2,5.6,4.4);
+  }
+  var coreP=w2m(0,0);b.strokeStyle='rgba(255,179,71,.66)';b.lineWidth=1.2;
+  b.beginPath();b.arc(coreP.x,coreP.y,8,0,Math.PI*2);b.stroke();
 })();
 function w2m(x,z){return {x:(x+MM_HALF)/(2*MM_HALF)*MM,y:(z+MM_HALF)/(2*MM_HALF)*MM};}
 function drawMap(){
@@ -5196,6 +5252,7 @@ function env(dt){
   cTop.lerp(C.grey,wx.cover*.42); cBot.lerp(C.grey,wx.cover*.5);
   skyU.top.value.copy(cTop); skyU.bottom.value.copy(cBot);
   skyU.sunCol.value.copy(cSun); skyU.sunDir.value.copy(sunDir); skyU.glow.value=1-wx.cover*.8;
+  skyU.cover.value=wx.cover;skyU.time.value=performance.now()*.001;
   scene.fog.color.copy(cBot).lerp(C.grey,.18); scene.fog.density=wx.fog;
 
   var shade=1-wx.cover*.62;
