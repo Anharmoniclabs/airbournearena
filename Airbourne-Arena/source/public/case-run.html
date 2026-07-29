@@ -3716,7 +3716,13 @@ function launch(){
   if(IS_TOUCH){ if(first){goFullscreen();} }
   else lock();
 }
-el.brief.addEventListener('pointerdown',launch);
+/* The briefing card is a menu with its own buttons and a scrollable control
+   list, so only the backdrop around it is "tap to launch" — otherwise dragging
+   the card to read it starts the match underneath. */
+el.brief.addEventListener('pointerdown',function(e){
+  if(e.target&&e.target.closest&&e.target.closest('.card'))return;
+  launch();
+});
 renderer.domElement.addEventListener('pointerdown',function(e){
   if(IS_TOUCH){launch();return;}
   /* The hangar is already running before the match is "started". Previously
