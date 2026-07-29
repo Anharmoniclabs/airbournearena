@@ -524,9 +524,7 @@
   #hangarTitle h2{font-size:20px;letter-spacing:.3em;color:var(--teal);margin-bottom:10px}
   #hangarTitle p{font-size:10px;line-height:2.1;color:rgba(223,243,255,.5)}
   #hangarTitle p b{color:var(--amber);font-weight:500}
-  #hangarHint{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);
-    text-align:center;color:rgba(223,243,255,.5);line-height:2.2;white-space:nowrap}
-  #hangarHint b{color:var(--teal);font-weight:500}
+  #hangarChapter{color:var(--amber)}
   #hangarPrompt{position:absolute;left:50%;top:54%;transform:translateX(-50%);
     border:1px solid var(--line);background:rgba(6,14,20,.86);padding:9px 17px;
     color:var(--ink);opacity:0;transition:opacity .14s;white-space:nowrap}
@@ -538,16 +536,16 @@
   body:not(.hangar) #hangarPrompt{display:none}
   #hangarSign{position:absolute;right:34px;top:30px;text-align:right;
     color:rgba(223,243,255,.45);line-height:2.1}
-  /* ---- hangar on a phone ----
-     None of this had a touch layout. The briefing paragraph is 340px wide at a
-     fixed 34px inset, so it runs off a 360px screen; the sign panel sits in the
-     opposite corner at the same top and overlapped it; and the hint and prompt
-     are both white-space:nowrap, which is the text that was visibly cut. */
+  /* ---- the hangar button bar ----
+     Walking up to a bay and pressing E is a discovery, not a control scheme.
+     The same four buttons are on screen on every device now, so a mouse player
+     and a thumb player reach fit-out, the campaign list, settings and launch
+     the same way. */
   #hangarTouch{position:absolute;left:50%;transform:translateX(-50%);
-    bottom:calc(56px + env(safe-area-inset-bottom));display:none;gap:10px;
+    bottom:calc(40px + env(safe-area-inset-bottom));display:none;gap:10px;
     flex-wrap:wrap;justify-content:center;width:max-content;max-width:92vw;
     pointer-events:auto;z-index:2}
-  body.touch.hangar #hangarTouch{display:flex}
+  body.hangar #hangarTouch{display:flex}
   #hangarTouch .pill{min-width:124px}
   /* Walk and look on a phone. Before this the hangar ran an automatic camera
      orbit, which reads as the pilot walking off on their own — the player is
@@ -579,8 +577,6 @@
     color:var(--teal);border-color:rgba(111,227,208,.5);z-index:3}
   body.touch.hangar #hangarPrompt.on{pointer-events:auto}
   body.touch #hangarPrompt.press{filter:brightness(1.3)}
-  body.touch #hangarHint{white-space:normal;max-width:min(430px,86vw);
-    bottom:calc(14px + env(safe-area-inset-bottom));line-height:1.9;font-size:9px}
   #hangarSign b{display:block;font-size:15px;letter-spacing:.26em;font-weight:600}
   #hangarSign b.blue{color:var(--blue)} #hangarSign b.red{color:var(--red)}
 
