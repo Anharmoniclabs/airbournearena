@@ -69,6 +69,19 @@
   .bar i{display:block;height:100%;width:100%}
   .hp i{background:linear-gradient(90deg,#ff5f56,#6fe3d0)}
   .thr i{background:var(--teal)}
+  .ab i{background:linear-gradient(90deg,#ffb347,#ff5f56);transition:none}
+  .bar.ab{margin-top:3px}
+  #abTag{font-size:8px;letter-spacing:.2em;color:rgba(223,243,255,.4);margin-top:2px}
+  #abTag.lit{color:var(--amber);text-shadow:0 0 8px var(--amber)}
+  #abTag.dry{color:var(--alert)}
+  /* zoom: a narrow gunsight reads better with the edges pulled down */
+  #zoomVig{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;
+    transition:opacity .18s;
+    background:radial-gradient(ellipse at center,transparent 42%,rgba(2,5,9,.62) 100%)}
+  #zoomTag{position:fixed;left:50%;top:calc(50% + 74px);transform:translateX(-50%);
+    font-size:9px;letter-spacing:.26em;color:var(--teal);opacity:0;
+    transition:opacity .18s;pointer-events:none;z-index:3;
+    text-shadow:0 0 10px rgba(111,227,208,.6)}
 
   #roster{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;margin-top:8px}
   .pilot{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.08em;
@@ -827,6 +840,8 @@
       <div class="lbl">AIRFRAME</div><div class="val" id="hpv">100</div>
       <div class="bar hp"><i id="hpBar"></i></div>
       <div class="bar thr"><i id="thrBar"></i></div>
+      <div class="bar ab"><i id="abBar"></i></div>
+      <div id="abTag">BURNER</div>
       <div id="sysDmg" style="font-size:9px;letter-spacing:.12em;color:#ffb347;margin-top:3px;min-height:11px"></div>
     </div>
   </div>
@@ -929,6 +944,7 @@
       <div class="pill" id="tCam">CAM</div>
       <div class="pill" id="tMap">MAP</div>
       <div class="pill" id="tLock">LOCK</div>
+      <div class="pill" id="tZoom">ZOOM</div>
     </div>
     <div class="tbtn" id="tRoll">ROLL</div>
     <div class="tbtn" id="tUp">THR&#9650;</div>
@@ -940,6 +956,8 @@
   <div id="tPause">&#10073;&#10073;</div>
 </div>
 <div id="rollHud"></div>
+<div id="zoomVig"></div>
+<div id="zoomTag">GUNSIGHT</div>
 
 <div id="end"><div>
   <div id="endT"></div>
@@ -977,13 +995,15 @@
         <div>
           <div class="hd">FIGHTING</div>
           <div class="row"><b>SPACE</b><span>Nose cannon (or left-click)</span></div>
+        <div class="row"><b>RIGHT-CLICK / Z</b><span>Zoom the gunsight</span></div>
+        <div class="row"><b>SHIFT</b><span>Afterburner &mdash; limited, refills when cool</span></div>
           <div class="row"><b>TAB</b><span>Lock the next bandit ahead</span></div>
           <div class="row"><b>F / Q / E</b><span>Pass the core · barrel roll</span></div>
           <div class="row"><b>C / M / P / O</b><span>Camera · map · pause · settings</span></div>
         </div>
       </div>
       <div class="row"><b>TOUCH</b><span>Left thumb flies, right thumb fires, passes, boosts and rolls</span></div>
-      <div class="row"><b>GAMEPAD</b><span>Left stick steer · RT/R2 fire · A/Cross boost · B/Circle lock · bumpers roll</span></div>
+      <div class="row"><b>GAMEPAD</b><span>Left stick steer · RT/R2 fire · A/Cross burner · L1 zoom · R1 roll · B/Circle lock</span></div>
       <div class="row"><b>HANGAR PAD</b><span>Sticks move/look · D-pad selects · A/Cross interact · Start/Options begin</span></div>
       <div class="btnRow"><button class="actionBtn" id="modeBtn">SWITCH TO TOUCH CONTROLS</button></div>
     </div>
@@ -2836,6 +2856,8 @@ function makeFighter(team,idx,isPlayer){
   respawnFighter(f,true); fighters.push(f); return f;
 }
 function respawnFighter(f,instant){
+  if(f.isPlayer&&typeof burner!=='undefined'){burner.fuel=1;burner.lit=false;burner.cool=0;}
+  f.abRamp=0;
   /* launch line abreast off your own base, nose already pointed at midfield */
   var b=BASES[f.team];
   var lane=(f.slot-1.5)*105;
@@ -2866,9 +2888,22 @@ var CDI=0.35;          // induced drag: hard turns bleed energy
 var LIFT_K=0.00284;
 var CL_A=5.2, CL0=0.06, A_CRIT=0.30;
 var A_TRIM=0.045;      // trim angle of attack — hands off, it flies level
-var G_LIMIT=8.0;       // structural limit
+var G_LIMIT=9.0;       // structural limit — sets the sustained turn radius
 var SIDE_K=0.0022;
-var PITCH_RATE=1.60, ROLL_RATE=4.8, YAW_RATE=0.60, STAB=1.9;
+var PITCH_RATE=1.85, ROLL_RATE=5.6, YAW_RATE=0.60, STAB=1.9;
+
+/* ===================== afterburner =====================
+   BOOST used to mean "set the throttle to 1", which is where the throttle
+   already sits the moment you hold W — so the button did nothing and the
+   aircraft had no way to make energy in a hurry. This is a real burner: a
+   limited pool that gives thrust well past the military rating, drains while
+   lit, and refills only once you let it cool. It is the tool for extending out
+   of a fight, which is the other half of not being permanently tailed.       */
+var AB_THRUST=1.85,      /* multiplier on top of full military thrust */
+    AB_DRAIN=1/5.0,      /* five seconds of burner from full */
+    AB_RECHARGE=1/8.0,   /* eight seconds to refill once cool */
+    AB_COOL=0.9,         /* pause before it starts refilling */
+    AB_RELIGHT=0.18;     /* how much you need banked to light it again */
 var AIL_BIAS=1.35;     // standing roll rate a wrecked aileron leaves behind
 
 /* ===================== open atmosphere =====================
@@ -2953,7 +2988,15 @@ function stepFlight(f,ctl,dt){
 
   _ac.set(0,0,0);
   /* thrust falls off more slowly than density — an intake still packs air */
-  _ac.addScaledVector(_f,THRUST*(f.trimThrust||1)*(carry?.85:1)*ctl.throttle*Math.pow(rho,0.75));
+  var thrustMul=1;
+  if(ctl.burner){
+    /* the burner comes in over a beat rather than as a step, so lighting it
+       reads as an engine spooling instead of a teleport */
+    f.abRamp=Math.min(1,(f.abRamp||0)+dt*3.2);
+    thrustMul=1+(AB_THRUST-1)*f.abRamp;
+  } else f.abRamp=Math.max(0,(f.abRamp||0)-dt*2.4);
+  _ac.addScaledVector(_f,THRUST*(f.trimThrust||1)*(carry?.85:1)*ctl.throttle*
+    thrustMul*Math.pow(rho,0.75));
   _ac.addScaledVector(_ld,liftA);
   _ac.addScaledVector(_vd,-DRAG_K*q2*cd*rho);
   _ac.addScaledVector(_r,-SIDE_K*q2*beta);
@@ -2975,11 +3018,11 @@ function stepFlight(f,ctl,dt){
   f.speed=f.vel.length(); f.alpha=alpha; f.stalled=stalled;
   f.gLoad=liftA/G;
   if(f.mesh.userData.exhausts){
-    var flame=2.8+ctl.throttle*4.8+(f.isPlayer&&touchIn&&touchIn.boost?2.8:0);
+    var flame=2.8+ctl.throttle*4.8+(f.abRamp||0)*5.4;
     for(var ei=0;ei<f.mesh.userData.exhausts.length;ei++){
       var ex=f.mesh.userData.exhausts[ei];
       ex.scale.set(2.4+ctl.throttle*1.8,flame,1);
-      ex.material.opacity=.34+ctl.throttle*.62;
+      ex.material.opacity=Math.min(1,.34+ctl.throttle*.62+(f.abRamp||0)*.3);
     }
   }
 }
@@ -3150,7 +3193,7 @@ var st={scoreB:0,scoreR:0,time:MATCH_TIME,over:false,hours:9.4,timeSpeed:1,
   started:false,locked:false,mouseSeen:false,padSeen:false,paused:false,ringWarned:false,
   /* 'arena' is a free Core Run; 'campaign' hands pacing to the mission runtime */
   phase:'hangar',mode:'arena'};
-var keys={},mouseDown=false;
+var keys={},mouseDown=false,mouseRight=false;
 var WORLD_UP=new THREE.Vector3(0,1,0);
 var tmpV=new THREE.Vector3(),tmpV2=new THREE.Vector3(),tmpV3=new THREE.Vector3();
 var sortie={startedAt:0,kills:0,deaths:0,shots:0,hits:0,grabs:0,passes:0,scores:0,
@@ -3168,7 +3211,12 @@ var aim={x:0,y:0}, AIM_R=0.55;
 /* how long the current turn input has been held, and which way — reversing the
    turn restarts the ramp so a reversal is as crisp as the first input */
 var turnHold=0, turnDir=0;
-function mouseSens(){return cfg.sens/100000;}
+/* Gain scales with the field of view. Zooming without this makes the reticle
+   travel the same angle over a third of the screen, which is the classic
+   "zoom makes it worse" feel; tying the two together is what makes a zoomed
+   pass steady. */
+function zoomGain(){return typeof zoom!=='undefined'?(1-zoom.k*0.62):1;}
+function mouseSens(){return (cfg.sens/100000)*zoomGain();}
 var aimDir=new THREE.Vector3(0,0,-1);
 
 /* The side you signed with is yours; the other one flies against you. */
@@ -3928,14 +3976,14 @@ addEventListener('gamepaddisconnected',function(e){
   if(e.gamepad.index===pad.index)padOff(true);
 });
 
-var padIn={aimX:0,aimY:0,fire:false,boost:false,idle:false,thrUp:false,thrDn:false};
+var padIn={aimX:0,aimY:0,fire:false,boost:false,idle:false,thrUp:false,thrDn:false,zoom:false};
 var padAimT=0;
 /* Polled from the render loop rather than from step(), so Start still unpauses
    and A still starts a rematch while the simulation is frozen. */
 function padTick(dt){
   var gp=padGet();
   if(!gp){
-    padIn.fire=padIn.boost=padIn.idle=padIn.thrUp=padIn.thrDn=false;
+    padIn.fire=padIn.boost=padIn.idle=padIn.thrUp=padIn.thrDn=padIn.zoom=false;
     padIn.aimX=padIn.aimY=0;
     if(typeof hWalk!=='undefined'&&hWalk){
       hWalk.active=false;hWalk.x=0;hWalk.y=0;
@@ -3966,11 +4014,12 @@ function padTick(dt){
   padIn.idle=padHeld(gp,6);
   padIn.thrUp=padHeld(gp,12);
   padIn.thrDn=padHeld(gp,13);
+  padIn.zoom=padHeld(gp,4);          /* L1 / LB — held, for gun work */
   if(padTap(gp,2)&&core.carrier===player)passCore(player);
   if(padTap(gp,1))cycleTarget();
   if(padTap(gp,10))releaseLock();
-  if(padTap(gp,4))startRoll(player,1);
-  if(padTap(gp,5))startRoll(player,-1);
+  /* R1 rolls the way the stick is leaning; L1 is the zoom now */
+  if(padTap(gp,5))startRoll(player,padIn.aimX>0?-1:1);
   if(padTap(gp,3))st.camMode=(st.camMode+1)%3;
   if(padTap(gp,8)){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
 }
@@ -4017,7 +4066,7 @@ function resetMatch(){
 /* ===================== HUD refs ===================== */
 var el={};['spd','alt','aoa','hpv','hpBar','thrBar','sysDmg','sB','sR','clock','coreLine','tapeInner','hdgRead',
   'wx','wxsub','roster','aimRet','pip','lead','vpath','dmg','flash','center','warn','prompt',
-  'end','endT','endS','mapWrap','hud','brief'].forEach(function(id){el[id]=document.getElementById(id);});
+  'end','endT','endS','mapWrap','hud','brief','abBar','abTag','zoomVig','zoomTag'].forEach(function(id){el[id]=document.getElementById(id);});
 var PPD=2.3;
 for(var dg=-180;dg<=540;dg+=5){
   var tk=document.createElement('div'),maj=(dg%45===0);
@@ -4247,7 +4296,7 @@ function drawMap(){
 }
 
 /* ===================== input ===================== */
-var touchIn={fire:false,thrUp:false,thrDn:false,boost:false};
+var touchIn={fire:false,thrUp:false,thrDn:false,boost:false,zoom:false};
 var stick={id:null,ox:0,oy:0,dx:0,dy:0,active:false,R:64};
 
 /* Chrome rejects requestPointerLock outside a user gesture with a promise, and
@@ -4314,8 +4363,13 @@ renderer.domElement.addEventListener('pointerdown',function(e){
      never at the cost of the trigger. */
   if(!st.locked)lock();
   if(e.button===0)mouseDown=true;
+  if(e.button===2)mouseRight=true;
 });
-addEventListener('pointerup',function(){mouseDown=false;});
+addEventListener('pointerup',function(e){
+  if(e.button===2)mouseRight=false; else mouseDown=false;
+});
+/* the right button is the zoom, so the browser menu cannot have it */
+renderer.domElement.addEventListener('contextmenu',function(e){e.preventDefault();});
 document.addEventListener('pointerlockchange',function(){
   st.locked=(document.pointerLockElement===renderer.domElement);
   document.body.classList.toggle('locked',st.locked);
@@ -4373,6 +4427,7 @@ document.addEventListener('pointerlockchange',function(){
   hold('tPass',function(){if(core.carrier===player)passCore(player);});
   hold('tRoll',function(){startRoll(player,stick.dx>0?-1:1);});
   hold('tLock',function(){if(lockOn.manual)releaseLock(); else cycleTarget();});
+  hold('tZoom',function(){touchIn.zoom=true;},function(){touchIn.zoom=false;});
   hold('tCam',function(){st.camMode=(st.camMode+1)%3;});
   hold('tMap',function(){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);});
 
@@ -4532,7 +4587,8 @@ var C={dayTop:new THREE.Color(0x2b6fc9),dayBot:new THREE.Color(0xa9d6f2),
   duskTop:new THREE.Color(0x2a2c55),duskBot:new THREE.Color(0xff9a4d),
   nightTop:new THREE.Color(0x03050e),nightBot:new THREE.Color(0x0d1730),
   sunWarm:new THREE.Color(0xffb469),sunHigh:new THREE.Color(0xfff4dc),grey:new THREE.Color(0x59636b)};
-var cTop=new THREE.Color(),cBot=new THREE.Color(),cSun=new THREE.Color(),sunDir=new THREE.Vector3();
+var cTop=new THREE.Color(),cBot=new THREE.Color(),cSun=new THREE.Color(),
+    cGround=new THREE.Color(),sunDir=new THREE.Vector3();
 
 /* ===================== the hangar =====================
    Everything before the sortie happens here: a room you walk around in rather
@@ -5190,13 +5246,28 @@ if(new URLSearchParams(location.search).has('capture')){
     getWalk:function(){return {x:walk.x,z:walk.z,yaw:walk.yaw,pitch:walk.pitch};},
     getBulletCount:function(){return bullets.length;},
     getPad:function(){return {on:pad.on,index:pad.index,id:pad.id};},
+    setEnvironment:function(hours,key){
+      st.hours=((hours%24)+24)%24;
+      if(WX[key]){
+        wxKey=key;wxTimer=400;
+        for(var weatherKey in wx)wx[weatherKey]=WX[key][weatherKey];
+      }
+      env(.016);
+    },
     tickController:function(dt){
       padTick(dt);
       if(st.phase==='hangar')hangarStep(dt);
       else if(st.started&&!st.paused)playerControl(dt);
     },
     getStoryTemplateCount:function(){return Object.keys(storyTemplates||{}).length;},
-    leaveHangar:leaveHangar,launch:launch,startMission:startMission,
+    /* startMission is declared further down the file, so this object literal —
+       which is built at load time — would capture `undefined` if the reference
+       were direct. Reading the name inside a wrapper defers the lookup to call
+       time. That also makes this the one place in the file whose behaviour
+       depends on declaration order rather than on hoisting, which matters
+       because src/ is assembled in manifest order. */
+    leaveHangar:leaveHangar,launch:launch,
+    startMission:function(id){return startMission(id);},
     settleFlightCamera:function(){
       camera.position.copy(player.pos);
       camLookReady=false;
@@ -5506,14 +5577,106 @@ function clearConvoy(){
   for(var i=0;i<convoy.length;i++){scene.remove(convoy[i].mesh);disposeSubtree(convoy[i].mesh);}
   convoy.length=0;
 }
+/* ===================== hostile behaviour =====================
+   Every hostile used to point at the player and never stop. Two things made
+   that inescapable rather than merely difficult: they all picked the same
+   target, and they steered by lerping their velocity vector, which has no
+   turn radius at all — a hostile could reverse direction inside its own
+   length, so no amount of flying could break its tracking. The result was the
+   thing every mission ended as: a permanent tail you could not shake.
+
+   Three rules fix it without making them harmless.
+
+     1. A turn rate. They rotate their heading at a bounded angular speed, so a
+        hard turn or a burner extension genuinely defeats the solution and
+        overshooting past you costs them the same time it costs you.
+     2. Engagement slots. Only a few press the attack at once; the rest hold
+        off at a distance and rotate in. Being outnumbered should mean pressure,
+        not eight aircraft in one cone.
+     3. Break-off. A hostile that has been in the saddle for a while extends
+        away, resets, and comes back around. That is the breathing room the
+        player never got.                                                     */
+var HOSTILE_TURN=0.95,      /* radians/sec of heading change */
+    HOSTILE_PRESS=3,        /* how many may commit at once */
+    HOSTILE_SADDLE=9,       /* seconds on the attack before extending */
+    HOSTILE_EXTEND=4.5;     /* seconds spent extending away */
+var _hoV=new THREE.Vector3(),_hoC=new THREE.Vector3();
+
 function stepConvoy(dt){
+  /* Hand out the engagement slots to whoever is closest, once per frame. */
+  var press=[];
+  for(var pi=0;pi<convoy.length;pi++){
+    var h=convoy[pi];
+    if(!h.alive||!h.hostile)continue;
+    if(h.role==='patrol')continue;
+    h._d=player.alive?h.pos.distanceTo(player.pos):1e9;
+    press.push(h);
+  }
+  press.sort(function(a,b){return a._d-b._d;});
+  for(var qi=0;qi<press.length;qi++)press[qi].committed=(qi<HOSTILE_PRESS);
+
   for(var i=0;i<convoy.length;i++){
     var c=convoy[i];
     if(!c.alive)continue;
     var tgt=null;
     if(c.hostile){
-      /* hostiles chase the player; everything else follows its route */
-      if(player.alive)tgt=player.pos;
+      if(c.anchor===undefined){
+        /* a third of any group works its own patch instead of the player, so a
+           mission reads as defended airspace rather than a swarm */
+        c.role=(i%3===2)?'patrol':'fighter';
+        c.anchor=c.pos.clone();
+        c.saddle=0; c.extend=0; c.orbit=rnd(0,Math.PI*2);
+      }
+      /* A hostile that has somehow ended up a long way out comes back in, no
+         matter what it thought it was doing. An objective that waits on
+         hostilesLeft() must never be left waiting on one that left. */
+      if(player.alive&&c.pos.distanceTo(player.pos)>2600){
+        c.extend=0; c.saddle=0; c.committed=true;
+      }
+      if(c.extend>0){
+        /* extending: run away from the player, rebuild the picture, come back */
+        c.extend-=dt;
+        if(player.alive){
+          _drV.copy(c.pos).sub(player.pos);
+          if(_drV.lengthSq()<1)_drV.set(1,0,0);
+          _hoV.copy(c.pos).add(_drV.normalize().multiplyScalar(900));
+          _hoV.y=clamp(_hoV.y+120,ground(_hoV.x,_hoV.z)+220,1500);
+          tgt=_hoV;
+        }
+        if(c.extend<=0)c.saddle=0;
+      } else if(c.role==='patrol'&&(!player.alive||c.pos.distanceTo(player.pos)>900)){
+        /* Orbit the patch you were left to guard. The angular rate has to keep
+           the orbit point slower than the aircraft that is chasing it — at
+           0.5 rad/s on a 420 m ring the point moves at 210 m/s and a 110 m/s
+           hostile can never catch it, so it spirals away and never comes back.
+           That is not a patrol, it is a defection. */
+        c.orbit+=dt*Math.min(0.22,c.speed/520);
+        _hoV.set(c.anchor.x+Math.cos(c.orbit)*420,c.anchor.y,
+                 c.anchor.z+Math.sin(c.orbit)*420);
+        tgt=_hoV;
+      } else if(c.committed||c.role==='patrol'){
+        if(player.alive){
+          tgt=player.pos;
+          c.saddle+=dt;
+          if(c.saddle>HOSTILE_SADDLE){c.extend=HOSTILE_EXTEND;c.saddle=0;}
+        }
+      } else if(player.alive){
+        /* Waiting your turn: stand off on the flank rather than pile in. Same
+           trap as the patrol ring — the holding point must not outrun the
+           aircraft holding on it. And a hostile already outside the ring closes
+           on the player directly rather than chasing a point on the far side
+           of it, which is what let them trail off to the horizon. */
+        c.orbit+=dt*Math.min(0.12,c.speed/900);
+        var dp0=c.pos.distanceTo(player.pos);
+        if(dp0>1000)tgt=player.pos;
+        else{
+          _hoV.set(player.pos.x+Math.cos(c.orbit)*760,
+                   player.pos.y+140,
+                   player.pos.z+Math.sin(c.orbit)*760);
+          tgt=_hoV;
+        }
+        c.saddle=Math.max(0,c.saddle-dt);
+      }
     } else if(c.leg<c.path.length){
       tgt=c.path[c.leg];
       if(c.pos.distanceTo(tgt)<110){c.leg++; if(c.leg>=c.path.length)c.arrived=true;}
@@ -5521,17 +5684,59 @@ function stepConvoy(dt){
     if(tgt){
       _drV.copy(tgt).sub(c.pos);
       var d=_drV.length(); if(d>1e-3)_drV.multiplyScalar(1/d);
-      var want=(c.hostile&&d<260)?-0.4:1;
-      c.vel.lerp(_drV2.copy(_drV).multiplyScalar(c.speed*want),Math.min(1,dt*1.0));
+      var want=(c.hostile&&c.extend<=0&&d<260)?-0.4:1;
+      if(c.hostile){
+        /* Steer the heading itself at a bounded rate.
+
+           Capping the *commanded* direction and then lerping the velocity
+           toward it does not give a turn rate — it gives the product of the
+           two. The command sat a fraction of a degree ahead of the current
+           heading and the velocity chased it at 2.7% a frame, which worked out
+           at about 1.4 deg/sec: a hostile needed two minutes to reverse and in
+           practice never turned at all, so nothing could re-engage and patrols
+           wandered off the map. Rotating the direction and easing only the
+           speed gives exactly the rate asked for.
+
+           At 0.95 rad/s a hostile reverses in about 3.3 seconds. The player's
+           pitch authority is 1.85 rad/s, so a committed turn or a burner
+           extension genuinely breaks their tracking — which is the point. */
+        if(c.extend<=0&&d<260)_drV.negate();   /* too close: break away, don't ram */
+        var spd=c.vel.length();
+        var cur=spd>1e-3?_hoC.copy(c.vel).multiplyScalar(1/spd):_hoC.copy(_drV);
+        var ang=Math.acos(clamp(cur.dot(_drV),-1,1));
+        var maxTurn=HOSTILE_TURN*dt;
+        if(ang>maxTurn&&ang>1e-5){
+          _hoV.crossVectors(cur,_drV);
+          if(_hoV.lengthSq()<1e-8){
+            /* exactly reversed: any perpendicular axis will do */
+            _hoV.set(0,1,0).cross(cur);
+            if(_hoV.lengthSq()<1e-8)_hoV.set(1,0,0);
+          }
+          _hoV.normalize();
+          cur.applyAxisAngle(_hoV,maxTurn);
+        } else cur.copy(_drV);
+        var spWant=c.speed*(c.extend>0?1.18:1);
+        c.vel.copy(cur).multiplyScalar(spd+(spWant-spd)*Math.min(1,dt*1.2));
+      } else {
+        c.vel.lerp(_drV2.copy(_drV).multiplyScalar(c.speed*want),Math.min(1,dt*1.0));
+      }
     }
     c.pos.addScaledVector(c.vel,dt);
     var gh=ground(c.pos.x,c.pos.z)+70;
     if(c.pos.y<gh){c.pos.y=gh;if(c.vel.y<0)c.vel.y=0;}
     if(c.vel.lengthSq()>1e-4)c.mesh.lookAt(_drV.copy(c.pos).add(c.vel));
-    if(c.hostile&&player.alive){
+    if(c.hostile&&player.alive&&c.extend<=0){
       c.cd-=dt;
       var dp=c.pos.distanceTo(player.pos);
-      if(dp<620&&c.cd<=0){
+      /* they have to actually be pointing at you: a bounded turn rate means a
+         hostile can be close and still have no shot, which is what makes
+         breaking their tracking worth doing */
+      var aligned=true;
+      if(c.vel.lengthSq()>1e-4){
+        _hoV.copy(player.pos).sub(c.pos).normalize();
+        aligned=_drV2.copy(c.vel).normalize().dot(_hoV)>0.90;
+      }
+      if(dp<620&&aligned&&c.cd<=0){
         c.cd=rnd(.8,1.4);
         var aim=_drV2.copy(player.pos).sub(c.pos).normalize();
         var sp=.03;
@@ -7351,10 +7556,16 @@ function env(dt){
   skyU.cover.value=wx.cover;skyU.time.value=performance.now()*.001;
   scene.fog.color.copy(cBot).lerp(C.grey,.18); scene.fog.density=wx.fog;
 
-  var shade=1-wx.cover*.62;
-  sunLight.color.copy(cSun); sunLight.intensity=(.15+dayF*1.05)*shade+st.flash*2.2;
-  moonLight.intensity=(1-dayF)*.28;
-  hemi.color.copy(cBot); hemi.intensity=.18+dayF*.42*shade+st.flash;
+  var shade=1-wx.cover*.62,nightF=1-dayF;
+  sunLight.color.copy(cSun); sunLight.intensity=(.08+dayF*1.12)*shade+st.flash*2.2;
+  /* Night must still read as night, but the player cannot fly a map that
+     disappears. Moon key plus a cool ground bounce preserves terrain relief
+     and authored materials without lifting the sky to daytime exposure. */
+  moonLight.intensity=nightF*.52*(1-wx.cover*.38);
+  hemi.color.copy(cBot);
+  cGround.setRGB(.075+dayF*.15,.09+dayF*.11,.13+dayF*.015);
+  hemi.groundColor.copy(cGround);
+  hemi.intensity=.31+dayF*.31*shade+st.flash;
   /* the city keeps its lights on after dark, which is also the only thing
      that stops a night match reading as an empty black valley */
   if(cityMat){
@@ -7419,21 +7630,50 @@ function env(dt){
 }
 
 /* ---------- player control ---------- */
+/* burner pool and the aim zoom, both held rather than toggled */
+var burner={fuel:1,lit:false,cool:0};
+var zoom={on:false,k:0};
+
 function playerControl(dt){
   /* throttle: W/S, the THR buttons or the d-pad trim it; SHIFT or A firewalls,
      CTRL or the left trigger idles */
   if(keys.KeyW||touchIn.thrUp||padIn.thrUp)player.throttle=clamp(player.throttle+dt*.55,0,1);
   if(keys.KeyS||touchIn.thrDn||padIn.thrDn)player.throttle=clamp(player.throttle-dt*.55,0,1);
   var thr=player.throttle;
-  if(keys.ShiftLeft||keys.ShiftRight||touchIn.boost||padIn.boost)thr=1;
-  if(keys.ControlLeft||keys.ControlRight||padIn.idle)thr=0;
+  var wantBurn=!!(keys.ShiftLeft||keys.ShiftRight||touchIn.boost||padIn.boost);
+  if(wantBurn)thr=1;
+  if(keys.ControlLeft||keys.ControlRight||padIn.idle){thr=0;wantBurn=false;}
+
+  /* The burner needs a floor to relight from, so feathering the button cannot
+     be used as an infinite one — you either commit to the burn or you cool. */
+  if(wantBurn&&!burner.lit&&burner.fuel>AB_RELIGHT)burner.lit=true;
+  if(!wantBurn||burner.fuel<=0||!player.alive)burner.lit=false;
+  if(burner.lit){
+    burner.fuel=clamp(burner.fuel-dt*AB_DRAIN,0,1);
+    burner.cool=AB_COOL;
+    if(burner.fuel<=0){burner.lit=false;banner('BURNER DRY',1);}
+  } else if(wantBurn){
+    /* Holding the button through a dry burner must not refill it. Without this
+       the pool cools for a moment, creeps back over the relight floor, lights
+       again on its own and the "limited" burner becomes a permanent one at
+       about a 40% duty cycle — you have to let go of it. */
+    burner.cool=AB_COOL;
+  } else if(burner.cool>0)burner.cool-=dt;
+  else burner.fuel=clamp(burner.fuel+dt*AB_RECHARGE,0,1);
+
+  /* Zoom: hold L1 on a pad, the right mouse button, or Z. Narrowing the field
+     of view without narrowing the mouse gain would make the reticle jumpy at
+     exactly the moment you are trying to be precise, so the two move together
+     — that is what makes a zoomed pass feel steady rather than twitchy. */
+  zoom.on=!!(padIn.zoom||touchIn.zoom||keys.KeyZ||mouseRight)&&player.alive&&!st.over;
+  zoom.k+=((zoom.on?1:0)-zoom.k)*Math.min(1,dt*7);
 
   /* the thumbstick and the gamepad stick drive the same aim vector the mouse
      does, and spring back to centre so the aircraft flies straight when let go */
   if(IS_TOUCH){
     if(stick.active){
-      aim.x=stick.dx*AIM_R;
-      aim.y=-stick.dy*AIM_R*st.invertY;
+      aim.x=stick.dx*AIM_R*zoomGain();
+      aim.y=-stick.dy*AIM_R*st.invertY*zoomGain();
     } else {
       var k=Math.min(1,dt*5);
       aim.x+=(0-aim.x)*k; aim.y+=(0-aim.y)*k;
@@ -7443,8 +7683,8 @@ function playerControl(dt){
        then hands back to the mouse so both can be used on the same machine */
     padAimT-=dt;
     if(padIn.aimX||padIn.aimY){
-      aim.x=padIn.aimX*AIM_R;
-      aim.y=-padIn.aimY*AIM_R*st.invertY;
+      aim.x=padIn.aimX*AIM_R*zoomGain();
+      aim.y=-padIn.aimY*AIM_R*st.invertY*zoomGain();
     } else {
       var kp=Math.min(1,dt*5);
       aim.x+=(0-aim.x)*kp; aim.y+=(0-aim.y)*kp;
@@ -7487,18 +7727,18 @@ function playerControl(dt){
     ctl={pitch:pitchCmd,
          roll:kTurn!==0?clamp(-(bankWant-bankNow)*ROLL_GAIN,-1,1)
                        :clamp(-bankNow*LEVEL_GAIN,-1,1),
-         yaw:0,throttle:thr};
+         yaw:0,throttle:thr,burner:burner.lit};
   } else if(canAim){
     turnHold=0; turnDir=0;
     ctl=steerTo(player,aimDir,2.2,true);
-    ctl.throttle=thr;
+    ctl.throttle=thr; ctl.burner=burner.lit;
     /* light damping only — the old 0.85 on roll was most of why the reticle
        felt like it was steering through treacle */
     ctl.pitch*=0.95; ctl.roll*=0.97;
   } else {
     /* nothing touched yet: roll wings level and fly on */
     turnHold=0; turnDir=0;
-    ctl={pitch:0,roll:clamp(-bankNow*LEVEL_GAIN,-1,1),yaw:0,throttle:thr};
+    ctl={pitch:0,roll:clamp(-bankNow*LEVEL_GAIN,-1,1),yaw:0,throttle:thr,burner:burner.lit};
   }
 
   ctl=applyRoll(player,ctl,dt);
@@ -7718,6 +7958,15 @@ function camWork(dt){
   }
   var lookDist=st.camMode===2?60:(st.camMode===0?38:30);
   camLookWant.copy(subject.pos).addScaledVector(_f,lookDist);
+  /* At altitude, a fixed level sightline can put the entire island below the
+     viewport even though it is directly under the aircraft. Gradually pitch
+     only the chase camera toward the terrain; cockpit view and flight physics
+     remain untouched. */
+  if(st.camMode!==2){
+    var cameraAgl=Math.max(0,subject.pos.y-ground(subject.pos.x,subject.pos.z));
+    var mapReveal=3+smooth(180,1100,cameraAgl)*(LOW?17:22);
+    camLookWant.y-=mapReveal;
+  }
   /* Wide banks pivot the sightline into the turn. A live lock adds a capped
      bias toward the other aircraft, so both planes stay readable without
      pulling the player out of frame. */
@@ -7738,6 +7987,9 @@ function camWork(dt){
   ).normalize();
   camera.lookAt(camLook);
   var targetFov=70+(st.camMode===2?0:turnPivot*6);
+  /* Narrow for gun work. The lerp below already eases it, so holding and
+     releasing the zoom is a glide rather than a snap. */
+  if(typeof zoom!=='undefined')targetFov-=zoom.k*30;
   if(Math.abs(camera.fov-targetFov)>.03){
     camera.fov+=(targetFov-camera.fov)*Math.min(1,dt*4.5);
     camera.updateProjectionMatrix();
@@ -7762,6 +8014,16 @@ function hudWork(dt){
   el.hpv.textContent=Math.round(player.hp);
   el.hpBar.style.width=Math.max(0,player.hp)+'%';
   el.thrBar.style.width=Math.round(player.throttle*100)+'%';
+  if(el.abBar){
+    el.abBar.style.width=Math.round(burner.fuel*100)+'%';
+    el.abTag.className=burner.lit?'lit':(burner.fuel<AB_RELIGHT?'dry':'');
+    el.abTag.textContent=burner.lit?'BURNER LIT'
+      :(burner.fuel<AB_RELIGHT?'BURNER COOLING':'BURNER');
+  }
+  if(el.zoomVig){
+    el.zoomVig.style.opacity=zoom.k.toFixed(3);
+    el.zoomTag.style.opacity=(zoom.k*0.9).toFixed(3);
+  }
   var sys=[];
   if(player.dmgEng>0)sys.push(player.dmgEng>=1?'ENGINE OUT':'ENGINE');
   if(player.dmgAil>0)sys.push(player.dmgAil>=1?'AILERON OUT':'AILERON');
