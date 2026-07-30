@@ -28,3 +28,8 @@ Airbourne-Arena/source/.wrangler/
 # Blender writes a .blend1 backup beside every save; it is the previous
 # revision of a file git already versions.
 *.blend1
+
+# Scratch copies of the game dropped beside it while testing. index.html is
+# generated from src/ and these are not, so a tracked one would quietly become a
+# third divergent copy of an 8,000-line file.
+Airbourne-Arena/__*.html

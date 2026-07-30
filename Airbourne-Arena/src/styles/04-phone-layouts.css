@@ -1,0 +1,67 @@
+  /* ===================== phone layouts =====================
+     These come after every base `body.touch` rule on purpose. A media query
+     adds no specificity, so an orientation override placed above them loses to
+     whatever the generic rule says and the panel never moves — which is how the
+     score panel came to sit on top of the airspeed readout on every phone. */
+  @media (orientation:portrait){
+    /* The score is centred and the instrument bracket is as wide as the stats
+       make it, so side by side they always collided. Stack them instead:
+       score and pause on the top line, instruments under, then tape, then map. */
+    body.touch #tl{flex-wrap:wrap;max-width:calc(100vw - 24px);gap:8px 14px;
+      top:calc(72px + env(safe-area-inset-top))}
+    /* clears the instrument bracket at its two-row height, which is what it
+       wraps to on a 320px screen */
+    body.touch #tape{top:calc(172px + env(safe-area-inset-top));width:min(210px,62vw)}
+    body.touch #mapWrap{width:72px;height:72px;top:calc(204px + env(safe-area-inset-top))}
+    body.touch #feed{display:none}
+    body.touch #tStick{width:62%;height:42%}
+    body.touch #coach{bottom:calc(252px + env(safe-area-inset-bottom));width:min(230px,62vw)}
+    body.touch #center{top:40%}
+    /* Sit the list beside the minimap rather than under it. Stacked, the pair
+       needed ~130px between the map and the thumbstick, which a 640-667px tall
+       phone does not have — the list and the radio ended up on top of each
+       other. Side by side they both fit at every portrait height. */
+    body.touch #objPanel{top:calc(204px + env(safe-area-inset-top));
+      left:calc(10px + env(safe-area-inset-left));right:auto;
+      width:min(200px,52vw);max-height:22vh}
+    /* the stick zone is 42% tall in portrait; sit the radio above it */
+    body.touch #radio{bottom:calc(46% + env(safe-area-inset-bottom));
+      max-width:min(300px,72vw)}
+  }
+  /* A 320-400px wide phone cannot carry the full-size cluster: at 100px the
+     fire button pushed ROLL off the left edge of the screen. */
+  @media (orientation:portrait) and (max-width:400px){
+    body.touch{--tpad:14px;--tgap:8px;--b-fire:84px;--b-mid:58px;--b-sm:48px}
+    body.touch #mapWrap{width:66px;height:66px}
+    body.touch #coach{width:min(198px,60vw)}
+  }
+  /* Short landscape — the case this game is actually played in. 340-400px of
+     height has to hold the top readouts, the minimap and a two-row cluster, so
+     everything shrinks together instead of stacking on top of each other. */
+  @media (orientation:landscape) and (max-height:520px){
+    body.touch{--tpad:10px;--tgap:7px;--b-fire:74px;--b-mid:52px;--b-sm:46px}
+    body.touch #mapWrap{width:68px;height:68px;top:calc(58px + env(safe-area-inset-top))}
+    body.touch #tape{top:calc(76px + env(safe-area-inset-top));width:min(200px,30vw);height:20px}
+    body.touch #tl{flex-wrap:wrap;max-width:34vw;gap:6px 10px;padding:5px 8px}
+    body.touch #tl .val{font-size:13px}
+    body.touch #coach{top:auto;bottom:calc(14px + env(safe-area-inset-bottom));
+      left:calc(12px + env(safe-area-inset-left));width:min(250px,34vw)}
+    body.touch #prompt{bottom:calc(96px + env(safe-area-inset-bottom))}
+    body.touch #center{top:44%}
+    /* Height is the scarce axis here, and the right column is already the map
+       stacked over the button cluster — between them only ~80px is free, which
+       clips a three-line list. The left column below the instrument bracket has
+       roughly 220px, so the objective list moves there instead. */
+    body.touch #objPanel{top:calc(76px + env(safe-area-inset-top));
+      left:calc(10px + env(safe-area-inset-left));right:auto;
+      width:min(190px,26vw);max-height:44vh;padding:7px 9px}
+    body.touch #radio{bottom:calc(96px + env(safe-area-inset-bottom));
+      max-width:min(280px,34vw)}
+  }
+  /* Under ~360px of height the right column cannot hold the minimap, the kill
+     feed and the button cluster at once — the feed lands on the map. The feed
+     is the one of the three you can play without. */
+  @media (orientation:landscape) and (max-height:360px){
+    body.touch #feed{display:none}
+  }
+

@@ -1,0 +1,20 @@
+  /* ===================== HUD scale =====================
+     Each panel scales from the corner it is anchored to, so raising the scale
+     grows the readout without pushing it off screen. */
+  :root{--hs:1}
+  #tl{transform:scale(var(--hs));transform-origin:0 0}
+  #tr,#feed{transform:scale(var(--hs));transform-origin:100% 0}
+  #bl{transform:scale(var(--hs));transform-origin:0 100%}
+  #mapWrap{transform:scale(var(--hs));transform-origin:100% 100%}
+  #score{transform:translateX(-50%) scale(var(--hs));transform-origin:50% 0}
+  #tape{transform:translateX(-50%) scale(var(--hs));transform-origin:50% 0}
+  body.touch #mapWrap{transform-origin:100% 0}
+  /* panels below a scaled panel have to move down by the same factor, or a
+     large HUD stacks the coaching card on top of the instrument bracket */
+  #tape{top:calc(104px * var(--hs))}
+  /* the feed is right-aligned and the tape is centred, so on anything narrower
+     than a wide desktop the two used to run into each other — drop the feed
+     clear of the bottom of the tape */
+  #feed{top:calc(142px * var(--hs))}
+  #coach{top:calc(112px * var(--hs))}
+

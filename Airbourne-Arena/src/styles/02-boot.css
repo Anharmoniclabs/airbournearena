@@ -1,0 +1,24 @@
+  /* ===================== boot ===================== */
+  /* Thirty megabytes of art across thirty-nine files has to come down before
+     anything looks like anything, and the game boots straight into the hangar
+     rather than the brief card. Without this the first thing a phone shows is
+     a long black screen saying nothing, and a 404 is indistinguishable from it.
+     Lives in the markup rather than being built in script so it paints before
+     three.js has even been fetched. */
+  #boot{position:fixed;inset:0;z-index:40;display:grid;place-items:center;
+    background:#05070d;padding:24px;text-align:center;transition:opacity .45s}
+  #boot.gone{opacity:0;pointer-events:none}
+  #bootInner{width:min(420px,82vw)}
+  #bootTitle{font-size:13px;letter-spacing:.34em;color:var(--teal);font-weight:600}
+  #bootBar{margin-top:20px;height:2px;background:rgba(111,227,208,.16);overflow:hidden}
+  #bootFill{height:100%;width:0;background:var(--teal);
+    box-shadow:0 0 14px rgba(111,227,208,.5);transition:width .3s ease-out}
+  #bootNote{margin-top:12px;font-size:9.5px;letter-spacing:.22em;line-height:1.9;
+    color:rgba(223,243,255,.45)}
+  #bootNote.bad{color:var(--amber)}
+  #bootGo{margin-top:18px;font-size:10px;letter-spacing:.28em;color:var(--teal);
+    border:1px solid var(--line);padding:10px 15px;display:inline-block;cursor:pointer;
+    opacity:0;pointer-events:none;transition:opacity .3s}
+  #bootGo.on{opacity:1;pointer-events:auto}
+  #bootGo:hover{background:rgba(111,227,208,.08)}
+

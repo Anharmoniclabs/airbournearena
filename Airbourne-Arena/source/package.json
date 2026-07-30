@@ -8,8 +8,9 @@
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
     "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
-    "build": "bash scripts/sync-game.sh && bash scripts/build-verified.sh",
+    "build": "bash scripts/build-game.sh && bash scripts/sync-game.sh && bash scripts/build-verified.sh",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
+    "build:game": "bash scripts/build-game.sh && bash scripts/sync-game.sh",
     "sync:game": "bash scripts/sync-game.sh",
     "test": "npm run build && node --test tests/*.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",

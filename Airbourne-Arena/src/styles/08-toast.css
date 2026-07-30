@@ -1,0 +1,7 @@
+  /* ===================== toast ===================== */
+  #toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));
+    transform:translateX(-50%);font-size:10px;letter-spacing:.2em;color:var(--teal);
+    border:1px solid var(--line);background:rgba(6,14,20,.72);padding:7px 14px;border-radius:2px;
+    opacity:0;pointer-events:none;transition:opacity .3s;z-index:8;backdrop-filter:blur(6px)}
+  #toast.on{opacity:1}
+

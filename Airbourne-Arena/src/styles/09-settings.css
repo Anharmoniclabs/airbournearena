@@ -1,0 +1,30 @@
+  /* ===================== settings ===================== */
+  #settings{position:fixed;inset:0;display:grid;place-items:center;z-index:10;
+    background:rgba(2,5,9,.88);opacity:0;pointer-events:none;transition:opacity .2s}
+  #settings.on{opacity:1;pointer-events:auto}
+  /* body sets touch-action:none for flight input; the menu has to opt back in
+     or sliders cannot be dragged and the panel cannot be scrolled on a phone */
+  #settings,#settings *{touch-action:auto}
+  .setCard{width:min(460px,92vw);max-height:90vh;overflow:auto;border:1px solid var(--line);
+    background:
+      linear-gradient(90deg,var(--teal),transparent 28%) top left/100% 2px no-repeat,
+      var(--panel-solid);padding:24px 26px;overscroll-behavior:contain;
+    box-shadow:var(--panel-shadow);position:relative}
+  .setCard h2{letter-spacing:.3em;color:var(--teal);font-size:19px;text-align:center}
+  .setRow{display:flex;align-items:center;gap:12px;margin-top:15px;font-size:10px;letter-spacing:.14em}
+  .setRow>label{flex:1;color:rgba(223,243,255,.72)}
+  .setRow output{min-width:44px;text-align:right;color:var(--teal);font-size:11px}
+  .setRow input[type=range]{flex:0 0 150px;accent-color:#6fe3d0;height:18px}
+  .toggle{appearance:none;width:42px;height:20px;border-radius:10px;border:1px solid var(--line);
+    background:rgba(223,243,255,.08);position:relative;cursor:pointer;flex:none}
+  .toggle:after{content:"";position:absolute;left:2px;top:1px;width:15px;height:15px;border-radius:50%;
+    background:rgba(223,243,255,.45);transition:.18s}
+  .toggle:checked{background:rgba(111,227,208,.28);border-color:var(--teal)}
+  .toggle:checked:after{left:23px;background:var(--teal)}
+  .segRow{display:flex;gap:6px;flex:none}
+  .seg{appearance:none;border:1px solid var(--line);background:transparent;color:rgba(223,243,255,.55);
+    font:600 9px/1 ui-monospace,monospace;letter-spacing:.14em;padding:7px 10px;cursor:pointer}
+  .seg.on{background:rgba(111,227,208,.2);color:var(--teal)}
+  .setNote{font-size:9px;line-height:1.7;color:rgba(223,243,255,.4);margin-top:16px;letter-spacing:.1em}
+  .btnRow{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+
