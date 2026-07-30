@@ -110,6 +110,15 @@ test("chase flight stays readable during hard banks on desktop and mobile", () =
   assert.match(canonical, /st\.camMode===2\?1:\(LOW\?\.08:\.18\+turnPivot\*\.10\)/);
 });
 
+test("the island remains framed and readable during high-altitude night flight", () => {
+  assert.match(canonical, /cameraAgl=Math\.max\(0,subject\.pos\.y-ground\(/);
+  assert.match(canonical, /mapReveal=3\+smooth\(180,1100,cameraAgl\)\*\(LOW\?17:22\)/);
+  assert.match(canonical, /camLookWant\.y-=mapReveal/);
+  assert.match(canonical, /moonLight\.intensity=nightF\*\.52\*\(1-wx\.cover\*\.38\)/);
+  assert.match(canonical, /hemi\.groundColor\.copy\(cGround\)/);
+  assert.match(canonical, /hemi\.intensity=\.31\+dayF\*\.31\*shade\+st\.flash/);
+});
+
 test("a connected standard controller works in menus, the hangar, and flight", () => {
   assert.match(canonical, /addEventListener\('gamepadconnected'/);
   assert.match(canonical, /addEventListener\('gamepaddisconnected'/);

@@ -89,6 +89,21 @@ if (reviewCase === "all" || reviewCase === "flight") {
   await flight.screenshot({ path: `${output}/airbourne-v2-flight.png`, timeout: 120_000 });
   await flight.close();
 }
+if (reviewCase === "nightmap") {
+  const nightmap = await openPage(desktop, "desktop night map");
+  await enterMission(nightmap, "ch1_m10", [0, 820, 250], [0, 820, -1000]);
+  await nightmap.evaluate(() => {
+    const capture = window.__AIRBOURNE_CAPTURE__;
+    capture.setEnvironment(21, "fair");
+    capture.settleFlightCamera();
+  });
+  await nightmap.waitForTimeout(1600);
+  await nightmap.screenshot({
+    path: `${output}/airbourne-v2-night-map.png`,
+    timeout: 120_000,
+  });
+  await nightmap.close();
+}
 if (reviewCase === "all" || reviewCase === "bank") {
   const bank = await openPage(desktop, "desktop bank");
   await enterMission(bank, "ch1_m1", [650, 720, 980]);
@@ -206,6 +221,28 @@ if (reviewCase === "mobilebank") {
   await phone.waitForTimeout(1200);
   await phone.screenshot({
     path: `${output}/airbourne-v2-mobile-bank.png`,
+    timeout: 120_000,
+  });
+  await phone.close();
+  await mobile.close();
+}
+if (reviewCase === "nightmapmobile") {
+  const mobile = await browser.newContext({
+    ...devices["iPhone 13"],
+    viewport: { width: 780, height: 360 },
+    screen: { width: 780, height: 360 },
+    deviceScaleFactor: 1,
+  });
+  const phone = await openPage(mobile, "mobile night map");
+  await enterMission(phone, "ch1_m10", [0, 820, 250], [0, 820, -1000]);
+  await phone.evaluate(() => {
+    const capture = window.__AIRBOURNE_CAPTURE__;
+    capture.setEnvironment(21, "fair");
+    capture.settleFlightCamera();
+  });
+  await phone.waitForTimeout(1400);
+  await phone.screenshot({
+    path: `${output}/airbourne-v2-mobile-night-map.png`,
     timeout: 120_000,
   });
   await phone.close();
