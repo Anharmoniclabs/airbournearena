@@ -1,0 +1,6 @@
+  /* ===================== colour-blind safe teams =====================
+     Blue/red is the worst possible pair for deuteranopia and protanopia, which
+     between them cover most colour vision deficiency. Blue/amber survives all
+     three types, so the whole palette swaps rather than adding a legend. */
+  body.cb{--blue:#4aa8ff; --red:#ffa32e}
+

@@ -1,0 +1,59 @@
+  /* ===================== campaign ===================== */
+  #radio{position:fixed;left:18px;bottom:96px;z-index:6;max-width:min(430px,60vw);
+    border-left:2px solid var(--teal);background:rgba(6,14,20,.82);padding:9px 14px;
+    opacity:0;transition:opacity .18s;pointer-events:none}
+  #radio.on{opacity:1}
+  #radioWho{font-size:9px;letter-spacing:.24em;color:var(--teal)}
+  #radioText{font-size:11.5px;line-height:1.7;color:rgba(223,243,255,.86);margin-top:4px}
+  #objPanel{position:fixed;right:18px;top:96px;z-index:6;width:min(280px,44vw);
+    border:1px solid var(--line);background:rgba(6,14,20,.7);padding:11px 13px;
+    opacity:0;transition:opacity .2s;pointer-events:none}
+  #objPanel.on{opacity:1}
+  #objTitle{font-size:9px;letter-spacing:.24em;color:var(--amber);margin-bottom:7px}
+  .obj{font-size:10px;letter-spacing:.1em;line-height:1.6;color:rgba(223,243,255,.4);
+    padding:3px 0 3px 14px;position:relative}
+  .obj:before{content:"○";position:absolute;left:0;color:rgba(223,243,255,.3)}
+  .obj.now{color:var(--ink)} .obj.now:before{content:"▸";color:var(--teal)}
+  .obj.done{color:rgba(223,243,255,.28);text-decoration:line-through}
+  .obj.done:before{content:"✓";color:var(--teal)}
+  .objMeta{margin-top:8px;padding-top:7px;border-top:1px solid rgba(111,227,208,.18);
+    font-size:9px;letter-spacing:.18em;line-height:1.9;color:rgba(223,243,255,.55)}
+  .objMeta b{color:var(--teal);font-weight:600}
+  #debrief,#choiceCard,#missionCard,#finaleCard{position:fixed;inset:0;display:grid;
+    place-items:center;z-index:11;background:rgba(2,5,9,.9);opacity:0;pointer-events:none;
+    transition:opacity .2s}
+  #debrief.on,#choiceCard.on,#missionCard.on,#finaleCard.on{opacity:1;pointer-events:auto}
+  #debrief *,#choiceCard *,#missionCard *,#finaleCard *{touch-action:auto}
+  #debriefStats,#finaleStats{display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:9px;margin:18px 0 0}
+  #campaignRow{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+  /* mission select — every chapter and every mission, with what is reachable
+     and what is already flown stated plainly rather than implied */
+  #missionCard .setCard{width:min(560px,94vw)}
+  #missionMeta{font-size:9px;letter-spacing:.2em;color:rgba(223,243,255,.5);
+    text-align:center;margin-top:10px;line-height:2}
+  #missionList{margin-top:16px}
+  .chapHd{font-size:9px;letter-spacing:.26em;color:var(--amber);margin:16px 0 6px;
+    border-top:1px solid rgba(111,227,208,.16);padding-top:12px}
+  .chapHd:first-child{border-top:0;margin-top:4px;padding-top:0}
+  .misRow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    appearance:none;border:1px solid transparent;background:transparent;color:inherit;
+    font:inherit;padding:7px 9px;margin-top:3px;cursor:pointer;border-radius:2px;
+    -webkit-tap-highlight-color:transparent;min-height:36px}
+  .misRow:hover:not([disabled]),.misRow.press{background:rgba(111,227,208,.12);
+    border-color:var(--line)}
+  .misRow[disabled]{opacity:.34;cursor:default}
+  .misRow .mk{flex:0 0 16px;color:var(--teal);font-size:11px;text-align:center}
+  .misRow.locked .mk{color:rgba(223,243,255,.3)}
+  .misRow .mt{flex:1;font-size:10.5px;letter-spacing:.14em;color:rgba(223,243,255,.82)}
+  .misRow[disabled] .mt{color:rgba(223,243,255,.5)}
+  .misRow .mn{font-size:8px;letter-spacing:.2em;color:rgba(223,243,255,.35)}
+  .misRow.now{border-color:var(--line);background:rgba(111,227,208,.07)}
+  .misRow.now .mt{color:var(--teal)}
+  #finaleT{color:var(--amber)}
+  #finaleNotes{margin-top:16px}
+  .fnHd{font-size:9px;letter-spacing:.26em;color:var(--amber);margin-bottom:7px}
+  .fnRow{font-size:10.5px;line-height:1.8;color:rgba(223,243,255,.7);
+    padding:3px 0 3px 14px;position:relative}
+  .fnRow:before{content:"\2022";position:absolute;left:2px;color:var(--teal)}
+

@@ -1,0 +1,82 @@
+# Build order for Airbourne-Arena/index.html.
+#
+# This file IS the dependency graph. The game is one shared function scope, not
+# a set of modules: every part below is concatenated into a single IIFE, so a
+# part may use any name declared in a part above it, and — because function
+# declarations hoist within their own part — any function declared in a part
+# below it, as long as the call happens after load. Only code that RUNS at load
+# time is order-sensitive. There is exactly one place in the file that depends
+# on this rule; it is commented at src/game/34-hangar-characters.js.
+#
+# Reorder with care. Add new parts next to the ones they belong with, not at
+# the end. Rebuild with: npm run build:game (from source/).
+
+[styles]
+styles/01-base.css
+styles/02-boot.css
+styles/03-touch-layout.css
+styles/04-phone-layouts.css
+styles/05-hud-scale.css
+styles/06-colour-blind.css
+styles/07-damage-direction.css
+styles/08-toast.css
+styles/09-settings.css
+styles/10-hangar.css
+styles/11-campaign.css
+styles/12-end-screen.css
+styles/13-touch-pause.css
+styles/14-reduced-motion.css
+
+[game]
+game/01-util.js
+game/02-buttons.js
+game/03-settings-store.js
+game/04-audio.js
+game/05-device.js
+game/06-arena.js
+game/07-scene.js
+game/08-assets.js
+game/09-weather.js
+game/10-objectives.js
+game/11-structures.js
+game/12-drones.js
+game/13-roads.js
+game/14-trees.js
+game/15-city.js
+game/16-authored-world.js
+game/17-story-kit.js
+game/18-core-visual.js
+game/19-fighters.js
+game/20-pilot.js
+game/21-flight-model.js
+game/22-bullets.js
+game/23-state.js
+game/24-core-rules.js
+game/25-ai.js
+game/26-feedback.js
+game/27-gunnery.js
+game/28-gamepad.js
+game/29-rematch.js
+game/30-hud.js
+game/31-input.js
+game/32-settings-ui.js
+game/33-hangar.js
+game/34-hangar-characters.js
+game/35-mission-foundation.js
+game/36-mission-entities.js
+game/37-hostile-behaviour.js
+game/38-mission-sites.js
+game/39-mission-machine.js
+game/40-campaign-registry.js
+game/41-chapter-1.js
+game/42-chapter-2.js
+game/43-chapter-3.js
+game/44-chapter-4.js
+game/45-chapter-5.js
+game/46-chapter-6.js
+game/47-campaign-ui.js
+game/48-mission-select.js
+game/49-loop.js
+game/50-targeting-hud.js
+game/51-end-match.js
+game/52-viewport.js

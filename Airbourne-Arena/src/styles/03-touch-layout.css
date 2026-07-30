@@ -1,0 +1,186 @@
+  /* ===================== touch layout ===================== */
+  #touch{position:fixed;inset:0;z-index:5;display:none;pointer-events:none}
+  body.touch #touch{display:block}
+  #tStick{position:absolute;left:0;bottom:0;width:48%;height:82%;pointer-events:auto;touch-action:none}
+  #stickBase,#hStickBase{position:absolute;width:136px;height:136px;margin:-68px 0 0 -68px;border-radius:50%;
+    border:1px solid rgba(111,227,208,.30);background:rgba(6,14,20,.26);opacity:0;
+    transition:opacity .12s;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  #stickBase.on,#hStickBase.on{opacity:1}
+  #stickBase:before,#hStickBase:before{content:"";position:absolute;left:50%;top:50%;width:5px;height:5px;
+    margin:-2.5px 0 0 -2.5px;border-radius:50%;background:rgba(111,227,208,.5)}
+  #stickKnob,#hStickKnob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
+    border-radius:50%;background:rgba(111,227,208,.28);border:1px solid rgba(111,227,208,.75);
+    box-shadow:0 0 16px rgba(111,227,208,.25)}
+  /* One grid holds every action control, instead of a per-button right/bottom
+     pair per breakpoint. Hand-placed offsets are what put THR-up on top of the
+     minimap and BOOST under THR-down on a 320px phone: each rule was correct on
+     the screen it was written for. A grid cannot overlap itself, so a breakpoint
+     only has to set three sizes and the whole cluster stays laid out. */
+  body.touch{--tpad:18px;--tgap:10px;--b-fire:100px;--b-mid:70px;--b-sm:58px;--b-pill:44px}
+  #tActions{position:absolute;
+    right:calc(var(--tpad) + env(safe-area-inset-right));
+    bottom:calc(var(--tpad) + env(safe-area-inset-bottom));
+    display:grid;gap:var(--tgap);pointer-events:none;
+    align-items:center;justify-items:center;
+    grid-template-areas:"pills pills pills pills"
+                        "roll  thrup boost fire"
+                        ".     thrdn pass  fire"}
+  #tPills{grid-area:pills;justify-self:end;display:flex;gap:var(--tgap);pointer-events:none}
+  #tRoll{grid-area:roll} #tUp{grid-area:thrup} #tBoost{grid-area:boost}
+  #tDn{grid-area:thrdn} #tPass{grid-area:pass} #tFire{grid-area:fire}
+  .tbtn{position:relative;pointer-events:auto;touch-action:none;display:grid;place-items:center;
+    border-radius:50%;border:1px solid var(--line);background-color:transparent;
+    background-image:url('assets/touch-control-round-v1.webp');background-position:center;
+    background-repeat:no-repeat;background-size:100% 100%;
+    font-size:10px;letter-spacing:.14em;color:var(--teal);font-weight:600;
+    text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 9px currentColor}
+  .tbtn.press{transform:scale(.94);filter:brightness(1.3) saturate(1.18)}
+  .tbtn.off{opacity:.25}
+  #tFire{width:var(--b-fire);height:var(--b-fire);font-size:13px;color:#ff8b80;
+    border-color:rgba(255,95,86,.55)}
+  #tFire.press{box-shadow:0 0 28px rgba(255,95,86,.34)}
+  #tPass{width:var(--b-mid);height:var(--b-mid);color:var(--amber);border-color:rgba(255,179,71,.55)}
+  #tPass.press{box-shadow:0 0 22px rgba(255,179,71,.28)}
+  #tUp,#tDn{width:var(--b-sm);height:var(--b-sm);font-size:11px}
+  #tRoll{width:var(--b-sm);height:var(--b-sm);font-size:10px;color:var(--blue);
+    border-color:rgba(79,195,255,.5)}
+  #tRoll.press{box-shadow:0 0 22px rgba(79,195,255,.3)}
+  #tBoost{width:var(--b-mid);height:var(--b-mid);font-size:9px;color:var(--amber);
+    border-color:rgba(255,179,71,.52)}
+  #tBoost.press{box-shadow:0 0 24px rgba(255,179,71,.35)}
+  /* 44px minimum on every control: a 26px-tall pill is under the size a thumb
+     can hit reliably, and it is the one accessibility floor a game HUD can
+     still honour without giving up screen. */
+  .pill{position:relative;pointer-events:auto;touch-action:none;display:grid;place-items:center;
+    min-height:var(--b-pill);min-width:60px;padding:0 14px;border-radius:calc(var(--b-pill) / 2);
+    border:1px solid var(--line);background-color:transparent;
+    background-image:url('assets/touch-control-pill-v1.webp');background-position:center;
+    background-repeat:no-repeat;background-size:100% 100%;
+    font-size:9px;letter-spacing:.18em;color:var(--teal);
+    text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 8px currentColor}
+  .pill.press{transform:scale(.96);filter:brightness(1.28) saturate(1.15)}
+  #tLock{color:var(--amber);border-color:rgba(255,179,71,.5)}
+  #tLock.armed{color:var(--amber);box-shadow:0 0 19px rgba(255,179,71,.28)}
+
+  #rollHud{position:fixed;left:50%;top:calc(50% + 46px);transform:translateX(-50%);font-size:9px;
+    letter-spacing:.22em;color:var(--blue);opacity:0;pointer-events:none;text-align:center;
+    text-shadow:0 0 10px rgba(79,195,255,.5)}
+
+  /* HUD reflow for small screens */
+  body.touch #bl{display:none}
+  body.touch #feed{top:auto;bottom:calc(150px + env(safe-area-inset-bottom));font-size:9px}
+  body.touch #mapWrap{width:92px;height:92px;bottom:auto;
+    top:calc(96px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
+  body.touch #mapWrap.big{width:min(64vh,64vw);height:min(64vh,64vw);top:50%;right:50%;
+    transform:translate(50%,-50%)}
+  body.touch #score{min-width:0;padding:6px 14px;top:calc(8px + env(safe-area-inset-top))}
+  body.touch #scoreLine{font-size:20px} body.touch #clock{font-size:9px;margin-top:4px}
+  body.touch #coreLine{font-size:9px;margin-top:4px}
+  body.touch #tl{gap:12px;padding:7px 10px;top:calc(8px + env(safe-area-inset-top));
+    left:calc(10px + env(safe-area-inset-left))}
+  body.touch #tl .val{font-size:15px} body.touch #tl .lbl{font-size:8px}
+  /* the pause button owns the top right corner in touch mode, so the weather
+     panel starts to the left of it rather than underneath */
+  body.touch #tr{padding:7px 10px;min-width:0;top:calc(8px + env(safe-area-inset-top));
+    right:calc(66px + env(safe-area-inset-right))}
+  body.touch #tape{top:calc(78px + env(safe-area-inset-top));width:min(250px,44vw);height:24px}
+  body.touch #prompt{bottom:calc(140px + env(safe-area-inset-bottom));font-size:10px}
+  body.touch #center{top:46%}
+  body.touch #aimRet{width:52px;height:52px;margin:-26px 0 0 -26px}
+  body.touch .tbtn{box-shadow:0 7px 24px rgba(0,0,0,.28)}
+  body.touch #tStick{min-width:44vw}
+  body.touch #coach{display:none}
+  /* The objective list and the radio never had a touch placement, so they kept
+     their desktop corners: the list at top-right, which is exactly where the
+     minimap moves to on a phone, and the radio at bottom-left, which is where
+     the thumbstick lives. Both read as clipped because something was sitting on
+     top of them. The list now starts below the map and the radio clears the
+     stick; neither takes pointer events, so nothing new is in the way. */
+  body.touch #objPanel{top:calc(196px + env(safe-area-inset-top));
+    right:calc(10px + env(safe-area-inset-right));width:min(216px,42vw);
+    padding:9px 11px;max-height:34vh;overflow:hidden}
+  body.touch #objTitle{font-size:8.5px;margin-bottom:5px}
+  body.touch .obj{font-size:9px;line-height:1.5;padding:2px 0 2px 12px}
+  body.touch #radio{left:calc(10px + env(safe-area-inset-left));
+    bottom:calc(150px + env(safe-area-inset-bottom));
+    max-width:min(320px,54vw);padding:7px 11px}
+  body.touch #radioText{font-size:10px;line-height:1.6}
+  body.touch #radioWho{font-size:8.5px}
+  /* The kill feed sat 150px up on the right, which is inside the action
+     cluster. FIRE spans both button rows rather than adding a third, so the
+     cluster is one pill row plus two mid rows — clear that, not more, or the
+     feed lands back on the minimap. */
+  body.touch #feed{bottom:calc(var(--b-pill) + var(--b-mid) * 2 +
+    var(--tgap) * 2 + var(--tpad) + 8px + env(safe-area-inset-bottom))}
+  @media (pointer:coarse) and (max-width:900px){
+    body.touch #tr{display:none}
+    body.touch #score{max-width:46vw}
+    body.touch #coreLine{max-width:44vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    body.touch #coach{font-size:9px}
+    body.touch .card{width:min(700px,95vw);max-height:94vh;padding:18px 20px}
+    body.touch .card h1{font-size:clamp(22px,6vw,30px)}
+    body.touch .row{padding:4px 0}
+  }
+
+  .card p.gp{display:none}
+  body.pad .card p.gp{display:block}
+  body.pad button:focus,body.pad [role="button"]:focus,body.pad input:focus{
+    outline:2px solid var(--teal);outline-offset:3px;
+    box-shadow:0 0 0 1px rgba(111,227,208,.24),0 0 18px rgba(111,227,208,.28)}
+
+  /* First Sortie coaching + pause layer */
+  #coach{position:fixed;left:14px;top:112px;width:min(292px,42vw);padding:11px 13px;
+    border:1px solid rgba(255,179,71,.38);background:rgba(5,10,16,.72);backdrop-filter:blur(8px);
+    z-index:4;opacity:0;transform:translateX(-14px);transition:.25s;pointer-events:none}
+  #coach.on{opacity:1;transform:none}
+  #coachTop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  #coachStep{font-size:9px;letter-spacing:.22em;color:var(--amber)}
+  #coachGoal{margin-top:7px;font-size:12px;line-height:1.45;color:var(--ink)}
+  #coachHint{margin-top:5px;font-size:9px;line-height:1.45;color:rgba(223,243,255,.52)}
+  #coachTrack{height:2px;margin-top:9px;background:rgba(255,255,255,.09)}
+  #coachTrack i{display:block;height:100%;width:0;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+  #pause{position:fixed;inset:0;display:grid;place-items:center;z-index:9;background:rgba(2,5,9,.84);
+    opacity:0;pointer-events:none;transition:opacity .2s}
+  #pause.on{opacity:1;pointer-events:auto}
+  #pause .pauseCard{width:min(430px,88vw);border:1px solid var(--line);padding:28px;
+    background:rgba(6,14,20,.92);text-align:center}
+  #pause h2{letter-spacing:.3em;color:var(--teal);font-size:24px}
+  #pause p{font-size:10px;letter-spacing:.14em;line-height:2;color:rgba(223,243,255,.58);margin:14px 0}
+  .actionBtn{appearance:none;border:1px solid var(--line);background:rgba(111,227,208,.08);
+    color:var(--teal);padding:10px 18px;font:600 10px/1 ui-monospace,monospace;letter-spacing:.18em;
+    cursor:pointer;position:relative;transition:background .16s,border-color .16s,transform .16s}
+  .actionBtn:hover,.actionBtn:focus-visible{background:rgba(111,227,208,.18);
+    border-color:var(--line-hot);outline:none;transform:translateY(-1px)}
+  /* :hover never fires on a phone, so a press class is the only feedback a
+     thumb gets that the tap registered */
+  .actionBtn.press,.seg.press,.swatch.press{background:rgba(111,227,208,.28);
+    border-color:var(--teal);transform:scale(.97)}
+  .actionBtn[disabled]{opacity:.3;cursor:default;background:transparent;transform:none}
+  .actionBtn[disabled]:hover{background:transparent;transform:none}
+  /* Every full-screen card has to be reachable under a thumb. body sets
+     touch-action:none for flight input, which silently kills overlay scrolling:
+     on a short phone the buttons at the bottom of a long card could not be
+     scrolled to at all. */
+  #pause,#pause *,#end,#end *,#brief,#brief *,
+  #missionCard,#missionCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
+  .card,.setCard,.pauseCard,#end>div{max-height:92vh;overflow-y:auto;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  /* The way out of a panel has to be on screen.
+
+     Fit-out is eleven rows tall and settings is ten; on a laptop at 520px, or
+     any phone in landscape, the card overflows and its action row — CLOSE,
+     BACK TO THE HANGAR, TO THE FLIGHT LINE — lands below the fold. The card
+     does scroll, but nothing announces that, so the buttons are simply gone and
+     the panel reads as a dead end. Pinning the row to the bottom of the card
+     means the exit is reachable at every height, and the rest of the panel
+     scrolls underneath it. */
+  /* Direct children only: the briefing keeps a second button row inside its
+     collapsible key list, and pinning that one parks it on top of the list. */
+  .setCard>.btnRow,.pauseCard>.btnRow,.card>.btnRow,#end>div>.btnRow{
+    position:sticky;bottom:0;z-index:2;margin-top:18px;
+    padding:14px 0 2px;background:linear-gradient(transparent,var(--panel-solid) 42%)}
+  /* the decorative inner hairline is drawn over the sticky row otherwise */
+  .card:after,.setCard:after,.pauseCard:after{z-index:1}
+  body.touch #coach{top:auto;bottom:calc(214px + env(safe-area-inset-bottom));left:10px;width:min(270px,70vw)}
+  @media(max-width:720px){#coach{width:min(250px,54vw)}}
+

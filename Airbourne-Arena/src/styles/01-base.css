@@ -1,0 +1,192 @@
+  :root{
+    --ink:#dff3ff; --teal:#6fe3d0; --amber:#ffb347; --alert:#ff5f56;
+    --blue:#4fc3ff; --red:#ff6b5e;
+    --panel:rgba(6,14,20,.58); --panel-solid:rgba(5,12,18,.94);
+    --line:rgba(111,227,208,.30); --line-hot:rgba(111,227,208,.62);
+    --panel-shadow:0 24px 90px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.025);
+    /* the touch-control sizes are declared on body.touch, but .pill is on
+       screen in the hangar on every device now and has to have a height there
+       too — without this it collapses to its 12px line box */
+    --b-pill:44px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#05070d;color:var(--ink);
+    font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    -webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
+  body.locked{cursor:none}
+  body.playing #app canvas{cursor:none}
+  #app{position:fixed;inset:0} canvas{display:block}
+  .lbl{font-size:9px;letter-spacing:.22em;color:rgba(223,243,255,.5)}
+  .val{font-size:19px;font-weight:600;line-height:1;color:var(--teal);text-shadow:0 0 14px rgba(111,227,208,.3)}
+  .val small{font-size:10px;letter-spacing:.12em;color:rgba(223,243,255,.45);margin-left:3px}
+  .bracket{position:absolute;background:var(--panel);border:1px solid var(--line);padding:9px 13px;
+    border-radius:2px;box-shadow:inset 3px 0 rgba(111,227,208,.08);
+    backdrop-filter:blur(9px) saturate(1.12);-webkit-backdrop-filter:blur(9px) saturate(1.12)}
+
+  #hud{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .5s}
+  #hud.live{opacity:1}
+  #tl{top:14px;left:14px;display:flex;gap:18px}
+  #tr{top:14px;right:14px;text-align:right;min-width:180px}
+  #bl{bottom:14px;left:14px;min-width:250px}
+
+  #score{position:absolute;top:12px;left:50%;transform:translateX(-50%);text-align:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:8px 20px;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);min-width:300px}
+  #scoreLine{font-size:26px;font-weight:600;line-height:1}
+  #sB{color:var(--blue)} #sR{color:var(--red)}
+  #scoreLine i{font-style:normal;color:rgba(223,243,255,.35);margin:0 12px;font-size:18px}
+  #clock{font-size:10px;letter-spacing:.22em;color:rgba(223,243,255,.5);margin-top:6px}
+  #coreLine{font-size:11px;letter-spacing:.16em;color:var(--amber);margin-top:6px}
+
+  #tape{position:absolute;top:104px;left:50%;transform:translateX(-50%);width:min(360px,54vw);height:28px;
+    overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:2px;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #tapeInner{position:absolute;inset:0}
+  .tick{position:absolute;bottom:0;width:1px;background:rgba(111,227,208,.4)}
+  .tick.maj{height:10px;background:var(--teal)} .tick.min{height:5px}
+  .cardinal{position:absolute;bottom:11px;transform:translateX(-50%);font-size:9px;letter-spacing:.16em}
+  #needle{position:absolute;left:50%;top:0;width:1px;height:100%;background:var(--amber)}
+  #hdgRead{position:absolute;left:50%;top:2px;transform:translateX(-50%);font-size:10px;
+    color:var(--amber);background:rgba(6,14,20,.75);padding:0 5px}
+
+  .bar{height:5px;background:rgba(223,243,255,.13);border-radius:3px;overflow:hidden;margin-top:5px}
+  .bar i{display:block;height:100%;width:100%}
+  .hp i{background:linear-gradient(90deg,#ff5f56,#6fe3d0)}
+  .thr i{background:var(--teal)}
+  .ab i{background:linear-gradient(90deg,#ffb347,#ff5f56);transition:none}
+  .bar.ab{margin-top:3px}
+  #abTag{font-size:8px;letter-spacing:.2em;color:rgba(223,243,255,.4);margin-top:2px}
+  #abTag.lit{color:var(--amber);text-shadow:0 0 8px var(--amber)}
+  #abTag.dry{color:var(--alert)}
+  /* zoom: a narrow gunsight reads better with the edges pulled down */
+  #zoomVig{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;
+    transition:opacity .18s;
+    background:radial-gradient(ellipse at center,transparent 42%,rgba(2,5,9,.62) 100%)}
+  #zoomTag{position:fixed;left:50%;top:calc(50% + 74px);transform:translateX(-50%);
+    font-size:9px;letter-spacing:.26em;color:var(--teal);opacity:0;
+    transition:opacity .18s;pointer-events:none;z-index:3;
+    text-shadow:0 0 10px rgba(111,227,208,.6)}
+
+  #roster{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;margin-top:8px}
+  .pilot{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.08em;
+    color:rgba(223,243,255,.75)}
+  .pilot .d{width:6px;height:6px;border-radius:50%;flex:none}
+  .pilot.b .d{background:var(--blue)} .pilot.r .d{background:var(--red)}
+  .pilot.me{color:var(--teal)}
+  .pilot.dead{opacity:.35;text-decoration:line-through}
+  .pilot.carry .d{background:var(--amber);box-shadow:0 0 9px var(--amber)}
+  .pilot b{margin-left:auto;font-weight:400;color:rgba(223,243,255,.4)}
+
+  #feed{position:absolute;top:96px;right:14px;text-align:right;font-size:10px;letter-spacing:.1em}
+  #feed div{margin-top:3px;color:rgba(223,243,255,.75);background:rgba(6,14,20,.4);
+    padding:2px 7px;border-radius:2px;display:inline-block}
+
+  #mapWrap{position:absolute;bottom:14px;right:14px;width:186px;height:186px;
+    border:1px solid var(--line);border-radius:2px;overflow:hidden;background:rgba(6,14,20,.68);
+    box-shadow:0 14px 44px rgba(0,0,0,.34),inset 0 0 28px rgba(4,12,18,.72)}
+  #mapWrap.big{width:min(70vh,70vw);height:min(70vh,70vw);bottom:50%;right:50%;
+    transform:translate(50%,50%);border-color:var(--amber)}
+  #mapWrap canvas{width:100%;height:100%}
+
+  /* --- aiming furniture --- */
+  #aimRet{position:fixed;width:44px;height:44px;margin:-22px 0 0 -22px;pointer-events:none;
+    border:1px solid var(--teal);border-radius:50%;opacity:.9;
+    box-shadow:0 0 10px rgba(111,227,208,.35)}
+  #aimRet:after{content:"";position:absolute;left:50%;top:50%;width:3px;height:3px;
+    margin:-1.5px 0 0 -1.5px;background:var(--teal);border-radius:50%}
+  #aimRet.assist{border-color:#7dff9b;box-shadow:0 0 16px rgba(125,255,155,.55)}
+  #aimRet.assist:after{background:#7dff9b;box-shadow:0 0 7px rgba(125,255,155,.9)}
+  /* Flight safety always outranks the lock cue. */
+  #aimRet.stall,#aimRet.stall.assist{border-color:var(--alert);box-shadow:0 0 14px rgba(255,95,86,.6)}
+  #aimRet.stall:after{background:var(--alert)}
+  #pip{position:fixed;width:26px;height:26px;margin:-13px 0 0 -13px;pointer-events:none}
+  #pip div{position:absolute;background:var(--amber)}
+  #pip .h{width:7px;height:1px;top:12.5px} #pip .v{width:1px;height:7px;left:12.5px}
+  #pip .l{left:0} #pip .r{right:0} #pip .t{top:0} #pip .b{bottom:0}
+  #pip.hit div{background:var(--alert)}
+  #lead{position:fixed;width:22px;height:22px;margin:-11px 0 0 -11px;border:1px solid var(--alert);
+    border-radius:50%;opacity:0;pointer-events:none}
+  #pip.hot div{background:#7dff9b}
+  #pip.hot{filter:drop-shadow(0 0 6px rgba(125,255,155,.8))}
+  /* a landed round outranks the firing cue — this has to beat #pip.hot, which
+     is declared just above it at the same specificity */
+  #pip.hit div,#pip.hot.hit div{background:var(--alert)}
+
+  /* --- target designation --- */
+  #tgtBox{position:fixed;pointer-events:none;opacity:0;transform:translate(-50%,-50%);
+    border:1px solid rgba(255,179,71,.8)}
+  #tgtBox:before,#tgtBox:after{content:"";position:absolute;width:9px;height:9px}
+  #tgtBox:before{top:-4px;left:-4px;border-top:2px solid var(--amber);border-left:2px solid var(--amber)}
+  #tgtBox:after{bottom:-4px;right:-4px;border-bottom:2px solid var(--amber);border-right:2px solid var(--amber)}
+  #tgtBox.solved{border-color:#7dff9b;box-shadow:0 0 14px rgba(125,255,155,.45)}
+  #tgtBox.solved:before{border-top-color:#7dff9b;border-left-color:#7dff9b}
+  #tgtBox.solved:after{border-bottom-color:#7dff9b;border-right-color:#7dff9b}
+  #tgtBox.assist{border-color:var(--teal);box-shadow:0 0 16px rgba(111,227,208,.4)}
+  #tgtBox.assist:before{border-top-color:var(--teal);border-left-color:var(--teal)}
+  #tgtBox.assist:after{border-bottom-color:var(--teal);border-right-color:var(--teal)}
+  #tgtBox.assist.solved{border-color:#7dff9b;box-shadow:0 0 16px rgba(125,255,155,.55)}
+  #tgtBox.assist.solved:before{border-top-color:#7dff9b;border-left-color:#7dff9b}
+  #tgtBox.assist.solved:after{border-bottom-color:#7dff9b;border-right-color:#7dff9b}
+  #tgtInfo{position:fixed;pointer-events:none;opacity:0;transform:translateX(-50%);
+    font-size:9px;letter-spacing:.14em;color:var(--amber);white-space:nowrap;
+    text-shadow:0 0 8px rgba(0,0,0,.9)}
+  #tgtInfo b{font-weight:600;color:var(--ink)}
+  /* off-screen cue: rotates about the middle of the screen and points at the bandit */
+  #tgtArrow{position:fixed;left:50%;top:50%;width:0;height:0;pointer-events:none;opacity:0}
+  #tgtArrow span{position:absolute;left:-7px;top:-118px;width:0;height:0;
+    border-left:7px solid transparent;border-right:7px solid transparent;
+    border-bottom:12px solid var(--amber);filter:drop-shadow(0 0 6px rgba(255,179,71,.6))}
+  body.touch #tgtArrow span{top:-96px}
+  #vpath{position:fixed;width:16px;height:16px;margin:-8px 0 0 -8px;pointer-events:none;
+    border:1px solid rgba(223,243,255,.45);border-radius:50%;opacity:.65}
+
+  #dmg{position:fixed;inset:0;pointer-events:none;opacity:0;
+    box-shadow:inset 0 0 170px rgba(255,60,50,.9);transition:opacity .25s}
+  #flash{position:fixed;inset:0;background:#eaf4ff;opacity:0;pointer-events:none;mix-blend-mode:screen}
+  #center{position:fixed;top:60%;left:50%;transform:translate(-50%,-50%);text-align:center;
+    font-size:13px;letter-spacing:.3em;color:var(--amber);text-shadow:0 0 16px rgba(255,179,71,.5)}
+  #warn{position:fixed;top:68%;left:50%;transform:translate(-50%,-50%);font-size:11px;
+    letter-spacing:.34em;color:var(--alert);opacity:0}
+  #prompt{position:fixed;bottom:20%;left:50%;transform:translateX(-50%);font-size:11px;
+    letter-spacing:.18em;color:var(--teal);border:1px solid var(--line);padding:6px 12px;
+    background:rgba(6,14,20,.6);border-radius:2px;opacity:0;transition:opacity .15s}
+
+  #end{position:fixed;inset:0;display:grid;place-items:center;background:rgba(3,6,12,.88);z-index:6;
+    opacity:0;pointer-events:none;transition:opacity .5s;text-align:center}
+  #end.on{opacity:1;pointer-events:auto}
+  #endT{font-size:32px;letter-spacing:.3em} #endS{font-size:11px;letter-spacing:.2em;
+    color:rgba(223,243,255,.6);margin-top:16px;line-height:2}
+
+  #brief{position:fixed;inset:0;display:grid;place-items:center;z-index:7;cursor:pointer;
+    background:
+      linear-gradient(90deg,rgba(2,7,13,.90) 0%,rgba(2,7,13,.64) 45%,rgba(2,7,13,.28) 100%),
+      linear-gradient(0deg,rgba(2,5,9,.90),transparent 48%),
+      url('assets/case-run-briefing-v2.webp') center/cover no-repeat;
+    transition:opacity .5s}
+  #brief.gone{opacity:0;pointer-events:none}
+  .card{width:min(730px,92vw);max-height:92vh;overflow:auto;border:1px solid var(--line);
+    background:
+      linear-gradient(90deg,var(--teal),transparent 22%) top left/100% 2px no-repeat,
+      linear-gradient(135deg,rgba(7,17,24,.96),rgba(4,10,16,.82));
+    box-shadow:var(--panel-shadow);padding:26px 30px;border-radius:3px;position:relative}
+  .card:after,.setCard:after,.pauseCard:after{content:"";position:absolute;inset:8px;
+    border:1px solid rgba(223,243,255,.035);pointer-events:none}
+  .card h1{font-size:30px;letter-spacing:.32em;color:var(--teal);text-shadow:0 0 26px rgba(111,227,208,.28)}
+  .card .sub{font-size:10px;letter-spacing:.24em;color:rgba(223,243,255,.5);margin:9px 0 4px}
+  .card p{font-size:11.5px;line-height:1.9;color:rgba(223,243,255,.72);margin:12px 0 14px}
+  .card p b{color:var(--amber);font-weight:500}
+  /* the briefing is a menu, not a manual: the key list only exists when asked
+     for, and the card scrolls under a thumb like every other overlay */
+  #keyList{display:none;margin-top:6px}
+  #keyList.on{display:block}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
+  @media (max-width:640px){.cols{grid-template-columns:1fr}}
+  .hd{font-size:9px;letter-spacing:.26em;color:var(--amber);margin:10px 0 4px}
+  .row{display:flex;gap:12px;padding:5px 0;border-top:1px solid rgba(111,227,208,.12);font-size:11px}
+  .row b{color:var(--teal);font-weight:500;min-width:88px;letter-spacing:.06em}
+  .row span{color:rgba(223,243,255,.7)}
+  .go{margin-top:18px;font-size:11px;letter-spacing:.3em;color:var(--teal);text-align:center;
+    animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){.go{animation:none;opacity:.85}}
+

@@ -1,0 +1,335 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#05070d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/airbourne-icon-v2-192.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/airbourne-icon-v2-192.png">
+<title>AIRBOURNE ARENA — ARENA CORE 4v4</title>
+<style>
+/*@include styles*/
+</style>
+</head>
+<body>
+<div id="boot">
+  <div id="bootInner">
+    <div id="bootTitle">AIRBOURNE ARENA</div>
+    <div id="bootBar"><div id="bootFill"></div></div>
+    <div id="bootNote">WARMING THE FLIGHT DECK&hellip;</div>
+    <div id="bootGo">ENTER THE HANGAR</div>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<div id="hangarUI">
+  <div id="hangarTitle">
+    <h2>BREAKWATER FIELD</h2>
+    <p id="hangarChapter">CHAPTER 1 — ROOKIE WINGS</p>
+  </div>
+  <div id="hangarSign">
+    <span>FLIGHT</span>
+    <b id="hangarTeam">INDEPENDENT</b>
+    <span id="hangarCall"></span>
+  </div>
+  <div id="hangarPrompt"></div>
+  <div id="hWalkCtl">
+    <div id="hLookZone"></div>
+    <div id="hStickZone"><div id="hStickBase"><div id="hStickKnob"></div></div></div>
+  </div>
+  <div id="hangarTouch">
+    <div class="pill" id="hFit" role="button" tabindex="0">FIT OUT</div>
+    <div class="pill" id="hMissions" role="button" tabindex="0">CAMPAIGN</div>
+    <div class="pill" id="hSet" role="button" tabindex="0">SETTINGS</div>
+    <div class="pill" id="hGo" role="button" tabindex="0">BEGIN</div>
+  </div>
+</div>
+
+<div id="fitCard">
+  <div class="setCard">
+    <h2>FIT OUT</h2>
+    <div class="setRow"><label>TEAM</label>
+      <div class="fitTeam">
+        <button class="seg blue" id="fitBlue" data-faction="vanguard">VANGUARD</button>
+        <button class="seg teal" id="fitTempest" data-faction="tempest">TEMPEST</button>
+        <button class="seg red" id="fitRed" data-faction="inferno">INFERNO</button>
+      </div>
+    </div>
+    <div class="setNote" id="fitTeamNote"></div>
+    <div class="setRow"><label>CALLSIGN</label>
+      <input id="fitCall" maxlength="10" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="setRow"><label>LIVERY</label>
+      <div class="segRow" id="fitLivery"></div>
+    </div>
+    <div class="setRow"><label>ACCENT</label>
+      <div class="swatchRow" id="fitAccent"></div>
+    </div>
+    <div class="setRow"><label>TRIM &mdash; TURN / SPEED</label>
+      <input type="range" id="fitTrim" min="-1" max="1" step=".25">
+      <output id="fitTrimOut">EVEN</output>
+    </div>
+    <div class="setRow"><label>ENGINE</label><div class="segRow" id="fitEngine"></div></div>
+    <div class="setRow"><label>WINGS</label><div class="segRow" id="fitWings"></div></div>
+    <div class="setRow"><label>ARMOR</label><div class="segRow" id="fitArmor"></div></div>
+    <div class="setRow"><label>PRIMARY</label><div class="segRow" id="fitPrimary"></div></div>
+    <div class="setNote" id="fitTrade"></div>
+    <div class="setNote">This is still your Kestrel Mk I. Nothing here is free &mdash;
+      every part states its cost beside its benefit. Trial side, paint, and setup
+      are saved to this device.</div>
+    <div class="btnRow">
+      <button class="actionBtn" id="fitDone">BACK TO THE HANGAR</button>
+      <button class="actionBtn" id="fitLaunch">TO THE FLIGHT LINE</button>
+    </div>
+  </div>
+</div>
+
+<div id="radio"><div id="radioWho"></div><div id="radioText"></div></div>
+
+<div id="objPanel"><div id="objTitle"></div><div id="objList"></div></div>
+
+<div id="debrief">
+  <div class="setCard">
+    <h2 id="debriefT">DEBRIEF</h2>
+    <p style="font-size:11.5px;line-height:1.9;color:rgba(223,243,255,.72);margin:14px 0 0"
+       id="debriefB"></p>
+    <div id="debriefStats"></div>
+    <div id="campaignRow">
+      <button class="actionBtn" id="debriefNext">CONTINUE</button>
+      <button class="actionBtn" id="debriefHangar">BREAKWATER HANGAR</button>
+    </div>
+  </div>
+</div>
+
+<div id="choiceCard">
+  <div class="setCard">
+    <h2 id="choiceT"></h2>
+    <p style="font-size:11.5px;line-height:1.9;color:rgba(223,243,255,.72);margin:14px 0 0"
+       id="choiceB"></p>
+    <div id="campaignRow" class="btnRow"><span id="choiceOpts"></span></div>
+  </div>
+</div>
+
+<div id="hud">
+  <div class="bracket" id="tl">
+    <div><div class="lbl">AIRSPEED</div><div class="val" id="spd">0<small>KTS</small></div></div>
+    <div><div class="lbl">ALTITUDE</div><div class="val" id="alt">0<small>FT</small></div></div>
+    <div><div class="lbl">AOA / G</div><div class="val" id="aoa">0<small>&deg;</small></div></div>
+    <div style="min-width:92px">
+      <div class="lbl">AIRFRAME</div><div class="val" id="hpv">100</div>
+      <div class="bar hp"><i id="hpBar"></i></div>
+      <div class="bar thr"><i id="thrBar"></i></div>
+      <div class="bar ab"><i id="abBar"></i></div>
+      <div id="abTag">BURNER</div>
+      <div id="sysDmg" style="font-size:9px;letter-spacing:.12em;color:#ffb347;margin-top:3px;min-height:11px"></div>
+    </div>
+  </div>
+
+  <div id="score">
+    <div id="scoreLine"><b id="sB">0</b><i>—</i><b id="sR">0</b></div>
+    <div id="clock">05:00</div>
+    <div id="coreLine">ARENA CORE ADRIFT AT MIDFIELD</div>
+  </div>
+
+  <div id="tape"><div id="tapeInner"></div><div id="needle"></div><div id="hdgRead">000</div></div>
+
+  <div class="bracket" id="tr">
+    <div class="lbl">CONDITIONS</div>
+    <div id="wx" style="margin-top:5px;font-size:11px;letter-spacing:.16em">CLEAR</div>
+    <div id="wxsub" style="font-size:9px;letter-spacing:.13em;color:rgba(223,243,255,.45);margin-top:4px"></div>
+  </div>
+
+  <div id="feed"></div>
+
+  <div class="bracket" id="bl">
+    <div class="lbl">FLIGHT ROSTER</div>
+    <div id="roster"></div>
+  </div>
+
+  <div id="mapWrap"><canvas id="map" width="372" height="372"></canvas></div>
+</div>
+
+<div id="vpath"></div>
+<div id="tgtBox"></div>
+<div id="tgtInfo"></div>
+<div id="tgtArrow"><span></span></div>
+<div id="aimRet"></div>
+<div id="pip"><div class="h l"></div><div class="h r"></div><div class="v t"></div><div class="v b"></div></div>
+<div id="lead"></div>
+<div id="dmg"></div><div id="flash"></div><div id="dmgDir"></div>
+<div id="center"></div><div id="warn"></div><div id="prompt"></div>
+<div id="toast"></div>
+
+<div id="coach">
+  <div id="coachTop"><div class="lbl">FIRST SORTIE</div><div id="coachStep">01 / 06</div></div>
+  <div id="coachGoal">Build speed and bank through the arena.</div>
+  <div id="coachHint">W adds throttle. Hold A / D to tighten the turn.</div>
+  <div id="coachTrack"><i></i></div>
+</div>
+<div id="pause">
+  <div class="pauseCard">
+    <h2>PAUSED</h2>
+    <p>THE SORTIE IS FROZEN</p>
+    <div class="btnRow">
+      <button class="actionBtn" id="resumeBtn">RETURN TO SORTIE</button>
+      <button class="actionBtn" id="pauseSetBtn">SETTINGS</button>
+      <button class="actionBtn" id="pauseQuitBtn">END SORTIE</button>
+    </div>
+  </div>
+</div>
+
+<div id="settings">
+  <div class="setCard">
+    <h2>SETTINGS</h2>
+
+    <div class="setRow"><label for="sSens">MOUSE SENSITIVITY</label>
+      <input type="range" id="sSens" min="30" max="300" step="5"><output id="oSens"></output></div>
+    <div class="setRow"><label for="sInvert">INVERT PITCH</label>
+      <input type="checkbox" class="toggle" id="sInvert"></div>
+    <div class="setRow"><label for="sPad">GAMEPAD</label>
+      <input type="checkbox" class="toggle" id="sPad"></div>
+
+    <div class="setRow"><label for="sVol">MASTER VOLUME</label>
+      <input type="range" id="sVol" min="0" max="100" step="5"><output id="oVol"></output></div>
+    <div class="setRow"><label for="sEngine">ENGINE TONE</label>
+      <input type="checkbox" class="toggle" id="sEngine"></div>
+
+    <div class="setRow"><label for="sHud">HUD SCALE</label>
+      <input type="range" id="sHud" min="70" max="160" step="5"><output id="oHud"></output></div>
+    <div class="setRow"><label>DIFFICULTY</label>
+      <div class="segRow" id="sDiff">
+        <button class="seg" data-v="0">ROOKIE</button>
+        <button class="seg" data-v="1">REGULAR</button>
+        <button class="seg" data-v="2">ACE</button>
+      </div></div>
+
+    <div class="setRow"><label for="sCb">COLOUR-BLIND TEAMS</label>
+      <input type="checkbox" class="toggle" id="sCb"></div>
+    <div class="setRow"><label for="sMotion">REDUCE MOTION</label>
+      <input type="checkbox" class="toggle" id="sMotion"></div>
+    <div class="setRow"><label for="sCoach">FIRST SORTIE COACHING</label>
+      <input type="checkbox" class="toggle" id="sCoach"></div>
+
+    <div class="setNote">Difficulty applies to enemy pilots on the next respawn.
+      Reduce motion disables camera shake and lightning.</div>
+    <div class="btnRow"><button class="actionBtn" id="setClose">CLOSE</button></div>
+  </div>
+</div>
+
+<div id="touch">
+  <div id="tStick"><div id="stickBase"><div id="stickKnob"></div></div></div>
+  <div id="tActions">
+    <div id="tPills">
+      <div class="pill" id="tCam">CAM</div>
+      <div class="pill" id="tMap">MAP</div>
+      <div class="pill" id="tLock">LOCK</div>
+      <div class="pill" id="tZoom">ZOOM</div>
+    </div>
+    <div class="tbtn" id="tRoll">ROLL</div>
+    <div class="tbtn" id="tUp">THR&#9650;</div>
+    <div class="tbtn" id="tBoost">BOOST</div>
+    <div class="tbtn" id="tDn">THR&#9660;</div>
+    <div class="tbtn" id="tPass">PASS</div>
+    <div class="tbtn" id="tFire">FIRE</div>
+  </div>
+  <div id="tPause">&#10073;&#10073;</div>
+</div>
+<div id="rollHud"></div>
+<div id="zoomVig"></div>
+<div id="zoomTag">GUNSIGHT</div>
+
+<div id="end"><div>
+  <div id="endT"></div>
+  <div id="endS"></div>
+  <div id="endStats"></div>
+  <div class="btnRow">
+    <button class="actionBtn" id="endStoryBtn">CONTINUE THE STORY</button>
+    <button class="actionBtn" id="againBtn">RUN IT BACK</button>
+    <button class="actionBtn" id="endSetBtn">SETTINGS</button>
+  </div>
+</div></div>
+
+<div id="brief">
+  <div class="card">
+    <h1>ARENA CORE</h1>
+    <div class="sub">AIRBOURNE ARENA · 4 v 4 · FIRST TO 3</div>
+    <p>Fly through the <b>Arena Core</b> at midfield to pick it up, then run it to the ring at the
+      <b>enemy end</b>. Shoot the carrier down and it drops where they died, free for anyone.</p>
+    <div class="btnRow">
+      <button class="actionBtn" id="briefGoBtn">LAUNCH</button>
+      <button class="actionBtn" id="briefStoryBtn">BACK TO THE HANGAR</button>
+      <button class="actionBtn" id="briefSetBtn">SETTINGS</button>
+      <button class="actionBtn" id="briefKeysBtn">CONTROLS</button>
+    </div>
+    <div class="go" id="goLine">CLICK TO CAPTURE THE MOUSE AND LAUNCH</div>
+    <div id="keyList">
+      <div class="cols">
+        <div>
+          <div class="hd">FLYING</div>
+          <div class="row"><b>MOUSE</b><span>Steer — the nose chases the teal reticle</span></div>
+          <div class="row"><b>A / D</b><span>Turn left / right — tap to correct, hold to tighten</span></div>
+          <div class="row"><b>W / S</b><span>Throttle up / down</span></div>
+          <div class="row"><b>SHIFT / CTRL</b><span>Firewall · idle</span></div>
+        </div>
+        <div>
+          <div class="hd">FIGHTING</div>
+          <div class="row"><b>SPACE</b><span>Nose cannon (or left-click)</span></div>
+        <div class="row"><b>RIGHT-CLICK / Z</b><span>Zoom the gunsight</span></div>
+        <div class="row"><b>SHIFT</b><span>Afterburner &mdash; limited, refills when cool</span></div>
+          <div class="row"><b>TAB</b><span>Lock the next bandit ahead</span></div>
+          <div class="row"><b>F / Q / E</b><span>Pass the core · barrel roll</span></div>
+          <div class="row"><b>C / M / P / O</b><span>Camera · map · pause · settings</span></div>
+        </div>
+      </div>
+      <div class="row"><b>TOUCH</b><span>Left thumb flies, right thumb fires, passes, boosts and rolls</span></div>
+      <div class="row"><b>GAMEPAD</b><span>Left stick steer · RT/R2 fire · A/Cross burner · L1 zoom · R1 roll · B/Circle lock</span></div>
+      <div class="row"><b>HANGAR PAD</b><span>Sticks move/look · D-pad selects · A/Cross interact · Start/Options begin</span></div>
+      <div class="btnRow"><button class="actionBtn" id="modeBtn">SWITCH TO TOUCH CONTROLS</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="missionCard">
+  <div class="setCard">
+    <h2>CAMPAIGN</h2>
+    <div id="missionMeta"></div>
+    <div id="missionList"></div>
+    <div class="btnRow">
+      <button class="actionBtn" id="missionClose">CLOSE</button>
+      <button class="actionBtn" id="missionReset">RESTART CAMPAIGN</button>
+    </div>
+  </div>
+</div>
+
+<div id="finaleCard">
+  <div class="setCard">
+    <h2 id="finaleT">THE SKIES AFTER</h2>
+    <p style="font-size:11.5px;line-height:1.9;color:rgba(223,243,255,.72);margin:14px 0 0"
+       id="finaleB"></p>
+    <div id="finaleNotes"></div>
+    <div id="finaleStats"></div>
+    <div class="btnRow">
+      <button class="actionBtn" id="finaleHangar">BREAKWATER HANGAR</button>
+      <button class="actionBtn" id="finaleAgain">NEW CAMPAIGN</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/three-r128.min.js"></script>
+<script src="assets/GLTFLoader-r128.js"></script>
+<script>
+(function(){
+'use strict';
+
+/*@include game*/
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+  /* ===================== damage direction =====================
+     An arc of a circle centred on the screen, rotated to face the shooter. */
+  #dmgDir{position:fixed;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:3}
+  .dmgArc{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0}
+  .dmgArc:after{content:"";position:absolute;left:-150px;top:-150px;width:300px;height:300px;
+    border:4px solid transparent;border-top-color:var(--alert);border-radius:50%;
+    filter:drop-shadow(0 0 7px rgba(255,60,50,.65))}
+  body.touch .dmgArc:after{left:-110px;top:-110px;width:220px;height:220px}
+

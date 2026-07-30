@@ -1,0 +1,7 @@
+  /* ===================== reduced motion =====================
+     Screen shake and lightning flash are the two things that reliably trigger
+     motion sensitivity, so they are gated in JS as well as here. */
+  body.noMotion #flash{display:none}
+  @media (prefers-reduced-motion:reduce){
+    #coach,#settings,#pause,#prompt{transition:none}
+  }
