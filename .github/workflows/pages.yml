@@ -5,6 +5,11 @@
 # game is relative, which is what lets it work unchanged at a project subpath
 # like /airbournearena/ as well as straight off a local disk.
 #
+# That one file is assembled from Airbourne-Arena/src/ and committed, so this
+# workflow publishes it as-is rather than building it. What it does check is that
+# the committed file is what src/ actually produces — a hand-edit of the
+# generated file must not be able to reach the site.
+#
 # The Next/vinext project under source/ is deliberately NOT deployed here — it
 # targets Cloudflare Workers and needs a server. Pages serves the static game.
 name: Deploy game to GitHub Pages
@@ -14,8 +19,11 @@ on:
     branches: [main]
     paths:
       - "Airbourne-Arena/index.html"
+      - "Airbourne-Arena/src/**"
       - "Airbourne-Arena/manifest.webmanifest"
       - "Airbourne-Arena/assets/**"
+      - "Airbourne-Arena/source/scripts/build-game.sh"
+      - "Airbourne-Arena/source/tests/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -40,13 +48,20 @@ jobs:
 
       - name: Check the game is intact
         working-directory: Airbourne-Arena/source
-        # Pure node:test, no dependencies — verifies the served copy is in sync,
-        # that all asset paths are relative, and that every referenced asset
-        # actually exists. New art landing in only one of the two asset folders
-        # has already shipped a game with missing textures once.
+        # Pure bash and node:test, no dependencies — nothing is installed yet at
+        # this point. --check comes first and does not write: the file about to be
+        # published has to be exactly what src/ assembles to, so a hand-edit of
+        # the generated file fails the deploy instead of shipping and then being
+        # reverted by the next rebuild.
+        #
+        # The rest verifies the served copy is in sync, that all asset paths are
+        # relative, and that every referenced asset actually exists. New art
+        # landing in only one of the two asset folders has already shipped a game
+        # with missing textures once.
         run: |
+          bash scripts/build-game.sh --check
           bash scripts/sync-game.sh
-          node --test tests/game-html.test.mjs
+          node --test tests/game-html.test.mjs tests/game-build.test.mjs
 
       - name: Assemble the site
         run: |
