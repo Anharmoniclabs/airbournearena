@@ -28,6 +28,30 @@ var AB_THRUST=1.85,      /* multiplier on top of full military thrust */
     AB_RELIGHT=0.18;     /* how much you need banked to light it again */
 var AIL_BIAS=1.35;     // standing roll rate a wrecked aileron leaves behind
 
+/* ===================== zero-point flight =====================
+   A field drive, not a wing. Three things stop a conventional airframe from
+   pointing wherever it likes: control surfaces need airflow to bite, the wing
+   needs airspeed to hold the aircraft up, and past a critical angle of attack
+   the wing gives up entirely. A zero-point drive answers all three, so the
+   aircraft can pitch to any attitude, come to a stop, and hold station.
+
+   This is layered on top of the energy model rather than replacing it. Thrust,
+   drag, lift and gravity are still integrated exactly as before, and at combat
+   speed the numbers are untouched — ZP_HOVER_HI is above the speed any fight
+   happens at, so a fast aircraft flies the same aeroplane it always did. What
+   changes is the bottom of the envelope, which used to be a stall and a fall
+   and is now a hover.
+
+   Deliberately kept as a setting. The energy model is what the gunnery solver,
+   the AI and the coaching were all written against, and being able to put the
+   old bottom of the envelope back is how you tell a tuning problem from a
+   zero-point problem.                                                    */
+var ZP_AUTH=0.90,        /* control authority floor — thrusters, not airflow */
+    ZP_HOVER_LO=30,      /* full station-keeping at or below this airspeed */
+    ZP_HOVER_HI=165,     /* wing has it entirely from here up */
+    ZP_DAMP=1.35,        /* how hard the field kills residual drift at idle */
+    ZP_STAB=0.9;         /* how much of the weathervane the field cancels */
+
 /* ===================== open atmosphere =====================
    The previous 2,300-unit clamp made the sky another arena wall. Aircraft can
    now use the full visible atmosphere. Density falls gradually at altitude,
@@ -77,11 +101,19 @@ function stepFlight(f,ctl,dt){
   if(f.dmgEng>0)ctl.throttle=Math.min(ctl.throttle,1-f.dmgEng*0.40);
   /* control authority falls off with airspeed — mushy when slow */
   var auth=clamp((speed-16)/125,0.10,1.0);
+  /* How much of the airframe's weight the field is carrying: all of it at a
+     standstill, none of it once the wing has the airspeed to do the job. */
+  var zp=!!cfg.zp;
+  var hover=zp?1-smooth(ZP_HOVER_LO,ZP_HOVER_HI,speed):0;
+  f.hover=hover;
+  /* Thrusters do not care what the airflow is doing, so the nose keeps its
+     authority down to zero knots. This is what "turn any way" actually is. */
+  if(zp)auth=Math.max(auth,ZP_AUTH);
   /* soft angle-of-attack limiter: you can still force a departure by holding
      the pull, but a normal hard turn won't dump you out of the sky */
   var lim=1;
   var over=(Math.abs(f.alpha)-A_CRIT*0.72)/(A_CRIT*0.55);
-  if(over>0&&ctl.pitch*(f.alpha>=0?1:-1)>0)lim=1-clamp(over,0,1)*0.70;
+  if(!zp&&over>0&&ctl.pitch*(f.alpha>=0?1:-1)>0)lim=1-clamp(over,0,1)*0.70;
   var agile=f.trimAgile||1;
   m.rotateX(ctl.pitch*PITCH_RATE*agile*(carry?.82:1)*auth*lim*dt);
   m.rotateZ(ctl.roll*ROLL_RATE*(ctl.rollMul||1)*agile*(carry?.82:1)*(1-f.dmgAil*0.5)*auth*dt);
@@ -93,7 +125,10 @@ function stepFlight(f,ctl,dt){
   var alpha=Math.asin(clamp(-_vd.dot(_u),-1,1));
   var beta=Math.asin(clamp(_vd.dot(_r),-1,1));
   var cl=CL0+CL_A*alpha;
-  var stalled=Math.abs(alpha)>A_CRIT;
+  /* Past A_CRIT a wing departs. A field does not, so there is no critical
+     angle to respect and nothing for the stall warning to say — the aircraft
+     will sit at ninety degrees of alpha and keep flying. */
+  var stalled=!zp&&Math.abs(alpha)>A_CRIT;
   if(stalled)cl*=1-0.75*clamp((Math.abs(alpha)-A_CRIT)/0.25,0,1);
   var q2=speed*speed;
 
@@ -123,18 +158,35 @@ function stepFlight(f,ctl,dt){
   _ac.addScaledVector(_vd,-DRAG_K*q2*cd*rho);
   _ac.addScaledVector(_r,-SIDE_K*q2*beta);
   _ac.y-=G;
+  /* Station-keeping. The lift the wing can no longer make is made by the field
+     instead, so running out of airspeed stops being a fall. Blended, not
+     switched: at 165 kn this is zero and the aeroplane is back. */
+  if(hover>0)_ac.y+=G*hover;
 
   f.vel.addScaledVector(_ac,dt);
+  /* Hovering has to actually stop. Without this the aircraft holds altitude but
+     keeps whatever drift it arrived with forever, which reads as ice rather
+     than as station-keeping. Throttle backs the damping off so commanded
+     movement is never fought. */
+  if(hover>0){
+    var damp=ZP_DAMP*hover*(1-ctl.throttle*0.85);
+    if(damp>0)f.vel.multiplyScalar(Math.max(0,1-damp*dt));
+  }
   f.pos.addScaledVector(f.vel,dt);
   f.pos.addScaledVector(windVec,dt*0.30);
 
   /* weathervane: the airframe swings into the airflow, offset by trim AoA,
      which is why it holds altitude hands-off instead of sinking */
+  /* The field also holds the attitude you asked for. Without cancelling most of
+     the weathervane here the airframe swings back into the airflow the moment
+     you stop pulling, which makes every nose-high hover slide back to level and
+     undoes the whole mechanic. */
   if(speed>8){
     _tg.copy(_vd).applyAxisAngle(_r,A_TRIM);
     _ax.crossVectors(_f,_tg);
     var s=clamp(_ax.length(),-1,1);
-    if(s>1e-4){_ax.normalize();m.rotateOnWorldAxis(_ax,Math.asin(s)*Math.min(1,STAB*dt));}
+    if(s>1e-4){_ax.normalize();
+      m.rotateOnWorldAxis(_ax,Math.asin(s)*Math.min(1,STAB*(1-hover*ZP_STAB)*dt));}
   }
 
   f.speed=f.vel.length(); f.alpha=alpha; f.stalled=stalled;
@@ -232,18 +284,62 @@ function applyRoll(f,ctl,dt){
   ctl.roll=f.roll.dir;
   ctl.rollMul=ROLL_MUL;
   ctl.pitch=clamp(ctl.pitch*0.2+0.40,-1,1);      /* back pressure scribes the barrel */
-  if(Math.random()<dt*26)vapor(f);
   return ctl;
 }
-var vaporTex=softSprite('rgba(255,255,255,.85)','rgba(200,230,255,.25)');
-function vapor(f){
-  axes(f);
+
+/* ===================== roll wingtip highlight =====================
+   This used to spawn a pair of additive white sprites 26 times a second, each
+   growing to 26 units — two thirds of a second of bloom per roll, from the one
+   manoeuvre you perform while somebody is shooting at you. It washed out the
+   gunsight and the lead circle at exactly the wrong moment.
+
+   A roll is a wing event, so mark the wings. Two small sprites are pinned to
+   the wingtips for the life of the roll and faded on a curve, rather than
+   hundreds being spawned and left to grow. That is one allocation per aircraft
+   for the whole sortie instead of ~55 per roll, and it stays under the HUD
+   instead of over it.                                                    */
+var ROLL_TIP_TEX=softSprite('rgba(214,240,255,.55)','rgba(150,200,255,0)');
+var ROLL_TIP_SPAN=6.2,   /* half-span, matched to the old vapor offset */
+    ROLL_TIP_SIZE=5.4,   /* was an effective 26 at full growth */
+    ROLL_TIP_PEAK=0.38;  /* additive, so this is the knob to turn if it reads hot */
+function rollTips(f){
+  if(f.rollTip)return f.rollTip;
+  var pair=[];
   for(var i=-1;i<=1;i+=2){
-    var s2=new THREE.Sprite(new THREE.SpriteMaterial({map:vaporTex,transparent:true,
-      depthWrite:false,fog:false,blending:THREE.AdditiveBlending,opacity:.5}));
-    s2.position.copy(f.pos).addScaledVector(_r,i*6.2);
-    s2.scale.set(7,7,1); scene.add(s2);
-    fx.push({s:s2,t:0,life:.55,scale:26});
+    var s=new THREE.Sprite(new THREE.SpriteMaterial({map:ROLL_TIP_TEX,transparent:true,
+      depthWrite:false,fog:false,blending:THREE.AdditiveBlending,opacity:0}));
+    s.scale.set(ROLL_TIP_SIZE,ROLL_TIP_SIZE,1); s.visible=false;
+    scene.add(s); pair.push(s);
   }
+  f.rollTip=pair;
+  return pair;
+}
+function stepRollTips(f,dt){
+  /* Fade in over the first fifth of the roll and out over the last third, so
+     it reads as the wing loading up and unloading rather than as a light
+     switch. Reduced motion drops it to a trace. */
+  var want=0;
+  if(f.roll.t>0){
+    var k=1-f.roll.t/ROLL_DUR;                       /* 0 at entry, 1 at exit */
+    want=Math.min(smooth(0,.2,k),smooth(1,.67,k))*(cfg.motion?.35:1);
+  }
+  f.rollGlow=f.rollGlow===undefined?0:f.rollGlow+(want-f.rollGlow)*Math.min(1,dt*9);
+  if(f.rollGlow<0.004){
+    if(f.rollTip){f.rollTip[0].visible=false;f.rollTip[1].visible=false;}
+    return;
+  }
+  var pair=rollTips(f);
+  axes(f);
+  for(var i=0;i<2;i++){
+    var s=pair[i];
+    s.visible=true;
+    s.material.opacity=f.rollGlow*ROLL_TIP_PEAK;
+    s.position.copy(f.pos).addScaledVector(_r,(i?1:-1)*ROLL_TIP_SPAN);
+  }
+}
+function disposeRollTips(f){
+  if(!f.rollTip)return;
+  for(var i=0;i<2;i++){scene.remove(f.rollTip[i]);f.rollTip[i].material.dispose();}
+  f.rollTip=null; f.rollGlow=0;
 }
 

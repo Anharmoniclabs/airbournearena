@@ -33,3 +33,17 @@ Airbourne-Arena/source/.wrangler/
 # generated from src/ and these are not, so a tracked one would quietly become a
 # third divergent copy of an 8,000-line file.
 Airbourne-Arena/__*.html
+Airbourne-Arena/unity-import/
+Airbourne-Arena/UnityProject/[Ll]ibrary/
+Airbourne-Arena/UnityProject/[Tt]emp/
+Airbourne-Arena/UnityProject/[Oo]bj/
+Airbourne-Arena/UnityProject/[Ll]ogs/
+Airbourne-Arena/UnityProject/[Uu]ser[Ss]ettings/
+Airbourne-Arena/UnityProject/Tools/**/bin/
+Airbourne-Arena/UnityProject/Tools/**/obj/
+Airbourne-Arena/Builds/
+__pycache__/
+
+# Local Cloudflare credential dropped here during deploy setup. A global key can
+# do anything on the account, so it must never be committable.
+/cloud

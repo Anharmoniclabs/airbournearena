@@ -31,11 +31,28 @@ function banner(msg,t){el.center.textContent=msg;bannerT=t||1.2;}
 var coachSteps=[
   {goal:'Build speed and bank through the arena.',hint:'W adds throttle. Hold A / D to tighten the turn.'},
   {goal:'Learn the energy trade.',hint:'Climb to gain height, then lower the nose to recover speed.'},
+  /* Slot 2 is filled in by coachEnvelopeStep() — see below. */
   {goal:'Recover cleanly from a stall.',hint:'Ease off the turn and let the nose fall until airflow returns.'},
   {goal:'Secure the drifting case.',hint:'Fly through the amber hard case at midfield.'},
   {goal:'Pass before the trap closes.',hint:'While carrying, press F to throw the case forward.'},
   {goal:'Finish the run.',hint:'Carry the case through the enemy ring in the east.'}
-],coachIndex=0,coachSeenStall=false,coachEnabled=true;
+],coachIndex=0,coachSeenStall=false,coachSeenHover=false,coachEnabled=true;
+
+/* The third sortie lesson teaches the bottom of the envelope, and what lives
+   down there depends on the flight model. On the energy model it is a stall you
+   have to fly out of. With zero-point flight there is no stall to have, so the
+   same slot teaches station-keeping instead — which is the more useful lesson
+   anyway, because hovering is the thing a pilot arriving from any other flight
+   game will not think to try.
+
+   This is not cosmetic: the step used to wait on player.stalled, and with
+   zero-point on that never becomes true, so the first sortie could not be
+   completed at all. */
+var COACH_STALL={goal:'Recover cleanly from a stall.',
+      hint:'Ease off the turn and let the nose fall until airflow returns.'},
+    COACH_HOVER={goal:'Come to a stop and hold station.',
+      hint:'Cut the throttle. The drive carries you — then point the nose and add throttle to move off.'};
+function coachEnvelopeStep(){return cfg.zp?COACH_HOVER:COACH_STALL;}
 var coachEl=document.getElementById('coach'),coachGoal=document.getElementById('coachGoal'),
   coachHint=document.getElementById('coachHint'),coachStep=document.getElementById('coachStep'),
   coachBar=document.querySelector('#coachTrack i');
@@ -50,7 +67,8 @@ function coachAdvance(){
 }
 function renderCoach(){
   if(!coachEnabled)return;
-  var s=coachSteps[coachIndex];coachGoal.textContent=s.goal;coachHint.textContent=s.hint;
+  var s=coachIndex===2?coachEnvelopeStep():coachSteps[coachIndex];
+  coachGoal.textContent=s.goal;coachHint.textContent=s.hint;
   coachStep.textContent=('0'+(coachIndex+1)).slice(-2)+' / 06';
   coachBar.style.width=(coachIndex/coachSteps.length*100)+'%';
   coachEl.classList.toggle('on',st.started);
@@ -60,8 +78,13 @@ function coachTick(){
   if(coachIndex===0&&player.speed>125&&(keys.KeyA||keys.KeyD||Math.abs(aim.x)>.18))coachAdvance();
   else if(coachIndex===1&&player.pos.y>720&&player.speed>110)coachAdvance();
   else if(coachIndex===2){
-    if(player.stalled)coachSeenStall=true;
-    if(coachSeenStall&&!player.stalled&&player.speed>85)coachAdvance();
+    if(cfg.zp){
+      if(player.hover>.8)coachSeenHover=true;
+      if(coachSeenHover&&player.speed>85)coachAdvance();
+    } else {
+      if(player.stalled)coachSeenStall=true;
+      if(coachSeenStall&&!player.stalled&&player.speed>85)coachAdvance();
+    }
   } else if(coachIndex===3&&core.carrier===player)coachAdvance();
   else if(coachIndex===4&&sortie.passes>0)coachAdvance();
   else if(coachIndex===5&&sortie.scores>0)coachAdvance();

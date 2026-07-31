@@ -102,6 +102,7 @@ function kill(f,by){
   if(f.carrying)dropCore(f);
   if(by&&by!==f){by.kills++;feed(tag(by)+' &rarr; '+tag(f));}
   else feed(tag(f)+' went in');
+  netEmitKill(f,by);
   if(by===player){sortie.kills++;emit('kill',{target:f.name});stingSfx([784,1046],.16);}
   if(f.isPlayer){st.dmgFlash=1;shake=1;sortie.deaths++;emit('death',{by:by?by.name:'terrain'});
     tone(220,1.1,.24,'sawtooth',48);}

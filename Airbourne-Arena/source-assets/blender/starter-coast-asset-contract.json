@@ -8,6 +8,33 @@
     "up_axis": "Y",
     "canonical_scene": "Airbourne-Arena/index.html"
   },
+  "unity": {
+    "engine": "Unity 6",
+    "render_pipeline": "URP",
+    "primary_target": "WebGL",
+    "authoring_format": "FBX",
+    "units": "meters",
+    "scale_factor": 1,
+    "up_axis": "Y",
+    "handedness": "left",
+    "forward_axis": "+Z",
+    "coordinate_conversion": "(x, y, z) -> (x, y, -z)",
+    "lod_screen_relative_heights": {
+      "lod0": 0.6,
+      "lod1": 0.25,
+      "cull": 0.02
+    },
+    "texture_budgets": {
+      "terrain": {"max_dimension": 2048, "webgl_format": "DXT", "max_mib": 8},
+      "aircraft": {"max_dimension": 2048, "webgl_format": "DXT", "max_mib": 4},
+      "architecture": {"max_dimension": 1024, "webgl_format": "DXT", "max_mib": 6},
+      "vfx": {"max_dimension": 1024, "webgl_format": "DXT", "max_mib": 2},
+      "ui_and_briefing": {"max_dimension": 1024, "webgl_format": "RGBA32", "max_mib": 3},
+      "character_reference": {"max_dimension": 1024, "webgl_format": "DXT", "max_mib": 2}
+    },
+    "first_load_budget_mib": 25,
+    "delivery": "vertical slice resident; regions and chapters delivered as remote Addressables"
+  },
   "masterplan": {
     "reference": "../concepts/starter-coast-masterplan-v1.png",
     "status": "authored_full_island_v2_generated_integrated_and_render_reviewed",
@@ -261,6 +288,7 @@
         "industrial-tank-diffusion-v1.webp",
         "rooftop-equipment-diffusion-v1.webp",
         "hangar-metal-diffusion-v1.webp",
+        "hangar-floor-diffusion-4k-v1.webp",
         "skyway-navigation-surface-diffusion-4k-v1.webp"
       ],
       "geometry": "closed modular building meshes",
@@ -310,7 +338,8 @@
       "class": "character_reference",
       "images": [
         "independent-pilot-rear-diffusion-4k-v1.webp",
-        "mara-switch-voss-diffusion-4k-v1.webp"
+        "mara-switch-voss-diffusion-4k-v1.webp",
+        "starter-coast-pilot-albedo-diffusion-v2.png"
       ],
       "use": "concept reference until matching skinned meshes exist",
       "reason": "a portrait does not provide topology, hidden surfaces, skeleton, or weights"

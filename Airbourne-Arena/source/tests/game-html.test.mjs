@@ -103,7 +103,13 @@ test("the Blender world and campaign story kit are runtime assets", () => {
 });
 
 test("chase flight stays readable during hard banks on desktop and mobile", () => {
-  assert.match(canonical, /LOW\?1\.25:2/);
+  // The device pixel ratio is still capped, and still capped harder at the
+  // bottom end — but it now comes from the quality tier rather than a literal
+  // LOW?1.25:2, because the tier is chosen by measured frame time instead of by
+  // whether the screen happens to accept touch.
+  assert.match(canonical, /renderer\.setPixelRatio\(Math\.min\(devicePixelRatio,GFX\.pixelCap\)\)/);
+  assert.match(canonical, /name:'LOW'[^}]*pixelCap:1\.25/);
+  assert.match(canonical, /name:'HIGH'[^}]*pixelCap:2/);
   assert.match(canonical, /LOW\?Math\.min\(2,renderer\.capabilities\.getMaxAnisotropy\(\)\)/);
   assert.match(canonical, /camFlatRight\.crossVectors\(_f,WORLD_UP\)/);
   assert.match(canonical, /\.addScaledVector\(WORLD_UP,camOff\.y\)/);

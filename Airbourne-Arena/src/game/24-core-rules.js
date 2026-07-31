@@ -6,6 +6,7 @@ function dropCore(f){
   feed('<span style="color:#ffb347">CORE DROPPED</span>');
   tone(330,.26,.14,'triangle',210);
   emit('case_drop',{pilot:f.name});
+  netEmitEvent(NET_EV.CORE_DROP,f);
 }
 function passCore(f){
   if(core.carrier!==f)return;
@@ -19,6 +20,7 @@ function passCore(f){
   if(f.isPlayer)sortie.passes++;
   tone(660,.18,f.isPlayer?.2:earGain(f.pos)*.12,'triangle',880);
   emit('case_pass',{pilot:f.name});
+  netEmitEvent(NET_EV.CORE_PASS,f);
 }
 function grabCore(f){
   core.carrier=f; f.carrying=true; core.vel.set(0,0,0);
@@ -28,9 +30,15 @@ function grabCore(f){
     sortie.grabs++;stingSfx([523,659,784],.19);}
   else tone(440,.2,earGain(f.pos)*.12,'triangle',560);
   emit('case_grab',{pilot:f.name});
+  netEmitEvent(NET_EV.CORE_GRAB,f);
 }
 function scoreCap(f){
+  /* Online the scoreboard is the server's. The local increment still happens so
+     the HUD reacts on the same frame as the capture, but the SCORE message that
+     follows overwrites it — and the server, not this client, is what decides the
+     match is over. */
   if(f.team==='blue')st.scoreB++; else st.scoreR++;
+  netEmitEvent(NET_EV.CORE_SCORE,f);
   f.caps++; core.carrier=null; f.carrying=false;
   core.pos.set(0,600,rnd(-260,260)); core.vel.set(0,0,0); core.lockout=null; core.charge=100;
   boom(GOALS[f.team],280);
@@ -39,9 +47,18 @@ function scoreCap(f){
   emit('case_score',{pilot:f.name,team:f.team});
   banner(factionName(f.team)+' SCORES',1.8);
   if(f.team===player.team)stingSfx([523,659,784,1046],.22); else stingSfx([392,330,262],.20);
-  if(st.scoreB>=TARGET_SCORE||st.scoreR>=TARGET_SCORE)endMatch();
+  if(!net.on&&(st.scoreB>=TARGET_SCORE||st.scoreR>=TARGET_SCORE))endMatch();
 }
+/* Online, the Core is simulated only by the arena host; every other client
+   receives its position and carrier in the host's state packets and runs the
+   presentation half alone. Splitting the two is what lets one function serve
+   both cases without the offline game paying for any of it. */
 function stepCore(dt){
+  if(netOwnsCore())stepCoreSim(dt);
+  stepCoreVisual(dt);
+}
+
+function stepCoreSim(dt){
   if(core.lockT>0){core.lockT-=dt; if(core.lockT<=0)core.lockout=null;}
   if(core.carrier){
     var c=core.carrier;
@@ -89,6 +106,9 @@ function stepCore(dt){
       if(f.pos.distanceTo(core.pos)<CASE_GRAB){grabCore(f);break;}
     }
   }
+}
+
+function stepCoreVisual(dt){
   coreGroup.position.copy(core.pos);
   coreMesh.rotation.y+=dt*.9;
   coreMesh.rotation.z=Math.sin(performance.now()*.0016)*.16;

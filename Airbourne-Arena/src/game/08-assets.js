@@ -50,6 +50,22 @@ bindBtn(bootGo,bootLift);
    swallows it — must not leave the player staring at a bar that never fills. */
 setTimeout(function(){ if(!assetsReady){bootTimedOut=true; bootFinish();} },25000);
 
+/* Every GLB in the game comes through here rather than through its own
+   `new THREE.GLTFLoader(loadManager)`. The models are meshopt-compressed
+   (EXT_meshopt_compression, applied by source/scripts/compress-glb.sh), and a
+   loader without the decoder attached fails on them with an extension error
+   rather than falling back — so there must be exactly one place that can be
+   forgotten, and this is it.
+
+   The decoder is optional at runtime: if meshopt_decoder-r128.js did not load,
+   uncompressed GLBs still work and compressed ones report a clear failure
+   through loadManager.onError instead of a silent blank aircraft. */
+function makeGltfLoader(){
+  var loader=new THREE.GLTFLoader(loadManager);
+  if(typeof MeshoptDecoder!=='undefined')loader.setMeshoptDecoder(MeshoptDecoder);
+  return loader;
+}
+
 /* generated high-resolution material kit */
 var assetLoader=new THREE.TextureLoader(loadManager);
 var imageLoader=new THREE.ImageLoader(loadManager);

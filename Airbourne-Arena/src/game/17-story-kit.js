@@ -99,7 +99,7 @@ function syncStorySetpiece(id){
   if(!storySetpiece)return;
   storySetpiece.position.set(2850,900,0);scene.add(storySetpiece);
 }
-new THREE.GLTFLoader(loadManager).load(
+makeGltfLoader().load(
   'assets/starter-coast-story-kit-authored-v2.glb',
   function(gltf){
     styleStoryAsset(gltf.scene);

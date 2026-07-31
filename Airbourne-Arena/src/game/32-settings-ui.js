@@ -37,6 +37,7 @@ bindRange('sVol','oVol','vol',function(v){return v+'%';});
 bindToggle('sEngine','engine');
 bindRange('sHud','oHud','hud',function(v){return v+'%';});
 bindToggle('sCb','cb');
+bindToggle('sZp','zp');
 bindToggle('sMotion','motion');
 bindToggle('sCoach','coach');
 
@@ -46,6 +47,21 @@ diffBtns.forEach(function(b){
 });
 syncFns.push(function(){
   diffBtns.forEach(function(b){b.classList.toggle('on',+b.getAttribute('data-v')===cfg.diff);});
+});
+
+/* AUTO is -1: keep measuring and step down if this machine cannot hold the
+   pace. Picking a tier by hand pins it and stops the measuring, which is the
+   point of picking one. */
+var gfxBtns=[].slice.call(document.querySelectorAll('#sGfx .seg'));
+gfxBtns.forEach(function(b){
+  bindBtn(b,function(){
+    cfg.gfx=+b.getAttribute('data-v');
+    setGfxTier(cfg.gfx<0?(IS_TOUCH?0:2):cfg.gfx,false);
+    applyCfg(); syncSettings();
+  });
+});
+syncFns.push(function(){
+  gfxBtns.forEach(function(b){b.classList.toggle('on',+b.getAttribute('data-v')===cfg.gfx);});
 });
 function syncSettings(){for(var i=0;i<syncFns.length;i++)syncFns[i]();}
 
@@ -63,6 +79,11 @@ bindBtn('briefStoryBtn',function(){
   abandonMission(); st.mode='arena'; parkArena(false); enterHangar();
 });
 bindBtn('againBtn',function(){
+  /* Online the scoreboard is the server's, so a rematch is a request rather
+     than a local reset — clearing our own copy here would put this client a
+     match ahead of everyone else. The server zeroes the score and tells the
+     whole room, and resetMatch() runs on the way back in. */
+  if(net.on){netRequestRematch();return;}
   abandonMission(); st.mode='arena'; parkArena(false); resetMatch();
 });
 /* A free Core Run used to dead-end on RUN IT BACK. The scoreboard is the point

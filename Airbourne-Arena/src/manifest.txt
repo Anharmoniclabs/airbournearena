@@ -26,6 +26,7 @@ styles/11-campaign.css
 styles/12-end-screen.css
 styles/13-touch-pause.css
 styles/14-reduced-motion.css
+styles/15-net.css
 
 [game]
 game/01-util.js
@@ -33,9 +34,14 @@ game/02-buttons.js
 game/03-settings-store.js
 game/04-audio.js
 game/05-device.js
+# The tier has to be settled before anything reads LOW: star counts, terrain
+# segments and texture anisotropy are all fixed at load time from it.
+game/05a-quality-tier.js
 game/06-arena.js
 game/07-scene.js
 game/08-assets.js
+# Shadows and bloom, which need both the renderer (07) and the sun (08).
+game/08a-render-quality.js
 game/09-weather.js
 game/10-objectives.js
 game/11-structures.js
@@ -50,6 +56,7 @@ game/19-fighters.js
 game/20-pilot.js
 game/21-flight-model.js
 game/22-bullets.js
+game/22a-speedlines.js
 game/23-state.js
 game/24-core-rules.js
 game/25-ai.js
@@ -80,3 +87,12 @@ game/49-loop.js
 game/50-targeting-hud.js
 game/51-end-match.js
 game/52-viewport.js
+# The net parts come last because the lobby wires buttons and reads a room code
+# out of the URL at load time, and both want the whole game already built. The
+# authority checks they define — netOwns, netOwnsCore, netOwnsEntity — are called
+# from parts above, which works because function declarations hoist across the
+# whole IIFE and nothing calls them until the first frame.
+game/53-net-protocol.js
+game/54-net-client.js
+game/55-net-sync.js
+game/56-net-ui.js

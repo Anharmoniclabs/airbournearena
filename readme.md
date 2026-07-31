@@ -60,8 +60,16 @@ order-sensitive.
 
 The aircraft flies on a real velocity vector — thrust, lift, drag and gravity,
 with angle of attack driving the lift curve. Point the nose up and the jet keeps
-going the way it was going until the wing turns it. Pull too hard and the wing
-stalls. Trade height for speed.
+going the way it was going until the wing turns it. Trade height for speed.
+
+**Zero-point flight** sits on top of that, and it is on by default. A field drive
+carries the airframe where a wing would have run out of airflow: the nose keeps
+full authority down to a standstill, there is no critical angle of attack to
+respect, and cutting the throttle brings you to a stop and holds station instead
+of into a stall and a fall. Point the nose anywhere and add throttle to go there.
+Above roughly 165 kn the field hands back to the wing and it is the same
+aeroplane it always was, so nothing about a fast fight changes. Turn it off in
+settings to fly the pure energy model, stall and all.
 
 Gunnery is solved rather than guessed: the amber box marks the tracked bandit,
 the red circle is where they will be when your rounds arrive, and the pipper is
@@ -106,6 +114,7 @@ Airbourne-Arena/
     public/case-run.html      byte-for-byte copy of the game, generated
     tests/                    node:test checks over the shipped file
 docs/STORY-BIBLE.md           setting and campaign notes
+docs/UNITY-PORT.md            build plan for a Unity WebGL version
 ```
 
 Both `index.html` and `source/public/case-run.html` are generated and committed,

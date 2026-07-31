@@ -14,7 +14,7 @@ try{
   document.getElementById('boot').classList.add('gone');
   return;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.25:2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,GFX.pixelCap));
 renderer.setSize(innerWidth,innerHeight);
 /* Filmic output keeps sunlit concrete from clipping to flat white while
    retaining the teal/orange cockpit language in dusk and storm conditions. */

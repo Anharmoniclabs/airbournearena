@@ -165,7 +165,7 @@ var MARA_POS=new THREE.Vector3(10,0,-27);
   var doorLight=new THREE.DirectionalLight(0xbcd9f2,.7);
   doorLight.position.set(0,10,40); hangarScene.add(doorLight,doorLight.target);
 })();
-new THREE.GLTFLoader(loadManager).load(
+makeGltfLoader().load(
   'assets/breakwater-hangar-detail-authored-v1.glb',
   function(gltf){
     calibrateAuthoredEnvironment(gltf.scene,true);
