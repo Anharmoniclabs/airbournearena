@@ -300,9 +300,9 @@ function step(dt){
 
     var bea=f.mesh.userData.beacon;
     if(bea){
-      bea.material.opacity=f.carrying?.95:(f.invuln>0?(Math.sin(performance.now()*.02)>0?.9:.15):.35);
+      bea.material.opacity=f.carrying?.78:(f.invuln>0?(Math.sin(performance.now()*.02)>0?.58:.08):.22);
       bea.material.color.setHex(f.carrying?0xffb347:TEAM_COL[f.team]);
-      bea.scale.setScalar(f.carrying?46:26);
+      bea.scale.setScalar(f.carrying?34:16);
     }
   }
 
@@ -648,4 +648,3 @@ function hudWork(dt){
   if(player.stalled&&!sortie.stalling){sortie.stalling=true;sortie.stalls++;emit('stall_enter');}
   else if(!player.stalled&&sortie.stalling){sortie.stalling=false;emit('stall_exit');}
 }
-

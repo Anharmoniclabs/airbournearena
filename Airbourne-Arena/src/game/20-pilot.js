@@ -263,7 +263,10 @@ function buildPlane(team,isPlayer){
   g.userData.exhausts=exhausts;
   var bea=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite('rgba(255,255,255,.9)','rgba(255,255,255,0)'),
     color:TEAM_COL[team],transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
-  bea.scale.set(26,26,1); g.add(bea); g.userData.beacon=bea;
+  /* Identification light, not a substitute silhouette. At 26 units the
+     additive sprite was wider than the authored aircraft and the bloom pass
+     turned normal flight into a white disc with wings. */
+  bea.scale.set(16,16,1); g.add(bea); g.userData.beacon=bea;
   /* kept so fit-out repaints this exact shared material across every physical
      hull panel without changing the faction texture or any other aircraft */
   g.userData.hull=hull; g.userData.trim=trim;
@@ -302,4 +305,3 @@ function respawnFighter(f,instant){
   f.dmgEng=0; f.dmgAil=0;      /* a fresh airframe is a repaired airframe */
   f.strike=null; f.strikeTarget=null; f.strikeT=0; f.ceilT=0;
 }
-

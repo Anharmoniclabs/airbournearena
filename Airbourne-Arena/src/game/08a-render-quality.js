@@ -76,11 +76,13 @@ function buildComposer(){
   composer=new THREE.EffectComposer(renderer);
   bloomRenderPass=new THREE.RenderPass(scene,camera);
   composer.addPass(bloomRenderPass);
-  /* Threshold high enough that lit terrain and sky stay out of it: this should
-     pick up burners, tracers, the Core and window lights, not wash the whole
-     daylight frame. Radius is generous because the bright things are small. */
+  /* Keep sunlit white aircraft below the effect. The first live Pages render
+     used 0.72 / 0.82 here and turned the player's beacon plus wing highlights
+     into a large white halo, erasing the silhouette in level and banked views.
+     Burners, tracers, the Core and night windows still clear this tighter
+     threshold; the smaller radius keeps their glow attached to its source. */
   bloomPass=new THREE.UnrealBloomPass(
-    new THREE.Vector2(innerWidth,innerHeight),GFX.bloomStrength,0.72,0.82);
+    new THREE.Vector2(innerWidth,innerHeight),GFX.bloomStrength,0.42,0.92);
   composer.addPass(bloomPass);
   composer.setSize(innerWidth,innerHeight);
   composer.setPixelRatio(renderer.getPixelRatio());
