@@ -107,7 +107,7 @@ function calibrateAuthoredWorld(root){
     o.material.needsUpdate=true;
   });
 }
-new THREE.GLTFLoader(loadManager).load(
+makeGltfLoader().load(
   LOW?'assets/starter-coast-world-authored-v2-lod1.glb':
       'assets/starter-coast-world-authored-v2.glb',
   function(gltf){

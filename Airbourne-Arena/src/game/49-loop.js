@@ -4,8 +4,14 @@ requestAnimationFrame(function loop(now){
   requestAnimationFrame(loop);
   var dt=(now-prevT)/1000; prevT=now; if(dt>.05)dt=.05;
   padTick(dt);
+  /* Above the phase check, because a socket does not care which screen is up:
+     you can be sitting in the hangar or reading the briefing while the rest of
+     the room is already flying, and a dropped connection has to keep retrying
+     through all of it. */
+  netStep(dt);
+  watchFrameRate(dt);
   /* the hangar owns the frame entirely while you are in it */
-  if(st.phase==='hangar'){hangarStep(dt);renderer.render(hangarScene,hangarCam);return;}
+  if(st.phase==='hangar'){hangarStep(dt);renderFrame(hangarScene,hangarCam);return;}
   if(st.started&&!st.paused)step(dt); else env(Math.min(dt,.016));
   audioEngine();
   stepDmgArcs(dt);
@@ -14,7 +20,7 @@ requestAnimationFrame(function loop(now){
     goalVisuals[gi].rotation.z+=dt*(gi?-.18:.18);
     goalVisuals[gi].material.opacity=.68+Math.sin(now*.003+gi*Math.PI)*.16;
   }
-  renderer.render(scene,camera);
+  renderFrame(scene,camera);
 });
 
 function env(dt){
@@ -110,8 +116,19 @@ function env(dt){
     rain.position.copy(camera.position);
   } else rain.visible=false;
 
-  sunLight.position.copy(anchor).addScaledVector(sunDir,2600);
-  sunLight.target.position.copy(anchor);
+  /* Airflow cue. Driven by the camera subject rather than the player, so it is
+     right in the chase, the cockpit and a spectate camera alike. */
+  stepSpeedLines(dt,st.phase==='hangar'?null:player);
+
+  /* The sun is a shadow caster now, so its placement is the shadow frustum's
+     placement — see frameShadowCamera in 08a-render-quality.js. With shadows
+     off it falls back to the old fixed offset, which is all a non-casting
+     directional light needs. */
+  if(sunLight.castShadow)frameShadowCamera(anchor);
+  else{
+    sunLight.position.copy(anchor).addScaledVector(sunDir,2600);
+    sunLight.target.position.copy(anchor);
+  }
   moonLight.position.copy(anchor).addScaledVector(sunDir,-2600);
   moonLight.target.position.copy(anchor);
   stepFx(dt);
@@ -239,27 +256,44 @@ function step(dt){
   env(dt);
   /* the match clock, the Core and the rings belong to an Arena match; a
      campaign mission owns its own pacing (STORY-BIBLE section 15). */
-  if(st.mode==='arena'&&!st.over){st.time-=dt; if(st.time<=0){st.time=0;endMatch();}}
+  if(st.mode==='arena'&&!st.over){
+    st.time-=dt;
+    /* Online, the clock still runs down locally so the HUD reads smoothly, but
+       the server's value overwrites it about once a second and the server is
+       the only thing allowed to call the match. Ending it locally would let two
+       clients disagree about when time ran out. */
+    if(st.time<=0){st.time=0; if(!net.on)endMatch();}
+  }
 
   if(player.alive&&!st.over)playerControl(dt);
 
   for(var i=0;i<fighters.length;i++){
     var f=fighters[i];
+    var remote=netIsRemote(f);
     f.invuln=Math.max(0,f.invuln-dt);
     if(!f.alive){
       f.respawnT-=dt;
+      disposeRollTips(f);
+      /* A remote wreck comes back when its owner says so, not on our clock. */
+      if(remote){netStepRemote(f,dt);continue;}
       if(f.respawnT<=0&&!st.over){respawnFighter(f);feed(tag(f)+' is airborne');}
       continue;
     }
-    if(!f.isPlayer&&!st.over)aiFor(f,dt);
+    stepRollTips(f,dt);
+    if(remote)netStepRemote(f,dt);
+    else if(!f.isPlayer&&!st.over)aiFor(f,dt);
 
-    var gh=ground(f.pos.x,f.pos.z);
-    if(f.pos.y-gh<8){kill(f,null);continue;}
-    /* Open sky: altitude changes aircraft performance through airDensity, but
-       does not inflict arbitrary damage. The final clamp is numerical safety
-       beyond the visible atmosphere, not a tactical boundary. */
-    if(f.pos.y>CEIL_HARD)f.ceilT+=dt; else f.ceilT=0;
-    if(f.pos.y>CEIL_MAX){f.pos.y=CEIL_MAX;if(f.vel.y>0)f.vel.y=0;}
+    /* Terrain and the ceiling are simulation, and a remote aircraft is not
+       simulated here — its owner has already flown it into the hill or not. */
+    if(!remote){
+      var gh=ground(f.pos.x,f.pos.z);
+      if(f.pos.y-gh<8){kill(f,null);continue;}
+      /* Open sky: altitude changes aircraft performance through airDensity, but
+         does not inflict arbitrary damage. The final clamp is numerical safety
+         beyond the visible atmosphere, not a tactical boundary. */
+      if(f.pos.y>CEIL_HARD)f.ceilT+=dt; else f.ceilT=0;
+      if(f.pos.y>CEIL_MAX){f.pos.y=CEIL_MAX;if(f.vel.y>0)f.vel.y=0;}
+    }
 
     f.boundT=0;
     if(f.isPlayer)el.warn.style.opacity=0;
@@ -322,7 +356,15 @@ function stepBullets(dt){
         var cx=prev.x+seg.x*t,cy=prev.y+seg.y*t,cz=prev.z+seg.z*t;
         var dx=cx-f.pos.x,dy=cy-f.pos.y,dz=cz-f.pos.z;
         if(dx*dx+dy*dy+dz*dz<HIT_RADIUS*HIT_RADIUS){
-          hurt(f,b.dmg||BULLET_DMG,b.owner);
+          /* A round only does damage on the machine that fired it. Every client
+             draws every tracer — including ones spawned locally to show a remote
+             pilot shooting — but those pass through, or eight machines would
+             each subtract the same fourteen points. If the target belongs to
+             someone else, the hit is claimed and their machine decides. */
+          if(netOwnsEntity(b.owner)){
+            if(netOwns(f))hurt(f,b.dmg||BULLET_DMG,b.owner);
+            else netClaimHit(f,b.dmg||BULLET_DMG,b.owner);
+          }
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
           boom(new THREE.Vector3(cx,cy,cz),18); dead=true; break;
         }
@@ -577,6 +619,10 @@ function hudWork(dt){
   if(!IS_TOUCH&&!st.mouseSeen&&alive)pr='MOVE THE MOUSE TO STEER  ·  A / D TO TURN';
   else if(core.carrier===player)pr='F — PASS THE CORE';
   else if(player.stalled)pr='STALLED — EASE OFF AND LET THE NOSE DROP';
+  /* With zero-point on there is no stall to warn about, so the same line tells
+     you the field is carrying you instead — the state you need to know about at
+     the bottom of the envelope either way. */
+  else if(player.hover>.55)pr='ZERO-POINT HOVER — POINT AND THROTTLE TO MOVE';
   else if(!core.carrier&&alive&&player.pos.distanceTo(core.pos)<450)pr='FLY THROUGH THE CORE';
   el.prompt.textContent=pr; el.prompt.style.opacity=pr?1:0;
 

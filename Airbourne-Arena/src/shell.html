@@ -223,8 +223,18 @@
         <button class="seg" data-v="2">ACE</button>
       </div></div>
 
+    <div class="setRow"><label>GRAPHICS</label>
+      <div class="segRow" id="sGfx">
+        <button class="seg" data-v="-1">AUTO</button>
+        <button class="seg" data-v="0">LOW</button>
+        <button class="seg" data-v="1">MEDIUM</button>
+        <button class="seg" data-v="2">HIGH</button>
+      </div></div>
+
     <div class="setRow"><label for="sCb">COLOUR-BLIND TEAMS</label>
       <input type="checkbox" class="toggle" id="sCb"></div>
+    <div class="setRow"><label for="sZp">ZERO-POINT FLIGHT</label>
+      <input type="checkbox" class="toggle" id="sZp"></div>
     <div class="setRow"><label for="sMotion">REDUCE MOTION</label>
       <input type="checkbox" class="toggle" id="sMotion"></div>
     <div class="setRow"><label for="sCoach">FIRST SORTIE COACHING</label>
@@ -269,6 +279,35 @@
   </div>
 </div></div>
 
+<div id="netTag"></div>
+
+<div id="netLobby">
+  <div class="card">
+    <h1>FLY ONLINE</h1>
+    <div class="sub">4 v 4 · DROP IN · EMPTY SEATS STAY ON AI</div>
+    <div id="netStatus" class="netStatus">OFFLINE</div>
+    <div class="netField">
+      <label for="netServer">ARENA SERVER</label>
+      <input id="netServer" type="text" spellcheck="false" autocomplete="off"
+        placeholder="https://airbourne-arena-net.<account>.workers.dev">
+    </div>
+    <div class="netField">
+      <label for="netCode">ROOM CODE</label>
+      <input id="netCode" type="text" spellcheck="false" autocomplete="off"
+        maxlength="5" placeholder="5 CHARACTERS">
+    </div>
+    <div class="btnRow">
+      <button class="actionBtn" id="netHostBtn">OPEN A ROOM</button>
+      <button class="actionBtn" id="netJoinBtn">JOIN</button>
+      <button class="actionBtn" id="netLeaveBtn">LEAVE</button>
+      <button class="actionBtn" id="netCloseBtn">BACK</button>
+    </div>
+    <div id="netRoster" class="netRoster"></div>
+    <div class="netNote">Anyone with the code can join. Seats nobody is flying stay
+      under AI control, so a match runs with one pilot or eight.</div>
+  </div>
+</div>
+
 <div id="brief">
   <div class="card">
     <h1>ARENA CORE</h1>
@@ -277,6 +316,7 @@
       <b>enemy end</b>. Shoot the carrier down and it drops where they died, free for anyone.</p>
     <div class="btnRow">
       <button class="actionBtn" id="briefGoBtn">LAUNCH</button>
+      <button class="actionBtn" id="briefNetBtn">FLY ONLINE</button>
       <button class="actionBtn" id="briefStoryBtn">BACK TO THE HANGAR</button>
       <button class="actionBtn" id="briefSetBtn">SETTINGS</button>
       <button class="actionBtn" id="briefKeysBtn">CONTROLS</button>
@@ -337,6 +377,13 @@
 
 <script src="assets/three-r128.min.js"></script>
 <script src="assets/GLTFLoader-r128.js"></script>
+<!-- Geometry decompression for the meshopt-packed GLBs. Vendored from three
+     r128 examples/js/libs; makeGltfLoader() attaches it when present. -->
+<script src="assets/meshopt_decoder-r128.js"></script>
+<!-- Bloom. Vendored from three r128 examples/js by
+     source/scripts/vendor-postprocessing.sh; the game checks for
+     THREE.EffectComposer and simply renders without it if this is missing. -->
+<script src="assets/postprocessing-r128.js"></script>
 <script>
 (function(){
 'use strict';

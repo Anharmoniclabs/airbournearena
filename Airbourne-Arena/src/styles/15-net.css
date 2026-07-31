@@ -1,0 +1,53 @@
+  /* ===================== online lobby ===================== */
+  /* Sits above the briefing card it is opened from, and below the settings
+     panel, which is reachable from either. */
+  #netLobby{position:fixed;inset:0;display:grid;place-items:center;z-index:9;
+    background:rgba(2,5,9,.9);opacity:0;pointer-events:none;transition:opacity .2s}
+  #netLobby.on{opacity:1;pointer-events:auto}
+  /* body sets touch-action:none for flight input; a form has to opt back in or
+     the fields cannot be focused and the card cannot be scrolled on a phone */
+  #netLobby,#netLobby *{touch-action:auto}
+  #netLobby .card{width:min(560px,92vw);cursor:auto}
+
+  .netStatus{font-size:10px;letter-spacing:.22em;margin:14px 0 4px;padding:9px 12px;
+    border:1px solid var(--line);color:rgba(223,243,255,.6);text-align:center}
+  .netStatus.live{border-color:var(--teal);color:var(--teal);
+    background:rgba(111,227,208,.09)}
+  .netStatus.busy{border-color:var(--amber);color:var(--amber)}
+  .netStatus.bad{border-color:#ff6b5e;color:#ff6b5e;background:rgba(255,107,94,.08)}
+
+  .netField{display:flex;align-items:center;gap:12px;margin-top:13px;
+    font-size:10px;letter-spacing:.14em}
+  .netField label{flex:0 0 110px;color:rgba(223,243,255,.72)}
+  .netField input{flex:1;min-width:0;background:rgba(2,7,13,.7);border:1px solid var(--line);
+    color:var(--ink);font:600 11px/1 ui-monospace,monospace;letter-spacing:.18em;
+    padding:9px 11px;border-radius:2px}
+  .netField input:focus{outline:none;border-color:var(--teal)}
+  /* The room code is read aloud and typed back in, so it gets the wide,
+     unambiguous treatment rather than the compact field the URL uses. */
+  #netCode{text-transform:uppercase;letter-spacing:.42em;font-size:15px;flex:0 0 8em}
+
+  .netRoster{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+  @media (max-width:560px){.netRoster{grid-template-columns:1fr}}
+  .netSeat{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:10.5px;
+    letter-spacing:.13em;border-top:1px solid rgba(111,227,208,.12)}
+  .netSeat .pip{width:7px;height:7px;border-radius:50%;flex:none;
+    background:rgba(223,243,255,.22)}
+  .netSeat.human .pip{background:var(--teal);box-shadow:0 0 8px rgba(111,227,208,.6)}
+  .netSeat.you{color:var(--teal)}
+  .netSeat .who{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .netSeat .kind{font-size:8.5px;letter-spacing:.2em;color:rgba(223,243,255,.34)}
+  .netSeat.host .kind{color:var(--amber)}
+
+  .netNote{font-size:9px;line-height:1.8;color:rgba(223,243,255,.4);
+    margin-top:16px;letter-spacing:.1em}
+
+  /* A live match shows who else is in it, in the corner the roster already
+     owns, so you can see a seat empty out without opening the lobby. */
+  #netTag{position:fixed;left:50%;transform:translateX(-50%);top:6px;z-index:6;
+    font-size:9px;letter-spacing:.26em;color:var(--teal);
+    background:rgba(2,7,13,.62);border:1px solid rgba(111,227,208,.3);
+    padding:4px 12px;border-radius:2px;opacity:0;transition:opacity .3s;
+    pointer-events:none}
+  #netTag.on{opacity:.9}
+  #netTag.warn{color:var(--amber);border-color:rgba(255,179,71,.45)}

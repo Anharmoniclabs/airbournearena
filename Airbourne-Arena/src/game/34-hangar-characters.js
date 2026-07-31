@@ -51,7 +51,7 @@ function prepareCharacter(root,accent){
   });
   root.scale.setScalar(1.72);
 }
-var characterLoader=new THREE.GLTFLoader(loadManager);
+var characterLoader=makeGltfLoader();
 characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
   playerAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x5d83b4);
   playerMixer=new THREE.AnimationMixer(gltf.scene);
@@ -501,6 +501,28 @@ if(new URLSearchParams(location.search).has('capture')){
        because src/ is assembled in manifest order. */
     leaveHangar:leaveHangar,launch:launch,
     startMission:function(id){return startMission(id);},
+    /* The net layer is declared in parts below this one, so every accessor here
+       is a wrapper: reading the name inside the function defers the lookup to
+       call time, exactly as startMission above does. Read-only — the socket is
+       opened through the lobby like any player would. */
+    getNet:function(){
+      return {status:net.status,on:net.on,room:net.room,slot:net.slot,
+        hostSlot:net.hostSlot,isHost:net.isHost,ai:net.ai.slice(),
+        roster:JSON.parse(JSON.stringify(net.roster))};
+    },
+    getNetOwnership:function(){
+      var out=[];
+      for(var i=0;i<fighters.length;i++){
+        var f=fighters[i];
+        out.push({slot:netSlotForFighter(f),name:f.name,
+          owned:netOwns(f),remote:netIsRemote(f),isPlayer:!!f.isPlayer});
+      }
+      return {fighters:out,core:netOwnsCore(),ownerless:netOwnsEntity(null)};
+    },
+    netCodecRoundTrip:function(sample){
+      var buffer=netEncodeState(NET_KIND_STATE,sample.time,sample.aircraft,sample.core||null);
+      return netDecodeState(buffer);
+    },
     settleFlightCamera:function(){
       camera.position.copy(player.pos);
       camLookReady=false;

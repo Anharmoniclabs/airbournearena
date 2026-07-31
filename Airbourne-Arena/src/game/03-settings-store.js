@@ -5,7 +5,15 @@
 var SKEY='airbourne:settings';
 var prefersReduced=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
 var cfg={sens:180,invert:false,pad:true,vol:70,engine:true,
-         hud:100,diff:1,cb:false,motion:prefersReduced,coach:true};
+         hud:100,diff:1,cb:false,motion:prefersReduced,coach:true,
+         /* zero-point flight: hover and unlimited pointing authority. On by
+            default — it is the aircraft the game is now about. Turning it off
+            restores the pure energy model the gunnery solver was tuned to. */
+         zp:true,
+         /* -1 means "work it out": start from the pointer type and step down if
+            measured frame times say this machine cannot hold it. 0/1/2 pin the
+            tier and switch the measuring off. See 05a-quality-tier.js. */
+         gfx:-1};
 (function loadCfg(){
   try{
     var saved=JSON.parse(localStorage.getItem(SKEY)||'null');

@@ -742,6 +742,59 @@
   @media (prefers-reduced-motion:reduce){
     #coach,#settings,#pause,#prompt{transition:none}
   }
+  /* ===================== online lobby ===================== */
+  /* Sits above the briefing card it is opened from, and below the settings
+     panel, which is reachable from either. */
+  #netLobby{position:fixed;inset:0;display:grid;place-items:center;z-index:9;
+    background:rgba(2,5,9,.9);opacity:0;pointer-events:none;transition:opacity .2s}
+  #netLobby.on{opacity:1;pointer-events:auto}
+  /* body sets touch-action:none for flight input; a form has to opt back in or
+     the fields cannot be focused and the card cannot be scrolled on a phone */
+  #netLobby,#netLobby *{touch-action:auto}
+  #netLobby .card{width:min(560px,92vw);cursor:auto}
+
+  .netStatus{font-size:10px;letter-spacing:.22em;margin:14px 0 4px;padding:9px 12px;
+    border:1px solid var(--line);color:rgba(223,243,255,.6);text-align:center}
+  .netStatus.live{border-color:var(--teal);color:var(--teal);
+    background:rgba(111,227,208,.09)}
+  .netStatus.busy{border-color:var(--amber);color:var(--amber)}
+  .netStatus.bad{border-color:#ff6b5e;color:#ff6b5e;background:rgba(255,107,94,.08)}
+
+  .netField{display:flex;align-items:center;gap:12px;margin-top:13px;
+    font-size:10px;letter-spacing:.14em}
+  .netField label{flex:0 0 110px;color:rgba(223,243,255,.72)}
+  .netField input{flex:1;min-width:0;background:rgba(2,7,13,.7);border:1px solid var(--line);
+    color:var(--ink);font:600 11px/1 ui-monospace,monospace;letter-spacing:.18em;
+    padding:9px 11px;border-radius:2px}
+  .netField input:focus{outline:none;border-color:var(--teal)}
+  /* The room code is read aloud and typed back in, so it gets the wide,
+     unambiguous treatment rather than the compact field the URL uses. */
+  #netCode{text-transform:uppercase;letter-spacing:.42em;font-size:15px;flex:0 0 8em}
+
+  .netRoster{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+  @media (max-width:560px){.netRoster{grid-template-columns:1fr}}
+  .netSeat{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:10.5px;
+    letter-spacing:.13em;border-top:1px solid rgba(111,227,208,.12)}
+  .netSeat .pip{width:7px;height:7px;border-radius:50%;flex:none;
+    background:rgba(223,243,255,.22)}
+  .netSeat.human .pip{background:var(--teal);box-shadow:0 0 8px rgba(111,227,208,.6)}
+  .netSeat.you{color:var(--teal)}
+  .netSeat .who{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .netSeat .kind{font-size:8.5px;letter-spacing:.2em;color:rgba(223,243,255,.34)}
+  .netSeat.host .kind{color:var(--amber)}
+
+  .netNote{font-size:9px;line-height:1.8;color:rgba(223,243,255,.4);
+    margin-top:16px;letter-spacing:.1em}
+
+  /* A live match shows who else is in it, in the corner the roster already
+     owns, so you can see a seat empty out without opening the lobby. */
+  #netTag{position:fixed;left:50%;transform:translateX(-50%);top:6px;z-index:6;
+    font-size:9px;letter-spacing:.26em;color:var(--teal);
+    background:rgba(2,7,13,.62);border:1px solid rgba(111,227,208,.3);
+    padding:4px 12px;border-radius:2px;opacity:0;transition:opacity .3s;
+    pointer-events:none}
+  #netTag.on{opacity:.9}
+  #netTag.warn{color:var(--amber);border-color:rgba(255,179,71,.45)}
 </style>
 </head>
 <body>
@@ -937,8 +990,18 @@
         <button class="seg" data-v="2">ACE</button>
       </div></div>
 
+    <div class="setRow"><label>GRAPHICS</label>
+      <div class="segRow" id="sGfx">
+        <button class="seg" data-v="-1">AUTO</button>
+        <button class="seg" data-v="0">LOW</button>
+        <button class="seg" data-v="1">MEDIUM</button>
+        <button class="seg" data-v="2">HIGH</button>
+      </div></div>
+
     <div class="setRow"><label for="sCb">COLOUR-BLIND TEAMS</label>
       <input type="checkbox" class="toggle" id="sCb"></div>
+    <div class="setRow"><label for="sZp">ZERO-POINT FLIGHT</label>
+      <input type="checkbox" class="toggle" id="sZp"></div>
     <div class="setRow"><label for="sMotion">REDUCE MOTION</label>
       <input type="checkbox" class="toggle" id="sMotion"></div>
     <div class="setRow"><label for="sCoach">FIRST SORTIE COACHING</label>
@@ -983,6 +1046,35 @@
   </div>
 </div></div>
 
+<div id="netTag"></div>
+
+<div id="netLobby">
+  <div class="card">
+    <h1>FLY ONLINE</h1>
+    <div class="sub">4 v 4 · DROP IN · EMPTY SEATS STAY ON AI</div>
+    <div id="netStatus" class="netStatus">OFFLINE</div>
+    <div class="netField">
+      <label for="netServer">ARENA SERVER</label>
+      <input id="netServer" type="text" spellcheck="false" autocomplete="off"
+        placeholder="https://airbourne-arena-net.<account>.workers.dev">
+    </div>
+    <div class="netField">
+      <label for="netCode">ROOM CODE</label>
+      <input id="netCode" type="text" spellcheck="false" autocomplete="off"
+        maxlength="5" placeholder="5 CHARACTERS">
+    </div>
+    <div class="btnRow">
+      <button class="actionBtn" id="netHostBtn">OPEN A ROOM</button>
+      <button class="actionBtn" id="netJoinBtn">JOIN</button>
+      <button class="actionBtn" id="netLeaveBtn">LEAVE</button>
+      <button class="actionBtn" id="netCloseBtn">BACK</button>
+    </div>
+    <div id="netRoster" class="netRoster"></div>
+    <div class="netNote">Anyone with the code can join. Seats nobody is flying stay
+      under AI control, so a match runs with one pilot or eight.</div>
+  </div>
+</div>
+
 <div id="brief">
   <div class="card">
     <h1>ARENA CORE</h1>
@@ -991,6 +1083,7 @@
       <b>enemy end</b>. Shoot the carrier down and it drops where they died, free for anyone.</p>
     <div class="btnRow">
       <button class="actionBtn" id="briefGoBtn">LAUNCH</button>
+      <button class="actionBtn" id="briefNetBtn">FLY ONLINE</button>
       <button class="actionBtn" id="briefStoryBtn">BACK TO THE HANGAR</button>
       <button class="actionBtn" id="briefSetBtn">SETTINGS</button>
       <button class="actionBtn" id="briefKeysBtn">CONTROLS</button>
@@ -1051,6 +1144,13 @@
 
 <script src="assets/three-r128.min.js"></script>
 <script src="assets/GLTFLoader-r128.js"></script>
+<!-- Geometry decompression for the meshopt-packed GLBs. Vendored from three
+     r128 examples/js/libs; makeGltfLoader() attaches it when present. -->
+<script src="assets/meshopt_decoder-r128.js"></script>
+<!-- Bloom. Vendored from three r128 examples/js by
+     source/scripts/vendor-postprocessing.sh; the game checks for
+     THREE.EffectComposer and simply renders without it if this is missing. -->
+<script src="assets/postprocessing-r128.js"></script>
 <script>
 (function(){
 'use strict';
@@ -1121,7 +1221,15 @@ function bindBtn(target,fn){
 var SKEY='airbourne:settings';
 var prefersReduced=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
 var cfg={sens:180,invert:false,pad:true,vol:70,engine:true,
-         hud:100,diff:1,cb:false,motion:prefersReduced,coach:true};
+         hud:100,diff:1,cb:false,motion:prefersReduced,coach:true,
+         /* zero-point flight: hover and unlimited pointing authority. On by
+            default — it is the aircraft the game is now about. Turning it off
+            restores the pure energy model the gunnery solver was tuned to. */
+         zp:true,
+         /* -1 means "work it out": start from the pointer type and step down if
+            measured frame times say this machine cannot hold it. 0/1/2 pin the
+            tier and switch the measuring off. See 05a-quality-tier.js. */
+         gfx:-1};
 (function loadCfg(){
   try{
     var saved=JSON.parse(localStorage.getItem(SKEY)||'null');
@@ -1255,6 +1363,35 @@ function setTouchMode(on){
 setTouchMode(IS_TOUCH);
 var LOW=IS_TOUCH;   /* trim the scene for phone GPUs */
 
+/* ===================== quality tier =====================
+   Which of three render budgets this machine gets.
+
+   This used to be one line — `LOW = IS_TOUCH` — which asked the wrong question.
+   A touchscreen laptop got phone settings and a decade-old desktop got the full
+   scene, because a pointer type says what you touch the screen with and nothing
+   about what the GPU can do.
+
+   The tier is decided here, before anything reads it, because the star count,
+   terrain segment count and texture anisotropy are all fixed at load time from
+   LOW. What the tier actually turns on — shadows, bloom — is wired up in
+   08a-render-quality.js, once the renderer and the sun exist to configure. That
+   split is a load-order fact, not a design preference.
+
+   The guess is only a starting point; 08a measures real frame times and steps
+   down once if this machine cannot hold the pace. */
+var GFX_TIERS=[
+  {name:'LOW',   shadow:0,    shadowFar:0,    bloom:false, bloomStrength:0,   pixelCap:1.25},
+  {name:'MEDIUM',shadow:1024, shadowFar:1500, bloom:true,  bloomStrength:0.34,pixelCap:1.5},
+  {name:'HIGH',  shadow:2048, shadowFar:2600, bloom:true,  bloomStrength:0.46,pixelCap:2}
+];
+/* A touch device is still the best cheap signal for "probably a phone", so it
+   picks the opening bid. Anything else starts at the top and is measured down. */
+var gfxTier=IS_TOUCH?0:2;
+if(cfg.gfx>=0&&cfg.gfx<GFX_TIERS.length)gfxTier=cfg.gfx;
+var GFX=GFX_TIERS[gfxTier];
+/* LOW keeps its name because a dozen call sites already ask for it, but it now
+   means "the bottom tier" rather than "has a touchscreen". */
+LOW=gfxTier===0;
 /* ===================== arena ===================== */
 /* Objectives stay concentrated around the two bases, but the world itself is
    open. arenaDistance remains useful for AI/object placement only; it never
@@ -1371,7 +1508,7 @@ try{
   document.getElementById('boot').classList.add('gone');
   return;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.25:2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,GFX.pixelCap));
 renderer.setSize(innerWidth,innerHeight);
 /* Filmic output keeps sunlit concrete from clipping to flat white while
    retaining the teal/orange cockpit language in dusk and storm conditions. */
@@ -1432,6 +1569,22 @@ bindBtn(bootGo,bootLift);
 /* A request that neither resolves nor errors — a hung connection, a proxy that
    swallows it — must not leave the player staring at a bar that never fills. */
 setTimeout(function(){ if(!assetsReady){bootTimedOut=true; bootFinish();} },25000);
+
+/* Every GLB in the game comes through here rather than through its own
+   `new THREE.GLTFLoader(loadManager)`. The models are meshopt-compressed
+   (EXT_meshopt_compression, applied by source/scripts/compress-glb.sh), and a
+   loader without the decoder attached fails on them with an extension error
+   rather than falling back — so there must be exactly one place that can be
+   forgotten, and this is it.
+
+   The decoder is optional at runtime: if meshopt_decoder-r128.js did not load,
+   uncompressed GLBs still work and compressed ones report a clear failure
+   through loadManager.onError instead of a silent blank aircraft. */
+function makeGltfLoader(){
+  var loader=new THREE.GLTFLoader(loadManager);
+  if(typeof MeshoptDecoder!=='undefined')loader.setMeshoptDecoder(MeshoptDecoder);
+  return loader;
+}
 
 /* generated high-resolution material kit */
 var assetLoader=new THREE.TextureLoader(loadManager);
@@ -1620,6 +1773,147 @@ var sea=new THREE.Mesh(new THREE.PlaneGeometry(40000,40000),
     transparent:true,opacity:.94}));
 sea.rotation.x=-Math.PI/2;sea.position.y=SEA_LEVEL;scene.add(sea);
 
+/* ===================== shadows and bloom =====================
+   The tier was chosen in 05a-quality-tier.js. This is where it becomes pixels,
+   and it runs after 08-assets.js because it needs both the renderer and the sun.
+
+   Two things were missing before this file existed.
+
+   Shadows: the scene set castShadow on aircraft, story props and authored world
+   pieces, and 16-authored-world.js reasoned carefully about which batches were
+   too large to cast — but nothing ever set renderer.shadowMap.enabled or
+   sunLight.castShadow, and both default to off. Every one of those flags was a
+   no-op and the game rendered with no shadows at all, which is the main reason
+   aircraft read as pasted onto the terrain rather than flying over it.
+
+   Bloom: the entire visual language is emissive — burners, tracers, the Core,
+   the goal rings, city windows at night — and all of it was drawn flat. */
+
+/* ---------- shadows ----------
+   A directional light over an arena kilometres across cannot shadow the whole
+   thing: spread that far, the map is a few texels per aircraft and resolves
+   nothing. The frustum is kept deliberately small and flown along with whoever
+   the camera is following, because the shadows worth having are the near ones. */
+var SHADOW_HALF=520;
+function applyShadowQuality(){
+  renderer.shadowMap.enabled=GFX.shadow>0;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  sunLight.castShadow=GFX.shadow>0;
+  /* Telling the light as well as the renderer matters: left casting with the
+     map disabled, three still allocates and renders a depth pass nothing
+     samples, which is the whole cost and none of the benefit. */
+  if(!sunLight.castShadow){
+    if(sunLight.shadow.map){sunLight.shadow.map.dispose();sunLight.shadow.map=null;}
+    return;
+  }
+  var s=sunLight.shadow;
+  s.mapSize.width=s.mapSize.height=GFX.shadow;
+  s.camera.left=-SHADOW_HALF; s.camera.right=SHADOW_HALF;
+  s.camera.top=SHADOW_HALF;   s.camera.bottom=-SHADOW_HALF;
+  s.camera.near=1; s.camera.far=GFX.shadowFar;
+  /* Aircraft are thin, so acne shows on their own wings long before it shows on
+     the ground. normalBias handles that at this frustum size without the
+     peter-panning a large constant bias would cost. */
+  s.bias=-0.0006;
+  s.normalBias=0.9;
+  s.camera.updateProjectionMatrix();
+  if(s.map){s.map.dispose();s.map=null;}
+}
+
+/* Called each frame from env(), replacing the fixed sun placement that used to
+   live there. The light sits up-sun of the camera subject and aims at it. */
+var _shadowAt=new THREE.Vector3();
+function frameShadowCamera(anchor){
+  if(!sunLight.castShadow)return;
+  /* Quantise the centre to whole shadow texels. Without this the depth map
+     resamples on a slightly different grid every frame and every shadow edge
+     crawls — the shimmer that makes a moving directional shadow look cheap. */
+  var texel=(SHADOW_HALF*2)/GFX.shadow;
+  _shadowAt.copy(anchor);
+  _shadowAt.x=Math.round(_shadowAt.x/texel)*texel;
+  _shadowAt.y=Math.round(_shadowAt.y/texel)*texel;
+  _shadowAt.z=Math.round(_shadowAt.z/texel)*texel;
+  sunLight.position.copy(_shadowAt).addScaledVector(sunDir,GFX.shadowFar*0.45);
+  sunLight.target.position.copy(_shadowAt);
+  sunLight.target.updateMatrixWorld();
+}
+
+/* ---------- bloom ----------
+   One composer serves both scenes. The hangar draws a different scene and
+   camera through the same renderer, so the render pass is retargeted per frame
+   rather than a second composer being built and kept in step. */
+var composer=null,bloomPass=null,bloomRenderPass=null;
+function buildComposer(){
+  composer=null; bloomPass=null; bloomRenderPass=null;
+  /* postprocessing-r128.js is a separate script tag. If it failed to load the
+     game must still run — bloom is the first thing to lose, not the frame. */
+  if(!GFX.bloom||typeof THREE.EffectComposer!=='function')return;
+  composer=new THREE.EffectComposer(renderer);
+  bloomRenderPass=new THREE.RenderPass(scene,camera);
+  composer.addPass(bloomRenderPass);
+  /* Threshold high enough that lit terrain and sky stay out of it: this should
+     pick up burners, tracers, the Core and window lights, not wash the whole
+     daylight frame. Radius is generous because the bright things are small. */
+  bloomPass=new THREE.UnrealBloomPass(
+    new THREE.Vector2(innerWidth,innerHeight),GFX.bloomStrength,0.72,0.82);
+  composer.addPass(bloomPass);
+  composer.setSize(innerWidth,innerHeight);
+  composer.setPixelRatio(renderer.getPixelRatio());
+}
+
+/* Every render in the game goes through here. With bloom off it is a plain
+   renderer.render and costs nothing extra. */
+function renderFrame(useScene,useCamera){
+  if(composer&&bloomRenderPass){
+    bloomRenderPass.scene=useScene;
+    bloomRenderPass.camera=useCamera;
+    composer.render();
+  } else renderer.render(useScene,useCamera);
+}
+
+function resizeRenderTargets(w,h){
+  if(!composer)return;
+  composer.setSize(w,h);
+  composer.setPixelRatio(renderer.getPixelRatio());
+}
+
+/* ---------- measure, then settle ----------
+   The pointer-type guess in 05a is a bid, not an answer. This watches real
+   frame times early in a sortie and eases down once if the machine is visibly
+   not keeping up. It never climbs back: oscillating between tiers looks worse
+   than sitting one below the ceiling, and a player who disagrees has the
+   setting in the menu. */
+var gfxWatch={t:0,frames:0,slow:0,settled:false};
+function watchFrameRate(dt){
+  if(gfxWatch.settled||cfg.gfx>=0)return;
+  /* The first seconds are textures still decoding and shaders still compiling;
+     nothing measured there says anything about the steady state. */
+  gfxWatch.t+=dt;
+  if(gfxWatch.t<3)return;
+  gfxWatch.frames++;
+  if(dt>1/45)gfxWatch.slow++;
+  if(gfxWatch.frames<240)return;
+  gfxWatch.settled=true;
+  if(gfxWatch.slow>gfxWatch.frames*0.34&&gfxTier>0)setGfxTier(gfxTier-1,true);
+}
+
+function setGfxTier(tier,automatic){
+  gfxTier=clamp(tier|0,0,GFX_TIERS.length-1);
+  GFX=GFX_TIERS[gfxTier];
+  LOW=gfxTier===0;
+  renderer.setPixelRatio(Math.min(devicePixelRatio,GFX.pixelCap));
+  applyShadowQuality();
+  if(composer&&composer.dispose)composer.dispose();
+  buildComposer();
+  resizeRenderTargets(innerWidth,innerHeight);
+  if(automatic){
+    gfxWatch.settled=true;
+    feed('<span style="color:#ffb347">graphics eased to '+GFX.name+'</span>');
+  }
+}
+
+applyShadowQuality();
+buildComposer();
 /* ===================== weather ===================== */
 var WX={clear:{name:'CLEAR',fog:.00012,cover:.10,rain:0,wind:8,gust:2},
   fair:{name:'SCATTERED CLOUD',fog:.00024,cover:.42,rain:0,wind:16,gust:5},
@@ -2395,7 +2689,7 @@ function calibrateAuthoredWorld(root){
     o.material.needsUpdate=true;
   });
 }
-new THREE.GLTFLoader(loadManager).load(
+makeGltfLoader().load(
   LOW?'assets/starter-coast-world-authored-v2-lod1.glb':
       'assets/starter-coast-world-authored-v2.glb',
   function(gltf){
@@ -2506,7 +2800,7 @@ function syncStorySetpiece(id){
   if(!storySetpiece)return;
   storySetpiece.position.set(2850,900,0);scene.add(storySetpiece);
 }
-new THREE.GLTFLoader(loadManager).load(
+makeGltfLoader().load(
   'assets/starter-coast-story-kit-authored-v2.glb',
   function(gltf){
     styleStoryAsset(gltf.scene);
@@ -2717,13 +3011,13 @@ function installAuthoredPlane(host,team,isPlayer){
   installAuthoredPlaneLod1(host,team,isPlayer);
   if(hullMaterial)host.userData.hull=hullMaterial;
 }
-new THREE.GLTFLoader(loadManager).load('assets/vanguard-interceptor-v4.glb',function(gltf){
+makeGltfLoader().load('assets/vanguard-interceptor-v4.glb',function(gltf){
   authoredPlaneTemplate=gltf.scene;
   for(var i=0;i<authoredPlaneHosts.length;i++){
     var h=authoredPlaneHosts[i];installAuthoredPlane(h.host,h.team,h.isPlayer);
   }
 },undefined,function(err){console.error('Vanguard Interceptor LOD0 failed to load.',err);});
-new THREE.GLTFLoader(loadManager).load('assets/vanguard-interceptor-v4-lod1.glb',function(gltf){
+makeGltfLoader().load('assets/vanguard-interceptor-v4-lod1.glb',function(gltf){
   authoredPlaneLod1Template=gltf.scene;
   for(var i=0;i<authoredPlaneHosts.length;i++){
     var h=authoredPlaneHosts[i];
@@ -2919,6 +3213,30 @@ var AB_THRUST=1.85,      /* multiplier on top of full military thrust */
     AB_RELIGHT=0.18;     /* how much you need banked to light it again */
 var AIL_BIAS=1.35;     // standing roll rate a wrecked aileron leaves behind
 
+/* ===================== zero-point flight =====================
+   A field drive, not a wing. Three things stop a conventional airframe from
+   pointing wherever it likes: control surfaces need airflow to bite, the wing
+   needs airspeed to hold the aircraft up, and past a critical angle of attack
+   the wing gives up entirely. A zero-point drive answers all three, so the
+   aircraft can pitch to any attitude, come to a stop, and hold station.
+
+   This is layered on top of the energy model rather than replacing it. Thrust,
+   drag, lift and gravity are still integrated exactly as before, and at combat
+   speed the numbers are untouched — ZP_HOVER_HI is above the speed any fight
+   happens at, so a fast aircraft flies the same aeroplane it always did. What
+   changes is the bottom of the envelope, which used to be a stall and a fall
+   and is now a hover.
+
+   Deliberately kept as a setting. The energy model is what the gunnery solver,
+   the AI and the coaching were all written against, and being able to put the
+   old bottom of the envelope back is how you tell a tuning problem from a
+   zero-point problem.                                                    */
+var ZP_AUTH=0.90,        /* control authority floor — thrusters, not airflow */
+    ZP_HOVER_LO=30,      /* full station-keeping at or below this airspeed */
+    ZP_HOVER_HI=165,     /* wing has it entirely from here up */
+    ZP_DAMP=1.35,        /* how hard the field kills residual drift at idle */
+    ZP_STAB=0.9;         /* how much of the weathervane the field cancels */
+
 /* ===================== open atmosphere =====================
    The previous 2,300-unit clamp made the sky another arena wall. Aircraft can
    now use the full visible atmosphere. Density falls gradually at altitude,
@@ -2968,11 +3286,19 @@ function stepFlight(f,ctl,dt){
   if(f.dmgEng>0)ctl.throttle=Math.min(ctl.throttle,1-f.dmgEng*0.40);
   /* control authority falls off with airspeed — mushy when slow */
   var auth=clamp((speed-16)/125,0.10,1.0);
+  /* How much of the airframe's weight the field is carrying: all of it at a
+     standstill, none of it once the wing has the airspeed to do the job. */
+  var zp=!!cfg.zp;
+  var hover=zp?1-smooth(ZP_HOVER_LO,ZP_HOVER_HI,speed):0;
+  f.hover=hover;
+  /* Thrusters do not care what the airflow is doing, so the nose keeps its
+     authority down to zero knots. This is what "turn any way" actually is. */
+  if(zp)auth=Math.max(auth,ZP_AUTH);
   /* soft angle-of-attack limiter: you can still force a departure by holding
      the pull, but a normal hard turn won't dump you out of the sky */
   var lim=1;
   var over=(Math.abs(f.alpha)-A_CRIT*0.72)/(A_CRIT*0.55);
-  if(over>0&&ctl.pitch*(f.alpha>=0?1:-1)>0)lim=1-clamp(over,0,1)*0.70;
+  if(!zp&&over>0&&ctl.pitch*(f.alpha>=0?1:-1)>0)lim=1-clamp(over,0,1)*0.70;
   var agile=f.trimAgile||1;
   m.rotateX(ctl.pitch*PITCH_RATE*agile*(carry?.82:1)*auth*lim*dt);
   m.rotateZ(ctl.roll*ROLL_RATE*(ctl.rollMul||1)*agile*(carry?.82:1)*(1-f.dmgAil*0.5)*auth*dt);
@@ -2984,7 +3310,10 @@ function stepFlight(f,ctl,dt){
   var alpha=Math.asin(clamp(-_vd.dot(_u),-1,1));
   var beta=Math.asin(clamp(_vd.dot(_r),-1,1));
   var cl=CL0+CL_A*alpha;
-  var stalled=Math.abs(alpha)>A_CRIT;
+  /* Past A_CRIT a wing departs. A field does not, so there is no critical
+     angle to respect and nothing for the stall warning to say — the aircraft
+     will sit at ninety degrees of alpha and keep flying. */
+  var stalled=!zp&&Math.abs(alpha)>A_CRIT;
   if(stalled)cl*=1-0.75*clamp((Math.abs(alpha)-A_CRIT)/0.25,0,1);
   var q2=speed*speed;
 
@@ -3014,18 +3343,35 @@ function stepFlight(f,ctl,dt){
   _ac.addScaledVector(_vd,-DRAG_K*q2*cd*rho);
   _ac.addScaledVector(_r,-SIDE_K*q2*beta);
   _ac.y-=G;
+  /* Station-keeping. The lift the wing can no longer make is made by the field
+     instead, so running out of airspeed stops being a fall. Blended, not
+     switched: at 165 kn this is zero and the aeroplane is back. */
+  if(hover>0)_ac.y+=G*hover;
 
   f.vel.addScaledVector(_ac,dt);
+  /* Hovering has to actually stop. Without this the aircraft holds altitude but
+     keeps whatever drift it arrived with forever, which reads as ice rather
+     than as station-keeping. Throttle backs the damping off so commanded
+     movement is never fought. */
+  if(hover>0){
+    var damp=ZP_DAMP*hover*(1-ctl.throttle*0.85);
+    if(damp>0)f.vel.multiplyScalar(Math.max(0,1-damp*dt));
+  }
   f.pos.addScaledVector(f.vel,dt);
   f.pos.addScaledVector(windVec,dt*0.30);
 
   /* weathervane: the airframe swings into the airflow, offset by trim AoA,
      which is why it holds altitude hands-off instead of sinking */
+  /* The field also holds the attitude you asked for. Without cancelling most of
+     the weathervane here the airframe swings back into the airflow the moment
+     you stop pulling, which makes every nose-high hover slide back to level and
+     undoes the whole mechanic. */
   if(speed>8){
     _tg.copy(_vd).applyAxisAngle(_r,A_TRIM);
     _ax.crossVectors(_f,_tg);
     var s=clamp(_ax.length(),-1,1);
-    if(s>1e-4){_ax.normalize();m.rotateOnWorldAxis(_ax,Math.asin(s)*Math.min(1,STAB*dt));}
+    if(s>1e-4){_ax.normalize();
+      m.rotateOnWorldAxis(_ax,Math.asin(s)*Math.min(1,STAB*(1-hover*ZP_STAB)*dt));}
   }
 
   f.speed=f.vel.length(); f.alpha=alpha; f.stalled=stalled;
@@ -3123,19 +3469,63 @@ function applyRoll(f,ctl,dt){
   ctl.roll=f.roll.dir;
   ctl.rollMul=ROLL_MUL;
   ctl.pitch=clamp(ctl.pitch*0.2+0.40,-1,1);      /* back pressure scribes the barrel */
-  if(Math.random()<dt*26)vapor(f);
   return ctl;
 }
-var vaporTex=softSprite('rgba(255,255,255,.85)','rgba(200,230,255,.25)');
-function vapor(f){
-  axes(f);
+
+/* ===================== roll wingtip highlight =====================
+   This used to spawn a pair of additive white sprites 26 times a second, each
+   growing to 26 units — two thirds of a second of bloom per roll, from the one
+   manoeuvre you perform while somebody is shooting at you. It washed out the
+   gunsight and the lead circle at exactly the wrong moment.
+
+   A roll is a wing event, so mark the wings. Two small sprites are pinned to
+   the wingtips for the life of the roll and faded on a curve, rather than
+   hundreds being spawned and left to grow. That is one allocation per aircraft
+   for the whole sortie instead of ~55 per roll, and it stays under the HUD
+   instead of over it.                                                    */
+var ROLL_TIP_TEX=softSprite('rgba(214,240,255,.55)','rgba(150,200,255,0)');
+var ROLL_TIP_SPAN=6.2,   /* half-span, matched to the old vapor offset */
+    ROLL_TIP_SIZE=5.4,   /* was an effective 26 at full growth */
+    ROLL_TIP_PEAK=0.38;  /* additive, so this is the knob to turn if it reads hot */
+function rollTips(f){
+  if(f.rollTip)return f.rollTip;
+  var pair=[];
   for(var i=-1;i<=1;i+=2){
-    var s2=new THREE.Sprite(new THREE.SpriteMaterial({map:vaporTex,transparent:true,
-      depthWrite:false,fog:false,blending:THREE.AdditiveBlending,opacity:.5}));
-    s2.position.copy(f.pos).addScaledVector(_r,i*6.2);
-    s2.scale.set(7,7,1); scene.add(s2);
-    fx.push({s:s2,t:0,life:.55,scale:26});
+    var s=new THREE.Sprite(new THREE.SpriteMaterial({map:ROLL_TIP_TEX,transparent:true,
+      depthWrite:false,fog:false,blending:THREE.AdditiveBlending,opacity:0}));
+    s.scale.set(ROLL_TIP_SIZE,ROLL_TIP_SIZE,1); s.visible=false;
+    scene.add(s); pair.push(s);
   }
+  f.rollTip=pair;
+  return pair;
+}
+function stepRollTips(f,dt){
+  /* Fade in over the first fifth of the roll and out over the last third, so
+     it reads as the wing loading up and unloading rather than as a light
+     switch. Reduced motion drops it to a trace. */
+  var want=0;
+  if(f.roll.t>0){
+    var k=1-f.roll.t/ROLL_DUR;                       /* 0 at entry, 1 at exit */
+    want=Math.min(smooth(0,.2,k),smooth(1,.67,k))*(cfg.motion?.35:1);
+  }
+  f.rollGlow=f.rollGlow===undefined?0:f.rollGlow+(want-f.rollGlow)*Math.min(1,dt*9);
+  if(f.rollGlow<0.004){
+    if(f.rollTip){f.rollTip[0].visible=false;f.rollTip[1].visible=false;}
+    return;
+  }
+  var pair=rollTips(f);
+  axes(f);
+  for(var i=0;i<2;i++){
+    var s=pair[i];
+    s.visible=true;
+    s.material.opacity=f.rollGlow*ROLL_TIP_PEAK;
+    s.position.copy(f.pos).addScaledVector(_r,(i?1:-1)*ROLL_TIP_SPAN);
+  }
+}
+function disposeRollTips(f){
+  if(!f.rollTip)return;
+  for(var i=0;i<2;i++){scene.remove(f.rollTip[i]);f.rollTip[i].material.dispose();}
+  f.rollTip=null; f.rollGlow=0;
 }
 
 /* ===================== bullets ===================== */
@@ -3200,6 +3590,95 @@ function stepFx(dt){
   shake=Math.max(0,shake-dt*2.2);
 }
 
+/* ===================== speed lines =====================
+   The airframe had no way to tell you how fast it was going. Airspeed lived in
+   a HUD number, the terrain is 7km across so the ground barely slides, and at
+   altitude there is nothing in frame to move against at all — 180 knots and 400
+   looked identical out of the canopy.
+
+   These are the air itself: short streaks seeded ahead of the camera in a tube
+   around the flight path, drifting backwards at the aircraft's own speed and
+   recycled once they fall behind. Because they move with the airflow rather
+   than on a timer, they read as the medium going past rather than as an overlay
+   — and they thin out to nothing when you slow down, which is what makes a
+   hover feel like a hover.
+
+   Same construction as the rain: one LineSegments, one buffer, points held in
+   local space with the mesh parked on the camera each frame, so there is no
+   per-streak object and no allocation once this file has run.          */
+var SPD_N=LOW?90:220;
+var SPD_ON=140,          /* airspeed where streaks begin to show */
+    SPD_FULL=430,        /* where they reach full length and opacity */
+    SPD_RADIUS=95,       /* tube radius around the flight axis */
+    SPD_INNER=17,        /* nothing closer than this, or it strobes the centre */
+    SPD_NEAR=24,         /* how far behind the camera a streak is recycled */
+    SPD_SPAN=230;        /* how far ahead they are seeded */
+var spdPos=new Float32Array(SPD_N*6),spdPt=[],spdSeeded=false;
+for(var si=0;si<SPD_N;si++)spdPt.push(new THREE.Vector3());
+var spdGeo=new THREE.BufferGeometry();
+spdGeo.setAttribute('position',new THREE.BufferAttribute(spdPos,3));
+var speedLines=new THREE.LineSegments(spdGeo,new THREE.LineBasicMaterial(
+  {color:0xdff3ff,transparent:true,opacity:0,fog:false,depthWrite:false,
+   blending:THREE.AdditiveBlending}));
+speedLines.frustumCulled=false; speedLines.visible=false; scene.add(speedLines);
+
+var _spD=new THREE.Vector3(),_spR2=new THREE.Vector3(),_spU2=new THREE.Vector3(),
+    _spW=new THREE.Vector3();
+
+/* A stable pair of axes across the flight direction. Straight up degenerates
+   when you are pointing at the zenith, which a zero-point aircraft does. */
+function spdBasis(dir){
+  _spU2.set(0,1,0);
+  if(Math.abs(dir.y)>0.94)_spU2.set(1,0,0);
+  _spR2.crossVectors(dir,_spU2).normalize();
+  _spU2.crossVectors(_spR2,dir).normalize();
+}
+function spdSeed(p,dir,ahead){
+  var th=Math.random()*6.28318,
+      rad=SPD_INNER+Math.sqrt(Math.random())*(SPD_RADIUS-SPD_INNER);
+  p.copy(dir).multiplyScalar(ahead)
+   .addScaledVector(_spR2,Math.cos(th)*rad)
+   .addScaledVector(_spU2,Math.sin(th)*rad);
+}
+function stepSpeedLines(dt,subject){
+  var spd=subject?subject.speed||0:0;
+  /* Reduced motion keeps a hint of the cue rather than losing the speed read
+     entirely — this is the effect most likely to bother someone. */
+  var k=smooth(SPD_ON,SPD_FULL,spd)*(cfg.motion?.3:1);
+  if(spd<1||k<=0.002){speedLines.visible=false;return;}
+  speedLines.visible=true;
+  speedLines.material.opacity=k*.42;
+  speedLines.position.copy(camera.position);
+
+  _spD.copy(subject.vel).multiplyScalar(1/spd);
+  spdBasis(_spD);
+  /* The points are declared at the origin, which is the camera — left alone,
+     the first frame draws every streak on top of the reticle before they drift
+     apart. Nothing knows the flight direction until here, so the initial spread
+     has to happen on the first step rather than at construction. */
+  if(!spdSeeded){
+    for(var j=0;j<SPD_N;j++)
+      spdSeed(spdPt[j],_spD,-SPD_NEAR+Math.random()*(SPD_NEAR+SPD_SPAN));
+    spdSeeded=true;
+  }
+  var len=7+k*44, travel=spd*dt;
+  for(var i=0;i<SPD_N;i++){
+    var p=spdPt[i];
+    p.addScaledVector(_spD,-travel);
+    /* split the offset into along-axis and across-axis so a hard turn, which
+       swings the axis out from under the whole field, recycles the strays */
+    var along=p.dot(_spD);
+    _spW.copy(p).addScaledVector(_spD,-along);
+    if(along<-SPD_NEAR||_spW.length()>SPD_RADIUS*1.7)
+      spdSeed(p,_spD,SPD_NEAR+Math.random()*SPD_SPAN);
+    var o=i*6;
+    spdPos[o]=p.x;   spdPos[o+1]=p.y;   spdPos[o+2]=p.z;
+    spdPos[o+3]=p.x-_spD.x*len;
+    spdPos[o+4]=p.y-_spD.y*len;
+    spdPos[o+5]=p.z-_spD.z*len;
+  }
+  spdGeo.attributes.position.needsUpdate=true;
+}
 /* ===================== state ===================== */
 var st={scoreB:0,scoreR:0,time:MATCH_TIME,over:false,hours:9.4,timeSpeed:1,
   camMode:0,flash:0,hitmark:0,dmgFlash:0,mapBig:false,invertY:cfg.invert?-1:1,
@@ -3304,6 +3783,7 @@ function kill(f,by){
   if(f.carrying)dropCore(f);
   if(by&&by!==f){by.kills++;feed(tag(by)+' &rarr; '+tag(f));}
   else feed(tag(f)+' went in');
+  netEmitKill(f,by);
   if(by===player){sortie.kills++;emit('kill',{target:f.name});stingSfx([784,1046],.16);}
   if(f.isPlayer){st.dmgFlash=1;shake=1;sortie.deaths++;emit('death',{by:by?by.name:'terrain'});
     tone(220,1.1,.24,'sawtooth',48);}
@@ -3317,6 +3797,7 @@ function dropCore(f){
   feed('<span style="color:#ffb347">CORE DROPPED</span>');
   tone(330,.26,.14,'triangle',210);
   emit('case_drop',{pilot:f.name});
+  netEmitEvent(NET_EV.CORE_DROP,f);
 }
 function passCore(f){
   if(core.carrier!==f)return;
@@ -3330,6 +3811,7 @@ function passCore(f){
   if(f.isPlayer)sortie.passes++;
   tone(660,.18,f.isPlayer?.2:earGain(f.pos)*.12,'triangle',880);
   emit('case_pass',{pilot:f.name});
+  netEmitEvent(NET_EV.CORE_PASS,f);
 }
 function grabCore(f){
   core.carrier=f; f.carrying=true; core.vel.set(0,0,0);
@@ -3339,9 +3821,15 @@ function grabCore(f){
     sortie.grabs++;stingSfx([523,659,784],.19);}
   else tone(440,.2,earGain(f.pos)*.12,'triangle',560);
   emit('case_grab',{pilot:f.name});
+  netEmitEvent(NET_EV.CORE_GRAB,f);
 }
 function scoreCap(f){
+  /* Online the scoreboard is the server's. The local increment still happens so
+     the HUD reacts on the same frame as the capture, but the SCORE message that
+     follows overwrites it — and the server, not this client, is what decides the
+     match is over. */
   if(f.team==='blue')st.scoreB++; else st.scoreR++;
+  netEmitEvent(NET_EV.CORE_SCORE,f);
   f.caps++; core.carrier=null; f.carrying=false;
   core.pos.set(0,600,rnd(-260,260)); core.vel.set(0,0,0); core.lockout=null; core.charge=100;
   boom(GOALS[f.team],280);
@@ -3350,9 +3838,18 @@ function scoreCap(f){
   emit('case_score',{pilot:f.name,team:f.team});
   banner(factionName(f.team)+' SCORES',1.8);
   if(f.team===player.team)stingSfx([523,659,784,1046],.22); else stingSfx([392,330,262],.20);
-  if(st.scoreB>=TARGET_SCORE||st.scoreR>=TARGET_SCORE)endMatch();
+  if(!net.on&&(st.scoreB>=TARGET_SCORE||st.scoreR>=TARGET_SCORE))endMatch();
 }
+/* Online, the Core is simulated only by the arena host; every other client
+   receives its position and carrier in the host's state packets and runs the
+   presentation half alone. Splitting the two is what lets one function serve
+   both cases without the offline game paying for any of it. */
 function stepCore(dt){
+  if(netOwnsCore())stepCoreSim(dt);
+  stepCoreVisual(dt);
+}
+
+function stepCoreSim(dt){
   if(core.lockT>0){core.lockT-=dt; if(core.lockT<=0)core.lockout=null;}
   if(core.carrier){
     var c=core.carrier;
@@ -3400,6 +3897,9 @@ function stepCore(dt){
       if(f.pos.distanceTo(core.pos)<CASE_GRAB){grabCore(f);break;}
     }
   }
+}
+
+function stepCoreVisual(dt){
   coreGroup.position.copy(core.pos);
   coreMesh.rotation.y+=dt*.9;
   coreMesh.rotation.z=Math.sin(performance.now()*.0016)*.16;
@@ -4109,11 +4609,28 @@ function banner(msg,t){el.center.textContent=msg;bannerT=t||1.2;}
 var coachSteps=[
   {goal:'Build speed and bank through the arena.',hint:'W adds throttle. Hold A / D to tighten the turn.'},
   {goal:'Learn the energy trade.',hint:'Climb to gain height, then lower the nose to recover speed.'},
+  /* Slot 2 is filled in by coachEnvelopeStep() — see below. */
   {goal:'Recover cleanly from a stall.',hint:'Ease off the turn and let the nose fall until airflow returns.'},
   {goal:'Secure the drifting case.',hint:'Fly through the amber hard case at midfield.'},
   {goal:'Pass before the trap closes.',hint:'While carrying, press F to throw the case forward.'},
   {goal:'Finish the run.',hint:'Carry the case through the enemy ring in the east.'}
-],coachIndex=0,coachSeenStall=false,coachEnabled=true;
+],coachIndex=0,coachSeenStall=false,coachSeenHover=false,coachEnabled=true;
+
+/* The third sortie lesson teaches the bottom of the envelope, and what lives
+   down there depends on the flight model. On the energy model it is a stall you
+   have to fly out of. With zero-point flight there is no stall to have, so the
+   same slot teaches station-keeping instead — which is the more useful lesson
+   anyway, because hovering is the thing a pilot arriving from any other flight
+   game will not think to try.
+
+   This is not cosmetic: the step used to wait on player.stalled, and with
+   zero-point on that never becomes true, so the first sortie could not be
+   completed at all. */
+var COACH_STALL={goal:'Recover cleanly from a stall.',
+      hint:'Ease off the turn and let the nose fall until airflow returns.'},
+    COACH_HOVER={goal:'Come to a stop and hold station.',
+      hint:'Cut the throttle. The drive carries you — then point the nose and add throttle to move off.'};
+function coachEnvelopeStep(){return cfg.zp?COACH_HOVER:COACH_STALL;}
 var coachEl=document.getElementById('coach'),coachGoal=document.getElementById('coachGoal'),
   coachHint=document.getElementById('coachHint'),coachStep=document.getElementById('coachStep'),
   coachBar=document.querySelector('#coachTrack i');
@@ -4128,7 +4645,8 @@ function coachAdvance(){
 }
 function renderCoach(){
   if(!coachEnabled)return;
-  var s=coachSteps[coachIndex];coachGoal.textContent=s.goal;coachHint.textContent=s.hint;
+  var s=coachIndex===2?coachEnvelopeStep():coachSteps[coachIndex];
+  coachGoal.textContent=s.goal;coachHint.textContent=s.hint;
   coachStep.textContent=('0'+(coachIndex+1)).slice(-2)+' / 06';
   coachBar.style.width=(coachIndex/coachSteps.length*100)+'%';
   coachEl.classList.toggle('on',st.started);
@@ -4138,8 +4656,13 @@ function coachTick(){
   if(coachIndex===0&&player.speed>125&&(keys.KeyA||keys.KeyD||Math.abs(aim.x)>.18))coachAdvance();
   else if(coachIndex===1&&player.pos.y>720&&player.speed>110)coachAdvance();
   else if(coachIndex===2){
-    if(player.stalled)coachSeenStall=true;
-    if(coachSeenStall&&!player.stalled&&player.speed>85)coachAdvance();
+    if(cfg.zp){
+      if(player.hover>.8)coachSeenHover=true;
+      if(coachSeenHover&&player.speed>85)coachAdvance();
+    } else {
+      if(player.stalled)coachSeenStall=true;
+      if(coachSeenStall&&!player.stalled&&player.speed>85)coachAdvance();
+    }
   } else if(coachIndex===3&&core.carrier===player)coachAdvance();
   else if(coachIndex===4&&sortie.passes>0)coachAdvance();
   else if(coachIndex===5&&sortie.scores>0)coachAdvance();
@@ -4533,6 +5056,7 @@ bindRange('sVol','oVol','vol',function(v){return v+'%';});
 bindToggle('sEngine','engine');
 bindRange('sHud','oHud','hud',function(v){return v+'%';});
 bindToggle('sCb','cb');
+bindToggle('sZp','zp');
 bindToggle('sMotion','motion');
 bindToggle('sCoach','coach');
 
@@ -4542,6 +5066,21 @@ diffBtns.forEach(function(b){
 });
 syncFns.push(function(){
   diffBtns.forEach(function(b){b.classList.toggle('on',+b.getAttribute('data-v')===cfg.diff);});
+});
+
+/* AUTO is -1: keep measuring and step down if this machine cannot hold the
+   pace. Picking a tier by hand pins it and stops the measuring, which is the
+   point of picking one. */
+var gfxBtns=[].slice.call(document.querySelectorAll('#sGfx .seg'));
+gfxBtns.forEach(function(b){
+  bindBtn(b,function(){
+    cfg.gfx=+b.getAttribute('data-v');
+    setGfxTier(cfg.gfx<0?(IS_TOUCH?0:2):cfg.gfx,false);
+    applyCfg(); syncSettings();
+  });
+});
+syncFns.push(function(){
+  gfxBtns.forEach(function(b){b.classList.toggle('on',+b.getAttribute('data-v')===cfg.gfx);});
 });
 function syncSettings(){for(var i=0;i<syncFns.length;i++)syncFns[i]();}
 
@@ -4559,6 +5098,11 @@ bindBtn('briefStoryBtn',function(){
   abandonMission(); st.mode='arena'; parkArena(false); enterHangar();
 });
 bindBtn('againBtn',function(){
+  /* Online the scoreboard is the server's, so a rematch is a request rather
+     than a local reset — clearing our own copy here would put this client a
+     match ahead of everyone else. The server zeroes the score and tells the
+     whole room, and resetMatch() runs on the way back in. */
+  if(net.on){netRequestRematch();return;}
   abandonMission(); st.mode='arena'; parkArena(false); resetMatch();
 });
 /* A free Core Run used to dead-end on RUN IT BACK. The scoreboard is the point
@@ -4770,7 +5314,7 @@ var MARA_POS=new THREE.Vector3(10,0,-27);
   var doorLight=new THREE.DirectionalLight(0xbcd9f2,.7);
   doorLight.position.set(0,10,40); hangarScene.add(doorLight,doorLight.target);
 })();
-new THREE.GLTFLoader(loadManager).load(
+makeGltfLoader().load(
   'assets/breakwater-hangar-detail-authored-v1.glb',
   function(gltf){
     calibrateAuthoredEnvironment(gltf.scene,true);
@@ -4831,7 +5375,7 @@ function prepareCharacter(root,accent){
   });
   root.scale.setScalar(1.72);
 }
-var characterLoader=new THREE.GLTFLoader(loadManager);
+var characterLoader=makeGltfLoader();
 characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
   playerAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x5d83b4);
   playerMixer=new THREE.AnimationMixer(gltf.scene);
@@ -5281,6 +5825,28 @@ if(new URLSearchParams(location.search).has('capture')){
        because src/ is assembled in manifest order. */
     leaveHangar:leaveHangar,launch:launch,
     startMission:function(id){return startMission(id);},
+    /* The net layer is declared in parts below this one, so every accessor here
+       is a wrapper: reading the name inside the function defers the lookup to
+       call time, exactly as startMission above does. Read-only — the socket is
+       opened through the lobby like any player would. */
+    getNet:function(){
+      return {status:net.status,on:net.on,room:net.room,slot:net.slot,
+        hostSlot:net.hostSlot,isHost:net.isHost,ai:net.ai.slice(),
+        roster:JSON.parse(JSON.stringify(net.roster))};
+    },
+    getNetOwnership:function(){
+      var out=[];
+      for(var i=0;i<fighters.length;i++){
+        var f=fighters[i];
+        out.push({slot:netSlotForFighter(f),name:f.name,
+          owned:netOwns(f),remote:netIsRemote(f),isPlayer:!!f.isPlayer});
+      }
+      return {fighters:out,core:netOwnsCore(),ownerless:netOwnsEntity(null)};
+    },
+    netCodecRoundTrip:function(sample){
+      var buffer=netEncodeState(NET_KIND_STATE,sample.time,sample.aircraft,sample.core||null);
+      return netDecodeState(buffer);
+    },
     settleFlightCamera:function(){
       camera.position.copy(player.pos);
       camLookReady=false;
@@ -7529,8 +8095,14 @@ requestAnimationFrame(function loop(now){
   requestAnimationFrame(loop);
   var dt=(now-prevT)/1000; prevT=now; if(dt>.05)dt=.05;
   padTick(dt);
+  /* Above the phase check, because a socket does not care which screen is up:
+     you can be sitting in the hangar or reading the briefing while the rest of
+     the room is already flying, and a dropped connection has to keep retrying
+     through all of it. */
+  netStep(dt);
+  watchFrameRate(dt);
   /* the hangar owns the frame entirely while you are in it */
-  if(st.phase==='hangar'){hangarStep(dt);renderer.render(hangarScene,hangarCam);return;}
+  if(st.phase==='hangar'){hangarStep(dt);renderFrame(hangarScene,hangarCam);return;}
   if(st.started&&!st.paused)step(dt); else env(Math.min(dt,.016));
   audioEngine();
   stepDmgArcs(dt);
@@ -7539,7 +8111,7 @@ requestAnimationFrame(function loop(now){
     goalVisuals[gi].rotation.z+=dt*(gi?-.18:.18);
     goalVisuals[gi].material.opacity=.68+Math.sin(now*.003+gi*Math.PI)*.16;
   }
-  renderer.render(scene,camera);
+  renderFrame(scene,camera);
 });
 
 function env(dt){
@@ -7635,8 +8207,19 @@ function env(dt){
     rain.position.copy(camera.position);
   } else rain.visible=false;
 
-  sunLight.position.copy(anchor).addScaledVector(sunDir,2600);
-  sunLight.target.position.copy(anchor);
+  /* Airflow cue. Driven by the camera subject rather than the player, so it is
+     right in the chase, the cockpit and a spectate camera alike. */
+  stepSpeedLines(dt,st.phase==='hangar'?null:player);
+
+  /* The sun is a shadow caster now, so its placement is the shadow frustum's
+     placement — see frameShadowCamera in 08a-render-quality.js. With shadows
+     off it falls back to the old fixed offset, which is all a non-casting
+     directional light needs. */
+  if(sunLight.castShadow)frameShadowCamera(anchor);
+  else{
+    sunLight.position.copy(anchor).addScaledVector(sunDir,2600);
+    sunLight.target.position.copy(anchor);
+  }
   moonLight.position.copy(anchor).addScaledVector(sunDir,-2600);
   moonLight.target.position.copy(anchor);
   stepFx(dt);
@@ -7764,27 +8347,44 @@ function step(dt){
   env(dt);
   /* the match clock, the Core and the rings belong to an Arena match; a
      campaign mission owns its own pacing (STORY-BIBLE section 15). */
-  if(st.mode==='arena'&&!st.over){st.time-=dt; if(st.time<=0){st.time=0;endMatch();}}
+  if(st.mode==='arena'&&!st.over){
+    st.time-=dt;
+    /* Online, the clock still runs down locally so the HUD reads smoothly, but
+       the server's value overwrites it about once a second and the server is
+       the only thing allowed to call the match. Ending it locally would let two
+       clients disagree about when time ran out. */
+    if(st.time<=0){st.time=0; if(!net.on)endMatch();}
+  }
 
   if(player.alive&&!st.over)playerControl(dt);
 
   for(var i=0;i<fighters.length;i++){
     var f=fighters[i];
+    var remote=netIsRemote(f);
     f.invuln=Math.max(0,f.invuln-dt);
     if(!f.alive){
       f.respawnT-=dt;
+      disposeRollTips(f);
+      /* A remote wreck comes back when its owner says so, not on our clock. */
+      if(remote){netStepRemote(f,dt);continue;}
       if(f.respawnT<=0&&!st.over){respawnFighter(f);feed(tag(f)+' is airborne');}
       continue;
     }
-    if(!f.isPlayer&&!st.over)aiFor(f,dt);
+    stepRollTips(f,dt);
+    if(remote)netStepRemote(f,dt);
+    else if(!f.isPlayer&&!st.over)aiFor(f,dt);
 
-    var gh=ground(f.pos.x,f.pos.z);
-    if(f.pos.y-gh<8){kill(f,null);continue;}
-    /* Open sky: altitude changes aircraft performance through airDensity, but
-       does not inflict arbitrary damage. The final clamp is numerical safety
-       beyond the visible atmosphere, not a tactical boundary. */
-    if(f.pos.y>CEIL_HARD)f.ceilT+=dt; else f.ceilT=0;
-    if(f.pos.y>CEIL_MAX){f.pos.y=CEIL_MAX;if(f.vel.y>0)f.vel.y=0;}
+    /* Terrain and the ceiling are simulation, and a remote aircraft is not
+       simulated here — its owner has already flown it into the hill or not. */
+    if(!remote){
+      var gh=ground(f.pos.x,f.pos.z);
+      if(f.pos.y-gh<8){kill(f,null);continue;}
+      /* Open sky: altitude changes aircraft performance through airDensity, but
+         does not inflict arbitrary damage. The final clamp is numerical safety
+         beyond the visible atmosphere, not a tactical boundary. */
+      if(f.pos.y>CEIL_HARD)f.ceilT+=dt; else f.ceilT=0;
+      if(f.pos.y>CEIL_MAX){f.pos.y=CEIL_MAX;if(f.vel.y>0)f.vel.y=0;}
+    }
 
     f.boundT=0;
     if(f.isPlayer)el.warn.style.opacity=0;
@@ -7847,7 +8447,15 @@ function stepBullets(dt){
         var cx=prev.x+seg.x*t,cy=prev.y+seg.y*t,cz=prev.z+seg.z*t;
         var dx=cx-f.pos.x,dy=cy-f.pos.y,dz=cz-f.pos.z;
         if(dx*dx+dy*dy+dz*dz<HIT_RADIUS*HIT_RADIUS){
-          hurt(f,b.dmg||BULLET_DMG,b.owner);
+          /* A round only does damage on the machine that fired it. Every client
+             draws every tracer — including ones spawned locally to show a remote
+             pilot shooting — but those pass through, or eight machines would
+             each subtract the same fourteen points. If the target belongs to
+             someone else, the hit is claimed and their machine decides. */
+          if(netOwnsEntity(b.owner)){
+            if(netOwns(f))hurt(f,b.dmg||BULLET_DMG,b.owner);
+            else netClaimHit(f,b.dmg||BULLET_DMG,b.owner);
+          }
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
           boom(new THREE.Vector3(cx,cy,cz),18); dead=true; break;
         }
@@ -8102,6 +8710,10 @@ function hudWork(dt){
   if(!IS_TOUCH&&!st.mouseSeen&&alive)pr='MOVE THE MOUSE TO STEER  ·  A / D TO TURN';
   else if(core.carrier===player)pr='F — PASS THE CORE';
   else if(player.stalled)pr='STALLED — EASE OFF AND LET THE NOSE DROP';
+  /* With zero-point on there is no stall to warn about, so the same line tells
+     you the field is carrying you instead — the state you need to know about at
+     the bottom of the envelope either way. */
+  else if(player.hover>.55)pr='ZERO-POINT HOVER — POINT AND THROTTLE TO MOVE';
   else if(!core.carrier&&alive&&player.pos.distanceTo(core.pos)<450)pr='FLY THROUGH THE CORE';
   el.prompt.textContent=pr; el.prompt.style.opacity=pr?1:0;
 
@@ -8244,8 +8856,12 @@ function applyViewport(){
   if(!w||!h)return;
   camera.aspect=w/h; camera.updateProjectionMatrix();
   hangarCam.aspect=w/h; hangarCam.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.25:2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio,GFX.pixelCap));
   renderer.setSize(w,h);
+  /* The bloom composer owns render targets sized to the canvas. Leaving them at
+     the old size survives a resize looking like a stretched, half-resolution
+     glow over a correctly sized frame. */
+  resizeRenderTargets(w,h);
 }
 addEventListener('resize',applyViewport);
 /* iOS reports the pre-rotation innerWidth/innerHeight for a frame or two after
@@ -8258,6 +8874,916 @@ addEventListener('orientationchange',function(){
 });
 if(window.visualViewport)visualViewport.addEventListener('resize',applyViewport);
 applyViewport();
+/* ===================== net protocol =====================
+   The browser half of the wire format. The canonical copy lives at
+   source/worker/protocol.mjs; this one exists because the game is a single
+   concatenated IIFE that must stay loadable from a file:// URL, and `import`
+   is not available to it.
+
+   Keeping two copies is a real hazard, so source/tests/net-protocol.test.mjs
+   encodes with each and decodes with the other, in both directions, over the
+   full field set. A change to one that is not mirrored in the other fails the
+   build rather than silently corrupting every packet at runtime.
+
+   Two channels over one socket: JSON strings for control (join, roster, score),
+   packed ArrayBuffers for aircraft state at NET_STATE_HZ. */
+var NET_PROTOCOL_VERSION=1;
+var NET_STATE_HZ=20;
+/* How far behind live remote aircraft are drawn. Long enough that a late packet
+   still lands before its frame is due, short enough that the lead you pull on a
+   remote target is honest. */
+var NET_INTERP_DELAY_MS=110;
+/* Past this with no fresh packet a remote holds its last attitude instead of
+   flying on. A frozen aircraft reads as a network problem; one that keeps
+   coasting reads as a teleport the moment packets resume. */
+var NET_EXTRAPOLATE_MAX_MS=250;
+var NET_HEARTBEAT_MS=3000;
+var NET_MAX_SLOTS=8, NET_SLOTS_PER_TEAM=4;
+var NET_ROOM_CODE_LENGTH=5;
+var NET_ROOM_CODE_ALPHABET='23456789BCDFGHJKMNPQRSTVWXYZ';
+
+var NET_C={HELLO:'hello',STATE_ACK:'ack',HIT:'hit',EVENT:'event',BYE:'bye'};
+var NET_S={WELCOME:'welcome',REJECT:'reject',PEER_JOIN:'peer_join',
+  PEER_LEAVE:'peer_leave',HOST:'host',SCORE:'score',HIT:'hit',EVENT:'event'};
+/* REMATCH may be called by any pilot, and only once the match is over.
+   Restricting it to the arena host would strand a finished room whenever the
+   host is the one who walked away from the keyboard. */
+var NET_EV={KILL:'kill',RESPAWN:'respawn',CORE_GRAB:'core_grab',
+  CORE_PASS:'core_pass',CORE_DROP:'core_drop',CORE_SCORE:'core_score',
+  DAMAGE:'damage',REMATCH:'rematch'};
+var NET_REJECT={VERSION:'version',FULL:'full',BAD_ROOM:'bad_room'};
+
+/* Slots are absolute — 0-3 blue, 4-7 red — and never array positions. The
+   game's fighters[] is built player's-team-first and so reorders whenever the
+   player switches sides in the hangar; indexing the wire by array position
+   would swap two aircraft the moment anyone did that. */
+function netSlotId(team,index){return (team==='red'?NET_SLOTS_PER_TEAM:0)+index;}
+function netSlotTeam(slot){return slot<NET_SLOTS_PER_TEAM?'blue':'red';}
+function netSlotIndex(slot){return slot%NET_SLOTS_PER_TEAM;}
+
+var NET_KIND_STATE=1, NET_KIND_SNAPSHOT=2;
+var NET_HEADER_BYTES=12, NET_AIRCRAFT_BYTES=44, NET_CORE_BYTES=28;
+var NET_CORE_NO_CARRIER=0xff;
+var NET_FLAG_ALIVE=1, NET_FLAG_CARRYING=2, NET_FLAG_BURNER=4,
+    NET_FLAG_FIRING=8, NET_FLAG_STALLED=16;
+
+function netClampByte(value,max){
+  if(!isFinite(value))return 0;
+  if(value<0)return 0;
+  if(value>max)return max;
+  return Math.round(value);
+}
+
+/* Layout, little-endian:
+     u8 kind, u8 count, u8 hasCore, u8 reserved, f64 time
+     per aircraft (44): u8 slot, u8 flags, u8 hp, u8 throttle,
+                        f32 pos xyz, f32 quat xyzw, f32 vel xyz
+     core (28): u8 carrier, u8 charge, u16 reserved, f32 pos xyz, f32 vel xyz  */
+function netEncodeState(kind,time,aircraft,core){
+  var count=aircraft.length, hasCore=core?1:0;
+  var buffer=new ArrayBuffer(NET_HEADER_BYTES+count*NET_AIRCRAFT_BYTES+hasCore*NET_CORE_BYTES);
+  var view=new DataView(buffer);
+  view.setUint8(0,kind); view.setUint8(1,count);
+  view.setUint8(2,hasCore); view.setUint8(3,0);
+  view.setFloat64(4,time,true);
+  var at=NET_HEADER_BYTES;
+  for(var i=0;i<count;i++){
+    var a=aircraft[i];
+    view.setUint8(at,a.slot);
+    view.setUint8(at+1,a.flags);
+    view.setUint8(at+2,netClampByte(a.hp,100));
+    view.setUint8(at+3,netClampByte(Math.round(a.throttle*255),255));
+    view.setFloat32(at+4,a.px,true);
+    view.setFloat32(at+8,a.py,true);
+    view.setFloat32(at+12,a.pz,true);
+    view.setFloat32(at+16,a.qx,true);
+    view.setFloat32(at+20,a.qy,true);
+    view.setFloat32(at+24,a.qz,true);
+    view.setFloat32(at+28,a.qw,true);
+    view.setFloat32(at+32,a.vx,true);
+    view.setFloat32(at+36,a.vy,true);
+    view.setFloat32(at+40,a.vz,true);
+    at+=NET_AIRCRAFT_BYTES;
+  }
+  if(core){
+    view.setUint8(at,core.carrier===null?NET_CORE_NO_CARRIER:core.carrier);
+    view.setUint8(at+1,netClampByte(core.charge,100));
+    view.setUint16(at+2,0,true);
+    view.setFloat32(at+4,core.px,true);
+    view.setFloat32(at+8,core.py,true);
+    view.setFloat32(at+12,core.pz,true);
+    view.setFloat32(at+16,core.vx,true);
+    view.setFloat32(at+20,core.vy,true);
+    view.setFloat32(at+24,core.vz,true);
+  }
+  return buffer;
+}
+
+function netDecodeState(buffer){
+  var bytes=buffer.byteLength;
+  if(bytes<NET_HEADER_BYTES)return null;
+  var view=new DataView(buffer);
+  var kind=view.getUint8(0);
+  if(kind!==NET_KIND_STATE&&kind!==NET_KIND_SNAPSHOT)return null;
+  var count=view.getUint8(1), hasCore=view.getUint8(2)===1;
+  /* A frame of the wrong length is a malformed frame. Decoding whichever
+     records happen to fit would hand the game a half-filled snapshot, which
+     shows up as one aircraft parked at the origin rather than as an error
+     anyone can trace. */
+  if(bytes!==NET_HEADER_BYTES+count*NET_AIRCRAFT_BYTES+(hasCore?NET_CORE_BYTES:0))return null;
+  var time=view.getFloat64(4,true);
+  var aircraft=[], at=NET_HEADER_BYTES;
+  for(var i=0;i<count;i++){
+    aircraft.push({
+      slot:view.getUint8(at), flags:view.getUint8(at+1),
+      hp:view.getUint8(at+2), throttle:view.getUint8(at+3)/255,
+      px:view.getFloat32(at+4,true), py:view.getFloat32(at+8,true), pz:view.getFloat32(at+12,true),
+      qx:view.getFloat32(at+16,true), qy:view.getFloat32(at+20,true),
+      qz:view.getFloat32(at+24,true), qw:view.getFloat32(at+28,true),
+      vx:view.getFloat32(at+32,true), vy:view.getFloat32(at+36,true), vz:view.getFloat32(at+40,true)});
+    at+=NET_AIRCRAFT_BYTES;
+  }
+  var core=null;
+  if(hasCore){
+    var carrier=view.getUint8(at);
+    core={carrier:carrier===NET_CORE_NO_CARRIER?null:carrier,
+      charge:view.getUint8(at+1),
+      px:view.getFloat32(at+4,true), py:view.getFloat32(at+8,true), pz:view.getFloat32(at+12,true),
+      vx:view.getFloat32(at+16,true), vy:view.getFloat32(at+20,true), vz:view.getFloat32(at+24,true)};
+  }
+  return {kind:kind,time:time,aircraft:aircraft,core:core};
+}
+
+function netIsRoomCode(code){
+  if(typeof code!=='string'||code.length!==NET_ROOM_CODE_LENGTH)return false;
+  for(var i=0;i<code.length;i++)
+    if(NET_ROOM_CODE_ALPHABET.indexOf(code.charAt(i))<0)return false;
+  return true;
+}
+function netNormaliseRoomCode(raw){
+  var code=String(raw||'').toUpperCase().replace(/[^0-9A-Z]/g,'');
+  return netIsRoomCode(code)?code:null;
+}
+/* ===================== net client =====================
+   Socket, room membership and who-simulates-what.
+
+   The authority rule, in one line: you simulate your own aircraft and nobody
+   else's, except that whoever has been in the room longest also simulates the
+   aircraft nobody is flying and the Core. Everything else on screen is an
+   interpolated copy of what its owner said it was doing.
+
+   That split is what keeps a flight game playable over a network. Your own
+   aeroplane never waits for a round trip and is never rewound by a remote
+   authority, which is the one thing a pilot would notice instantly. The cost is
+   that the server takes a client's word for where it is — deliberate, and
+   revisited in the deploy notes. */
+
+var NET_OFF='off', NET_DIALLING='dialling', NET_LIVE='live', NET_LOST='lost', NET_ERROR='error';
+
+var net={
+  on:false,                 /* a match is being played over the wire */
+  status:NET_OFF,
+  error:'',
+  server:'',                /* base URL of the arena worker */
+  room:'',
+  ws:null,
+  slot:null,                /* my absolute slot, 0-7 */
+  hostSlot:null,            /* who owns the AI aircraft and the Core */
+  isHost:false,
+  roster:{},                /* slot -> {callsign, team} for humans only */
+  ai:[],                    /* slots currently under AI control */
+  remotes:{},               /* slot -> interpolation buffer, see 55-net-sync */
+  clockSkew:0,              /* server clock minus ours, ms */
+  lastSend:0,
+  lastRecv:0,
+  retries:0,
+  retryT:0,
+  sendAcc:0
+};
+
+/* Where the arena server lives. Baked in so a player never has to know a URL;
+   the lobby field stays editable for anyone running their own. The query
+   parameter overrides both, for testing two browsers against a local
+   `wrangler dev` without disturbing the stored setting. */
+var ARENA_SERVER='https://airbourne-arena-net.luisminier79.workers.dev';
+/* Precedence: an explicit ?net= wins, then a server the player deliberately
+   typed, then the shipped default. The saved value has to outrank the default
+   or anyone running their own server would be dragged back to ours on reload. */
+function netServerUrl(){
+  var q=new URLSearchParams(location.search).get('net');
+  if(q)return q.replace(/\/+$/,'');
+  try{
+    var saved=localStorage.getItem('airbourne:net-server');
+    if(saved)return saved.replace(/\/+$/,'');
+  }catch(err){}
+  return ARENA_SERVER.replace(/\/+$/,'');
+}
+function netSaveServerUrl(url){
+  net.server=String(url||'').trim().replace(/\/+$/,'');
+  try{
+    /* Only a departure from the shipped default is worth remembering. Storing
+       the default too would pin every player to whatever URL was current the
+       first time they opened the lobby, and moving the server later would
+       strand all of them. */
+    if(net.server&&net.server!==ARENA_SERVER.replace(/\/+$/,''))
+      localStorage.setItem('airbourne:net-server',net.server);
+    else localStorage.removeItem('airbourne:net-server');
+  }catch(err){}
+}
+
+function netSocketUrl(base,room){
+  /* An https origin has to dial wss, and a plain http one ws — mixing them is
+     blocked by the browser with an error that does not mention the scheme. */
+  var url=base.replace(/^http/,'ws');
+  if(!/^wss?:/.test(url))url=(location.protocol==='https:'?'wss://':'ws://')+url;
+  return url+'/api/room/'+room+'/socket';
+}
+
+/* ---------- slot <-> fighter ---------- */
+function netFighterForSlot(slot){
+  var team=netSlotTeam(slot), index=netSlotIndex(slot);
+  for(var i=0;i<fighters.length;i++)
+    if(fighters[i].team===team&&fighters[i].slot===index)return fighters[i];
+  return null;
+}
+function netSlotForFighter(f){return netSlotId(f.team,f.slot);}
+
+/* Does this client run the physics for this aircraft? Everything downstream —
+   whether AI thinks for it, whether damage lands on it, whether it is stepped
+   or interpolated — is this one question. */
+function netOwns(f){
+  if(!net.on)return true;
+  var slot=netSlotForFighter(f);
+  if(slot===net.slot)return true;
+  return net.isHost&&net.ai.indexOf(slot)>=0;
+}
+function netIsRemote(f){return net.on&&!netOwns(f);}
+
+/* The Core needs exactly one simulator for the same reason an aircraft does,
+   and it belongs to nobody in particular — so it goes to the arena host along
+   with the aircraft nobody is flying. */
+function netOwnsCore(){return !net.on||net.isHost;}
+
+/* Rounds are also fired by AA emplacements, drones and convoys, none of which
+   have a slot on the wire. They belong to the arena host, along with everything
+   else in the world that nobody is personally flying. */
+function netOwnsEntity(e){
+  if(!net.on)return true;
+  if(!e||fighters.indexOf(e)<0)return net.isHost;
+  return netOwns(e);
+}
+
+/* ---------- seating ----------
+   The server decides which aircraft you are, which may not be the one the
+   hangar had you in. Both the team and the position within it can change, and
+   the mesh differs between a player aircraft and an AI one, so the eight are
+   rebuilt rather than patched. */
+function netSeatPlayer(slot){
+  var team=netSlotTeam(slot), index=netSlotIndex(slot);
+  if(player&&player.team===team&&player.slot===index){netApplyRoster();return;}
+  for(var i=0;i<fighters.length;i++)scene.remove(fighters[i].mesh);
+  fighters.length=0;
+  PILOT.team=team;
+  claimLeadName();
+  var foe=foeOf(team);
+  for(var a=0;a<4;a++)makeFighter(team,a,a===index);
+  for(var b=0;b<4;b++)makeFighter(foe,b,false);
+  for(var k=0;k<fighters.length;k++)if(fighters[k].isPlayer)player=fighters[k];
+  applyPilot();
+  netApplyRoster();
+}
+
+/* Human-flown aircraft carry their pilot's callsign; the rest keep the roster
+   names the single-player game already uses. claimLeadName() stamps your own
+   callsign onto slot 0 of your team, which is wrong the moment slot 0 is
+   somebody else, so this runs after it and puts every name back. */
+function netApplyRoster(){
+  for(var i=0;i<fighters.length;i++){
+    var f=fighters[i], slot=netSlotForFighter(f);
+    var seat=net.roster[slot];
+    f.name=seat?seat.callsign:NAMES[f.team][f.slot];
+    f.netHuman=!!seat&&slot!==net.slot;
+  }
+  if(player)player.name=PILOT.callsign;
+  if(typeof renderRoster==='function')renderRoster();
+}
+
+/* ---------- connection ---------- */
+function netCreateRoom(base,done){
+  var url=base.replace(/\/+$/,'')+'/api/room';
+  fetch(url,{method:'POST'})
+    .then(function(r){return r.ok?r.json():r.json().then(function(b){throw new Error(b.error||'server');});})
+    .then(function(body){done(null,body.code);})
+    .catch(function(err){done(err);});
+}
+
+function netConnect(base,room){
+  netDisconnect(true);
+  net.server=base.replace(/\/+$/,'');
+  net.room=room;
+  net.status=NET_DIALLING;
+  net.error='';
+  net.on=true;
+  var ws;
+  try{
+    ws=new WebSocket(netSocketUrl(net.server,room));
+  }catch(err){
+    netFail('could not open a socket to '+net.server);
+    return;
+  }
+  ws.binaryType='arraybuffer';
+  net.ws=ws;
+  ws.onopen=function(){
+    net.lastRecv=performance.now();
+    netSend({t:NET_C.HELLO,v:NET_PROTOCOL_VERSION,
+      callsign:PILOT.callsign,team:PILOT.team});
+  };
+  ws.onmessage=function(e){
+    net.lastRecv=performance.now();
+    if(typeof e.data==='string'){
+      var msg=null;
+      try{msg=JSON.parse(e.data);}catch(err){return;}
+      netOnControl(msg);
+    } else netOnSnapshot(e.data);
+  };
+  ws.onerror=function(){
+    /* onerror fires without detail by design; onclose carries the code, so the
+       message the player sees is written there. */
+  };
+  ws.onclose=function(evt){
+    if(net.ws!==ws)return;
+    net.ws=null;
+    if(!net.on)return;
+    if(evt.code===4001){netFail('this build is too old for that server');return;}
+    if(evt.code===4002){netFail('that match is full');return;}
+    net.status=NET_LOST;
+    net.retryT=1.5;
+  };
+}
+
+function netDisconnect(quiet){
+  if(net.ws){
+    try{netSend({t:NET_C.BYE});net.ws.close(1000,'left');}catch(err){}
+    net.ws=null;
+  }
+  net.on=false; net.slot=null; net.hostSlot=null; net.isHost=false;
+  net.roster={}; net.ai=[]; net.remotes={}; net.retries=0; net.retryT=0;
+  if(!quiet){net.status=NET_OFF;net.error='';}
+}
+
+function netFail(message){
+  net.on=false; net.status=NET_ERROR; net.error=message;
+  net.ws=null;
+  if(typeof netLobbyRefresh==='function')netLobbyRefresh();
+}
+
+function netSend(obj){
+  if(!net.ws||net.ws.readyState!==1)return;
+  try{net.ws.send(JSON.stringify(obj));}catch(err){}
+}
+function netSendHot(buffer){
+  if(!net.ws||net.ws.readyState!==1)return;
+  try{net.ws.send(buffer);}catch(err){}
+}
+
+/* ---------- control messages ---------- */
+function netOnControl(msg){
+  if(msg.t===NET_S.WELCOME){
+    net.slot=msg.you.slot;
+    net.roster={};
+    for(var i=0;i<msg.roster.length;i++)
+      net.roster[msg.roster[i].slot]={callsign:msg.roster[i].callsign,team:msg.roster[i].team};
+    net.ai=msg.ai||[];
+    net.hostSlot=msg.host;
+    net.isHost=msg.host===net.slot;
+    net.status=NET_LIVE;
+    net.retries=0;
+    netSeatPlayer(net.slot);
+    netApplyScore(msg.score,msg.clock,msg.over);
+    banner('ONLINE — '+net.room,2);
+    feed('<span style="color:#6fe3d0">joined '+net.room+'</span> as '+PILOT.callsign);
+    if(typeof netLobbyRefresh==='function')netLobbyRefresh();
+    return;
+  }
+  if(msg.t===NET_S.REJECT){
+    netFail(msg.why===NET_REJECT.VERSION?'this build is too old for that server'
+      :msg.why===NET_REJECT.FULL?'that match is full':'that room code was refused');
+    return;
+  }
+  if(msg.t===NET_S.PEER_JOIN){
+    net.roster[msg.slot]={callsign:msg.callsign,team:msg.team};
+    net.ai=msg.ai||net.ai;
+    if(msg.host!==undefined)netSetHost(msg.host);
+    netApplyRoster();
+    feed('<span style="color:'+teamHex(msg.team)+'">'+msg.callsign+'</span> joined');
+    if(typeof netLobbyRefresh==='function')netLobbyRefresh();
+    return;
+  }
+  if(msg.t===NET_S.PEER_LEAVE){
+    var gone=net.roster[msg.slot];
+    delete net.roster[msg.slot];
+    delete net.remotes[msg.slot];
+    net.ai=msg.ai||net.ai;
+    netApplyRoster();
+    if(gone)feed('<span style="color:'+teamHex(gone.team)+'">'+gone.callsign+'</span> left — AI has the aircraft');
+    if(typeof netLobbyRefresh==='function')netLobbyRefresh();
+    return;
+  }
+  if(msg.t===NET_S.HOST){
+    net.ai=msg.ai||net.ai;
+    netSetHost(msg.slot);
+    return;
+  }
+  if(msg.t===NET_S.SCORE){
+    netApplyScore({blue:msg.blue,red:msg.red},msg.clock,msg.over);
+    return;
+  }
+  if(msg.t===NET_S.HIT){netOnRemoteHit(msg);return;}
+  if(msg.t===NET_S.EVENT){netOnRemoteEvent(msg);return;}
+}
+
+function netSetHost(slot){
+  var was=net.isHost;
+  net.hostSlot=slot;
+  net.isHost=slot===net.slot;
+  if(net.isHost&&!was){
+    /* Inheriting the room mid-match means inheriting aircraft that have been
+       interpolating rather than flying. Their velocity is whatever the last two
+       packets implied, which is close enough for the AI to take the controls
+       from without a visible jump. */
+    feed('<span style="color:#ffb347">you are hosting the arena</span>');
+    for(var i=0;i<net.ai.length;i++)delete net.remotes[net.ai[i]];
+  }
+  if(typeof netLobbyRefresh==='function')netLobbyRefresh();
+}
+
+/* The scoreboard and the clock are the server's, not ours. Taking them wholesale
+   is what stops two clients disagreeing about who won. */
+function netApplyScore(score,clock,over){
+  if(score){st.scoreB=score.blue;st.scoreR=score.red;}
+  if(typeof clock==='number')st.time=clock;
+  if(over&&!st.over)endMatch();
+}
+/* ===================== net sync =====================
+   Sending what we own, and drawing what we do not.
+
+   Aircraft under someone else's control are never simulated here. They are
+   played back from a short buffer of states, rendered NET_INTERP_DELAY_MS
+   behind the newest packet so that the ordinary jitter of a socket lands inside
+   the delay instead of on the screen. */
+
+var _netP0=new THREE.Vector3(),_netP1=new THREE.Vector3(),
+    _netQ0=new THREE.Quaternion(),_netQ1=new THREE.Quaternion(),
+    _netV=new THREE.Vector3();
+var netSendInterval=1/NET_STATE_HZ;
+
+/* Our clock against the server's. Sampled on every snapshot and smoothed
+   heavily: the estimate includes one-way latency, so it is biased late by a few
+   tens of milliseconds — harmless, because everything is rendered behind it
+   anyway, and stable, which matters far more than being exactly right. */
+function netNoteSkew(serverTime){
+  var sample=serverTime-Date.now();
+  net.clockSkew=net.clockSkew?net.clockSkew+(sample-net.clockSkew)*0.05:sample;
+}
+function netServerNow(){return Date.now()+net.clockSkew;}
+function netRenderTime(){return netServerNow()-NET_INTERP_DELAY_MS;}
+
+/* ---------- outbound ---------- */
+function netAircraftRecord(f){
+  var flags=0;
+  if(f.alive)flags|=NET_FLAG_ALIVE;
+  if(f.carrying)flags|=NET_FLAG_CARRYING;
+  if(f.stalled)flags|=NET_FLAG_STALLED;
+  /* Gun state travels as a flag rather than a message per round. A remote
+     client spawns its own tracers from it at the aircraft's own rate, which
+     costs nothing and puts visible fire in the air; those rounds are cosmetic
+     everywhere except on the shooter's machine. */
+  if(f.cannonCd>0)flags|=NET_FLAG_FIRING;
+  if(f.isPlayer&&typeof burner!=='undefined'&&burner.lit)flags|=NET_FLAG_BURNER;
+  return {slot:netSlotForFighter(f),flags:flags,hp:f.hp,throttle:f.throttle,
+    px:f.pos.x,py:f.pos.y,pz:f.pos.z,
+    qx:f.quat.x,qy:f.quat.y,qz:f.quat.z,qw:f.quat.w,
+    vx:f.vel.x,vy:f.vel.y,vz:f.vel.z};
+}
+
+function netCoreRecord(){
+  return {carrier:core.carrier?netSlotForFighter(core.carrier):null,
+    charge:core.charge,
+    px:core.pos.x,py:core.pos.y,pz:core.pos.z,
+    vx:core.vel.x,vy:core.vel.y,vz:core.vel.z};
+}
+
+function netSendState(){
+  var owned=[];
+  for(var i=0;i<fighters.length;i++){
+    var f=fighters[i];
+    if(netOwns(f))owned.push(netAircraftRecord(f));
+  }
+  if(!owned.length&&!net.isHost)return;
+  netSendHot(netEncodeState(NET_KIND_STATE,Date.now(),owned,
+    net.isHost?netCoreRecord():null));
+}
+
+/* ---------- inbound ---------- */
+function netOnSnapshot(buffer){
+  var msg=netDecodeState(buffer);
+  if(!msg||msg.kind!==NET_KIND_SNAPSHOT)return;
+  netNoteSkew(msg.time);
+  for(var i=0;i<msg.aircraft.length;i++){
+    var a=msg.aircraft[i];
+    if(a.slot===net.slot)continue;      /* never let the wire move our own aircraft */
+    var buf=net.remotes[a.slot];
+    if(!buf)buf=net.remotes[a.slot]={samples:[],lastAlive:true,firing:false};
+    /* Snapshots can overtake each other. A sample older than the newest one
+       already held would drag the interpolation backwards, so it is dropped
+       rather than sorted in — by the time it arrived its moment had passed. */
+    var newest=buf.samples[buf.samples.length-1];
+    if(newest&&msg.time<=newest.t)continue;
+    buf.samples.push({t:msg.time,
+      px:a.px,py:a.py,pz:a.pz,qx:a.qx,qy:a.qy,qz:a.qz,qw:a.qw,
+      vx:a.vx,vy:a.vy,vz:a.vz,hp:a.hp,flags:a.flags,throttle:a.throttle});
+    var cutoff=msg.time-1000;
+    while(buf.samples.length>2&&buf.samples[0].t<cutoff)buf.samples.shift();
+  }
+  if(msg.core&&!net.isHost)netApplyCore(msg.core);
+}
+
+function netApplyCore(rec){
+  core.pos.set(rec.px,rec.py,rec.pz);
+  core.vel.set(rec.vx,rec.vy,rec.vz);
+  core.charge=rec.charge;
+  var carrier=rec.carrier===null?null:netFighterForSlot(rec.carrier);
+  if(core.carrier!==carrier){
+    if(core.carrier)core.carrier.carrying=false;
+    core.carrier=carrier;
+    if(carrier)carrier.carrying=true;
+  }
+}
+
+/* ---------- playback ---------- */
+function netApplyRemote(f,dt){
+  var slot=netSlotForFighter(f), buf=net.remotes[slot];
+  if(!buf||!buf.samples.length)return;
+  var at=netRenderTime(), s=buf.samples, n=s.length;
+
+  if(at<=s[0].t){netWriteSample(f,s[0]);}
+  else if(at>=s[n-1].t){
+    /* Ahead of the newest packet. Coast on the last known velocity for a short
+       while — long enough to cover a dropped frame, short enough that a real
+       dropout stops rather than flies the aircraft into a hillside. */
+    var ahead=at-s[n-1].t;
+    netWriteSample(f,s[n-1]);
+    if(ahead<NET_EXTRAPOLATE_MAX_MS){
+      var k=ahead/1000;
+      f.pos.x+=s[n-1].vx*k; f.pos.y+=s[n-1].vy*k; f.pos.z+=s[n-1].vz*k;
+    }
+  } else {
+    var hi=1;
+    while(hi<n&&s[hi].t<at)hi++;
+    var a=s[hi-1], b=s[hi];
+    var span=b.t-a.t;
+    var u=span>0?(at-a.t)/span:0;
+    _netP0.set(a.px,a.py,a.pz); _netP1.set(b.px,b.py,b.pz);
+    f.pos.copy(_netP0.lerp(_netP1,u));
+    _netQ0.set(a.qx,a.qy,a.qz,a.qw); _netQ1.set(b.qx,b.qy,b.qz,b.qw);
+    _netQ0.slerp(_netQ1,u); f.quat.copy(_netQ0);
+    _netP0.set(a.vx,a.vy,a.vz); _netP1.set(b.vx,b.vy,b.vz);
+    f.vel.copy(_netP0.lerp(_netP1,u));
+    netWriteMeta(f,b);
+  }
+
+  f.speed=f.vel.length();
+  f.throttle=buf.samples[n-1].throttle;
+  netRemoteTransitions(f,buf);
+  /* The gunnery solver and the AI both read alpha, so a remote needs one. It is
+     derived here rather than shipped, using the same expression stepFlight uses
+     — the angle between where the nose points and where the aircraft is
+     actually going is recoverable from the attitude and velocity we already
+     received, so putting it on the wire would be paying for it twice. */
+  if(f.speed>0.5){
+    axes(f);
+    _netV.copy(f.vel).multiplyScalar(1/f.speed);
+    f.alpha=Math.asin(clamp(-_netV.dot(_u),-1,1));
+  } else f.alpha=0;
+}
+
+function netWriteSample(f,s){
+  f.pos.set(s.px,s.py,s.pz);
+  f.quat.set(s.qx,s.qy,s.qz,s.qw);
+  f.vel.set(s.vx,s.vy,s.vz);
+  netWriteMeta(f,s);
+}
+function netWriteMeta(f,s){
+  f.hp=s.hp;
+  f.stalled=!!(s.flags&NET_FLAG_STALLED);
+  var carrying=!!(s.flags&NET_FLAG_CARRYING);
+  if(!net.isHost)f.carrying=carrying;
+}
+
+/* Death, respawn and gunfire are edges, not levels — they have to be spotted in
+   the flag stream rather than reapplied every frame, or a dead aircraft would
+   explode twenty times a second. */
+function netRemoteTransitions(f,buf){
+  var latest=buf.samples[buf.samples.length-1];
+  var alive=!!(latest.flags&NET_FLAG_ALIVE);
+  if(alive!==buf.lastAlive){
+    buf.lastAlive=alive;
+    if(!alive){
+      f.alive=false; f.mesh.visible=false; boom(f.pos,150);
+      disposeRollTips(f);
+    } else {
+      f.alive=true; f.mesh.visible=true; f.hp=latest.hp;
+      f.dmgEng=0; f.dmgAil=0; f.invuln=2;
+    }
+  }
+  f.alive=alive;
+  f.mesh.visible=alive;
+  var firing=!!(latest.flags&NET_FLAG_FIRING);
+  buf.firing=firing;
+  if(firing&&alive)fire(f);
+}
+
+/* ---------- damage ----------
+   A round only ever does damage on the machine that fired it. That client tells
+   the target's owner, and the owner is the one that subtracts health and
+   decides whether the aircraft is dead. Any other arrangement has every client
+   applying the same hit independently. */
+function netClaimHit(f,dmg,by){
+  /* `by` is a fighter for gunfire and an AA emplacement or drone for everything
+     else, and only a fighter has a slot to name. */
+  netSend({t:NET_C.HIT,slot:netSlotForFighter(f),dmg:dmg,
+    by:by&&fighters.indexOf(by)>=0?netSlotForFighter(by):null});
+}
+
+function netOnRemoteHit(msg){
+  var f=netFighterForSlot(msg.slot);
+  if(!f||!netOwns(f))return;
+  var by=msg.by===undefined||msg.by===null?null:netFighterForSlot(msg.by);
+  hurt(f,msg.dmg,by);
+}
+
+/* ---------- events ---------- */
+var NET_CORE_EVENTS=[NET_EV.CORE_GRAB,NET_EV.CORE_PASS,NET_EV.CORE_DROP,NET_EV.CORE_SCORE];
+function netEmitEvent(ev,f,data){
+  if(!net.on)return;
+  /* Only the arena host speaks for the Core. A carrier that dies runs dropCore
+     locally on its own machine — correct for what it draws, but the host has
+     already worked the same thing out from the carrier being dead, and two
+     announcements of one drop is one too many. */
+  if(NET_CORE_EVENTS.indexOf(ev)>=0&&!netOwnsCore())return;
+  netSend({t:NET_C.EVENT,ev:ev,slot:f?netSlotForFighter(f):null,d:data||null});
+}
+
+/* Deaths are announced by the machine that owns the aircraft, and only for real
+   fighters — hurt()/kill() also run for drones and structures, which have no
+   slot on the wire. */
+function netEmitKill(f,by){
+  if(!net.on||fighters.indexOf(f)<0||!netOwns(f))return;
+  netSend({t:NET_C.EVENT,ev:NET_EV.KILL,slot:netSlotForFighter(f),
+    d:{by:by&&fighters.indexOf(by)>=0?netSlotForFighter(by):null}});
+}
+
+function netOnRemoteEvent(msg){
+  var f=msg.slot===null||msg.slot===undefined?null:netFighterForSlot(msg.slot);
+  var by=msg.by===undefined||msg.by===null?null:netFighterForSlot(msg.by);
+  if(msg.ev===NET_EV.KILL){
+    /* The victim's owner already ran kill() and is not echoed this message, so
+       everything here is the bookkeeping the other clients would otherwise
+       miss: who gets the credit, and what the feed says. */
+    var killer=msg.d&&msg.d.by!==null&&msg.d.by!==undefined?netFighterForSlot(msg.d.by):null;
+    if(killer&&f&&killer!==f){killer.kills++;feed(tag(killer)+' &rarr; '+tag(f));}
+    else if(f)feed(tag(f)+' went in');
+    if(killer===player){sortie.kills++;emit('kill',{target:f?f.name:'?'});stingSfx([784,1046],.16);}
+    return;
+  }
+  if(msg.ev===NET_EV.CORE_GRAB&&f){
+    feed(tag(f)+' has the core');
+    tone(440,.2,earGain(f.pos)*.12,'triangle',560);
+    return;
+  }
+  if(msg.ev===NET_EV.CORE_PASS&&f){
+    feed(tag(f)+' passed the core');
+    tone(660,.18,earGain(f.pos)*.12,'triangle',880);
+    return;
+  }
+  if(msg.ev===NET_EV.CORE_DROP){
+    feed('<span style="color:#ffb347">CORE DROPPED</span>');
+    tone(330,.26,.14,'triangle',210);
+    return;
+  }
+  if(msg.ev===NET_EV.CORE_SCORE&&f){
+    /* Presentation only. The numbers arrive separately, from the server. */
+    boom(GOALS[f.team],280);
+    feed(tag(f)+' <span style="color:#ffb347">SCORED</span>');
+    banner(factionName(f.team)+' SCORES',1.8);
+    if(player&&f.team===player.team)stingSfx([523,659,784,1046],.22);
+    else stingSfx([392,330,262],.20);
+    return;
+  }
+  if(msg.ev===NET_EV.RESPAWN&&f&&!netOwns(f)){
+    f.alive=true; f.mesh.visible=true;
+    return;
+  }
+  if(msg.ev===NET_EV.REMATCH){
+    /* Nobody reset locally when the button was pressed, so this is where every
+       client in the room — including whoever asked — starts the next match. */
+    abandonMission(); st.mode='arena'; parkArena(false);
+    net.remotes={};
+    resetMatch();
+    banner('REMATCH',1.6);
+  }
+}
+
+function netRequestRematch(){
+  if(!net.on)return;
+  netSend({t:NET_C.EVENT,ev:NET_EV.REMATCH,slot:net.slot,d:null});
+  banner('REMATCH CALLED',1.2);
+}
+
+/* ---------- per-frame ---------- */
+function netStep(dt){
+  if(net.status===NET_LOST&&net.on){
+    net.retryT-=dt;
+    if(net.retryT<=0){
+      net.retries++;
+      if(net.retries>6){netFail('lost the connection to '+net.server);return;}
+      netConnect(net.server,net.room);
+    }
+    return;
+  }
+  if(!net.on||net.status!==NET_LIVE)return;
+  net.sendAcc+=dt;
+  if(net.sendAcc>=netSendInterval){
+    net.sendAcc=0;
+    netSendState();
+  }
+}
+
+/* Called from step()'s per-fighter loop in place of the AI, for every aircraft
+   this client does not own. */
+function netStepRemote(f,dt){
+  netApplyRemote(f,dt);
+  f.cannonCd-=dt;
+}
+/* ===================== online lobby =====================
+   Opening a room hands back a five-character code. Anyone with the code joins
+   the same match. Seats nobody has taken keep flying themselves, so a room is
+   playable from the moment it exists rather than from the moment it fills — the
+   arena already ran eight AI aircraft, and a human joining is only that AI
+   letting go of one of them. */
+
+var netEl={
+  panel:document.getElementById('netLobby'),
+  status:document.getElementById('netStatus'),
+  server:document.getElementById('netServer'),
+  code:document.getElementById('netCode'),
+  roster:document.getElementById('netRoster'),
+  host:document.getElementById('netHostBtn'),
+  join:document.getElementById('netJoinBtn'),
+  leave:document.getElementById('netLeaveBtn'),
+  close:document.getElementById('netCloseBtn'),
+  tag:document.getElementById('netTag')
+};
+
+function netLobbyOpen(){
+  if(!netEl.panel)return;
+  netEl.server.value=net.server||netServerUrl();
+  netEl.panel.classList.add('on');
+  if(document.exitPointerLock)document.exitPointerLock();
+  netLobbyRefresh();
+}
+function netLobbyClose(){
+  if(netEl.panel)netEl.panel.classList.remove('on');
+}
+
+function netSetStatus(text,kind){
+  if(!netEl.status)return;
+  netEl.status.textContent=text;
+  netEl.status.className='netStatus'+(kind?' '+kind:'');
+}
+
+function netLobbyRefresh(){
+  if(!netEl.panel)return;
+  if(net.status===NET_LIVE){
+    netSetStatus('IN ROOM '+net.room+(net.isHost?' · HOSTING THE ARENA':''),'live');
+  } else if(net.status===NET_DIALLING){
+    netSetStatus('CONNECTING…','busy');
+  } else if(net.status===NET_LOST){
+    netSetStatus('CONNECTION LOST — RETRYING','busy');
+  } else if(net.status===NET_ERROR){
+    netSetStatus(net.error.toUpperCase(),'bad');
+  } else {
+    netSetStatus('OFFLINE');
+  }
+  var live=net.status===NET_LIVE||net.status===NET_DIALLING;
+  netEl.host.disabled=live;
+  netEl.join.disabled=live;
+  netEl.leave.disabled=!net.on;
+  if(net.room&&netEl.code.value!==net.room)netEl.code.value=net.room;
+  netRenderSeats();
+  netRenderTag();
+}
+
+/* Both teams, all eight seats, in slot order — the point of the list is to show
+   at a glance which aircraft have somebody in them. */
+function netRenderSeats(){
+  if(!netEl.roster)return;
+  if(!net.on){netEl.roster.innerHTML='';return;}
+  var html='';
+  for(var slot=0;slot<NET_MAX_SLOTS;slot++){
+    var team=netSlotTeam(slot), seat=net.roster[slot];
+    var mine=slot===net.slot, isHost=slot===net.hostSlot;
+    var who=seat?seat.callsign:NAMES[team][netSlotIndex(slot)];
+    var kind=seat?(mine?'YOU':'PILOT'):'AI';
+    if(isHost&&seat)kind+=' · ARENA';
+    html+='<div class="netSeat'+(seat?' human':'')+(mine?' you':'')+(isHost?' host':'')+'">'+
+      '<span class="pip"></span>'+
+      '<span class="who" style="color:'+(mine?'':teamHex(team))+'">'+who+'</span>'+
+      '<span class="kind">'+kind+'</span></div>';
+  }
+  netEl.roster.innerHTML=html;
+}
+
+/* A one-line reminder over the HUD that this is a live match, and how many
+   people are in it. It turns amber the moment the socket is in trouble, which
+   is the only network state worth interrupting a fight for. */
+function netRenderTag(){
+  if(!netEl.tag)return;
+  if(!net.on){netEl.tag.classList.remove('on');return;}
+  var humans=0;
+  for(var k in net.roster)if(Object.prototype.hasOwnProperty.call(net.roster,k))humans++;
+  var trouble=net.status===NET_LOST||net.status===NET_DIALLING;
+  netEl.tag.textContent=trouble
+    ? 'RECONNECTING TO '+net.room
+    : net.room+' · '+humans+' PILOT'+(humans===1?'':'S')+' · '+(NET_MAX_SLOTS-humans)+' AI';
+  netEl.tag.classList.add('on');
+  netEl.tag.classList.toggle('warn',trouble);
+}
+
+function netLobbyServer(){
+  var url=(netEl.server.value||'').trim();
+  if(!url){netSetStatus('ENTER THE ARENA SERVER URL','bad');return null;}
+  if(!/^https?:\/\//i.test(url))url='https://'+url;
+  netSaveServerUrl(url);
+  netEl.server.value=net.server;
+  return net.server;
+}
+
+bindBtn(netEl.host,function(){
+  var base=netLobbyServer();
+  if(!base)return;
+  netSetStatus('OPENING A ROOM…','busy');
+  netCreateRoom(base,function(err,code){
+    if(err){netSetStatus('COULD NOT REACH THAT SERVER','bad');return;}
+    netEl.code.value=code;
+    netConnect(base,code);
+    netLobbyRefresh();
+  });
+});
+
+bindBtn(netEl.join,function(){
+  var base=netLobbyServer();
+  if(!base)return;
+  var code=netNormaliseRoomCode(netEl.code.value);
+  if(!code){netSetStatus('THAT ROOM CODE IS NOT VALID','bad');return;}
+  netEl.code.value=code;
+  netConnect(base,code);
+  netLobbyRefresh();
+});
+
+bindBtn(netEl.leave,function(){
+  netDisconnect();
+  /* Back to eight AI aircraft with the player in the seat the hangar chose,
+     which is what the offline game expects to find. */
+  netSeatPlayer(netSlotId(PILOT.team,0));
+  banner('LEFT THE ROOM',1.4);
+  netLobbyRefresh();
+});
+
+bindBtn(netEl.close,netLobbyClose);
+bindBtn('briefNetBtn',netLobbyOpen);
+
+if(netEl.code){
+  netEl.code.addEventListener('input',function(){
+    netEl.code.value=netEl.code.value.toUpperCase().replace(/[^0-9A-Z]/g,'').slice(0,NET_ROOM_CODE_LENGTH);
+  });
+}
+
+addEventListener('keydown',function(e){
+  if(!netEl.panel||!netEl.panel.classList.contains('on'))return;
+  if(e.code==='Escape'){netLobbyClose();e.preventDefault();}
+});
+
+/* A code in the URL is how an invite travels: send someone
+   .../index.html?room=ABCDE and the lobby is already filled in for them. */
+(function(){
+  var params=new URLSearchParams(location.search);
+  var room=netNormaliseRoomCode(params.get('room'));
+  net.server=netServerUrl();
+  if(room&&netEl.code)netEl.code.value=room;
+  if(room&&net.server)netConnect(net.server,room);
+  netLobbyRefresh();
+})();
 })();
 </script>
 </body>

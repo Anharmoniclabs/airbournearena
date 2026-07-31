@@ -131,13 +131,13 @@ function installAuthoredPlane(host,team,isPlayer){
   installAuthoredPlaneLod1(host,team,isPlayer);
   if(hullMaterial)host.userData.hull=hullMaterial;
 }
-new THREE.GLTFLoader(loadManager).load('assets/vanguard-interceptor-v4.glb',function(gltf){
+makeGltfLoader().load('assets/vanguard-interceptor-v4.glb',function(gltf){
   authoredPlaneTemplate=gltf.scene;
   for(var i=0;i<authoredPlaneHosts.length;i++){
     var h=authoredPlaneHosts[i];installAuthoredPlane(h.host,h.team,h.isPlayer);
   }
 },undefined,function(err){console.error('Vanguard Interceptor LOD0 failed to load.',err);});
-new THREE.GLTFLoader(loadManager).load('assets/vanguard-interceptor-v4-lod1.glb',function(gltf){
+makeGltfLoader().load('assets/vanguard-interceptor-v4-lod1.glb',function(gltf){
   authoredPlaneLod1Template=gltf.scene;
   for(var i=0;i<authoredPlaneHosts.length;i++){
     var h=authoredPlaneHosts[i];

@@ -7,8 +7,12 @@ function applyViewport(){
   if(!w||!h)return;
   camera.aspect=w/h; camera.updateProjectionMatrix();
   hangarCam.aspect=w/h; hangarCam.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.25:2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio,GFX.pixelCap));
   renderer.setSize(w,h);
+  /* The bloom composer owns render targets sized to the canvas. Leaving them at
+     the old size survives a resize looking like a stretched, half-resolution
+     glow over a correctly sized frame. */
+  resizeRenderTargets(w,h);
 }
 addEventListener('resize',applyViewport);
 /* iOS reports the pre-rotation innerWidth/innerHeight for a frame or two after

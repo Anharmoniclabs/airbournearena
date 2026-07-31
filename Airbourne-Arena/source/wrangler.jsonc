@@ -1,0 +1,50 @@
+{
+  // Realtime arena server. This is a separate deploy from the game itself —
+  // Airbourne-Arena/index.html stays a static artifact on GitHub Pages and
+  // reaches this worker over its public URL. Deploy with:
+  //
+  //   npm run net:deploy
+  //
+  // then put the resulting URL into the game's ARENA_SERVER (see
+  // src/game/54-net-client.js), or leave it unset and paste the URL into the
+  // lobby's server field at runtime.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "airbourne-arena-net",
+  // Pinned so wrangler does not have to list accounts to find out where to
+  // deploy — that lookup needs an "Account Settings: Read" permission the
+  // "Edit Cloudflare Workers" token template does not always grant. An account
+  // ID is an identifier, not a credential: it appears in dashboard URLs and can
+  // do nothing without a token.
+  "account_id": "a516a1df63fca7e13f01b916a397a79d",
+  "main": "worker/index.mjs",
+  "compatibility_date": "2026-01-15",
+  "observability": { "enabled": true },
+
+  "durable_objects": {
+    "bindings": [{ "name": "MATCH_ROOM", "class_name": "MatchRoom" }]
+  },
+
+  // MatchRoom keeps the scoreboard and match clock in Durable Object storage,
+  // so it needs a SQLite-backed migration rather than a plain new_classes one.
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["MatchRoom"]
+    }
+  ],
+
+  "vars": {
+    // Comma-separated exact origins. Empty would mean "any origin", which lets
+    // anyone else's site point at this server and spend its budget.
+    //
+    // The localhost entries are for developing against the deployed worker; a
+    // local `npm run net:dev` does not need them, since that runs its own copy
+    // with its own empty list.
+    //
+    // Known limitation: a copy of the game opened straight off disk sends
+    // `Origin: null` and so cannot play online while this list is set. Offline
+    // play from file:// is unaffected. Add an origin here and redeploy to let
+    // another host in.
+    "ALLOWED_ORIGINS": "https://anharmoniclabs.github.io,http://localhost:8000,http://localhost:5173,http://127.0.0.1:8000"
+  }
+}
