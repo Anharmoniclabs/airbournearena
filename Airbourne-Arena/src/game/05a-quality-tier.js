@@ -16,8 +16,8 @@
    down once if this machine cannot hold the pace. */
 var GFX_TIERS=[
   {name:'LOW',   shadow:0,    shadowFar:0,    bloom:false, bloomStrength:0,   pixelCap:1.25},
-  {name:'MEDIUM',shadow:1024, shadowFar:1500, bloom:true,  bloomStrength:0.34,pixelCap:1.5},
-  {name:'HIGH',  shadow:2048, shadowFar:2600, bloom:true,  bloomStrength:0.46,pixelCap:2}
+  {name:'MEDIUM',shadow:1024, shadowFar:1500, bloom:true,  bloomStrength:0.18,pixelCap:1.5},
+  {name:'HIGH',  shadow:2048, shadowFar:2600, bloom:true,  bloomStrength:0.24,pixelCap:2}
 ];
 /* A touch device is still the best cheap signal for "probably a phone", so it
    picks the opening bid. Anything else starts at the top and is measured down. */

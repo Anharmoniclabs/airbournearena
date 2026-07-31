@@ -1381,8 +1381,8 @@ var LOW=IS_TOUCH;   /* trim the scene for phone GPUs */
    down once if this machine cannot hold the pace. */
 var GFX_TIERS=[
   {name:'LOW',   shadow:0,    shadowFar:0,    bloom:false, bloomStrength:0,   pixelCap:1.25},
-  {name:'MEDIUM',shadow:1024, shadowFar:1500, bloom:true,  bloomStrength:0.34,pixelCap:1.5},
-  {name:'HIGH',  shadow:2048, shadowFar:2600, bloom:true,  bloomStrength:0.46,pixelCap:2}
+  {name:'MEDIUM',shadow:1024, shadowFar:1500, bloom:true,  bloomStrength:0.18,pixelCap:1.5},
+  {name:'HIGH',  shadow:2048, shadowFar:2600, bloom:true,  bloomStrength:0.24,pixelCap:2}
 ];
 /* A touch device is still the best cheap signal for "probably a phone", so it
    picks the opening bid. Anything else starts at the top and is measured down. */
@@ -1851,11 +1851,13 @@ function buildComposer(){
   composer=new THREE.EffectComposer(renderer);
   bloomRenderPass=new THREE.RenderPass(scene,camera);
   composer.addPass(bloomRenderPass);
-  /* Threshold high enough that lit terrain and sky stay out of it: this should
-     pick up burners, tracers, the Core and window lights, not wash the whole
-     daylight frame. Radius is generous because the bright things are small. */
+  /* Keep sunlit white aircraft below the effect. The first live Pages render
+     used 0.72 / 0.82 here and turned the player's beacon plus wing highlights
+     into a large white halo, erasing the silhouette in level and banked views.
+     Burners, tracers, the Core and night windows still clear this tighter
+     threshold; the smaller radius keeps their glow attached to its source. */
   bloomPass=new THREE.UnrealBloomPass(
-    new THREE.Vector2(innerWidth,innerHeight),GFX.bloomStrength,0.72,0.82);
+    new THREE.Vector2(innerWidth,innerHeight),GFX.bloomStrength,0.42,0.92);
   composer.addPass(bloomPass);
   composer.setSize(innerWidth,innerHeight);
   composer.setPixelRatio(renderer.getPixelRatio());
@@ -3143,7 +3145,10 @@ function buildPlane(team,isPlayer){
   g.userData.exhausts=exhausts;
   var bea=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite('rgba(255,255,255,.9)','rgba(255,255,255,0)'),
     color:TEAM_COL[team],transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
-  bea.scale.set(26,26,1); g.add(bea); g.userData.beacon=bea;
+  /* Identification light, not a substitute silhouette. At 26 units the
+     additive sprite was wider than the authored aircraft and the bloom pass
+     turned normal flight into a white disc with wings. */
+  bea.scale.set(16,16,1); g.add(bea); g.userData.beacon=bea;
   /* kept so fit-out repaints this exact shared material across every physical
      hull panel without changing the faction texture or any other aircraft */
   g.userData.hull=hull; g.userData.trim=trim;
@@ -3182,7 +3187,6 @@ function respawnFighter(f,instant){
   f.dmgEng=0; f.dmgAil=0;      /* a fresh airframe is a repaired airframe */
   f.strike=null; f.strikeTarget=null; f.strikeT=0; f.ceilT=0;
 }
-
 /* ===================== FLIGHT MODEL =====================
    Real velocity vector. Thrust, lift, drag and gravity are summed into an
    acceleration; the nose only decides where the wing is pointing. Angle of
@@ -8391,9 +8395,9 @@ function step(dt){
 
     var bea=f.mesh.userData.beacon;
     if(bea){
-      bea.material.opacity=f.carrying?.95:(f.invuln>0?(Math.sin(performance.now()*.02)>0?.9:.15):.35);
+      bea.material.opacity=f.carrying?.78:(f.invuln>0?(Math.sin(performance.now()*.02)>0?.58:.08):.22);
       bea.material.color.setHex(f.carrying?0xffb347:TEAM_COL[f.team]);
-      bea.scale.setScalar(f.carrying?46:26);
+      bea.scale.setScalar(f.carrying?34:16);
     }
   }
 
@@ -8739,7 +8743,6 @@ function hudWork(dt){
   if(player.stalled&&!sortie.stalling){sortie.stalling=true;sortie.stalls++;emit('stall_enter');}
   else if(!player.stalled&&sortie.stalling){sortie.stalling=false;emit('stall_exit');}
 }
-
 /* ===================== targeting HUD =====================
    Two marks, one solution. The pipper is where this burst will actually be at
    the moment it reaches the target — velocity inheritance and all — and the

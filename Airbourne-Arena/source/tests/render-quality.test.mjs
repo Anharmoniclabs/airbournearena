@@ -58,6 +58,25 @@ test("bloom degrades to a plain render if the vendored library is missing", () =
   assert.match(canonical, /<script src="assets\/postprocessing-r128\.js">/);
 });
 
+test("bloom keeps sunlit aircraft readable", () => {
+  const strengths = [...canonical.matchAll(/bloomStrength:([0-9.]+)/g)]
+    .map((match) => Number(match[1]));
+  assert.ok(strengths.length >= 3, "expected one bloom budget per quality tier");
+  assert.ok(Math.max(...strengths) <= 0.25,
+    "full-scene bloom above 0.25 blows the aircraft beacon into a white halo");
+  const pass = canonical.match(
+    /new THREE\.UnrealBloomPass\([\s\S]{0,160}?GFX\.bloomStrength,([0-9.]+),([0-9.]+)\)/,
+  );
+  assert.ok(pass, "could not read the bloom radius and threshold");
+  assert.ok(Number(pass[1]) <= 0.5, "bloom radius must stay attached to small emitters");
+  assert.ok(Number(pass[2]) >= 0.9, "sunlit white surfaces must stay below bloom");
+
+  const beacon = canonical.match(/bea\.scale\.setScalar\(f\.carrying\?([0-9.]+):([0-9.]+)\)/);
+  assert.ok(beacon, "could not read the carrier and normal beacon sizes");
+  assert.ok(Number(beacon[1]) <= 36, "the carrier beacon must not cover the aircraft");
+  assert.ok(Number(beacon[2]) <= 18, "the normal team beacon must preserve the silhouette");
+});
+
 test("the bloom composer is resized with the canvas", () => {
   // Render targets left at the old size survive a resize as a stretched,
   // half-resolution glow over a correctly sized frame.
