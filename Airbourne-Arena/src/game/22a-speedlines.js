@@ -8,8 +8,8 @@
    around the flight path, drifting backwards at the aircraft's own speed and
    recycled once they fall behind. Because they move with the airflow rather
    than on a timer, they read as the medium going past rather than as an overlay
-   — and they thin out to nothing when you slow down, which is what makes a
-   hover feel like a hover.
+   — and they thin out to nothing when you slow down, which is what makes the
+   bottom of the envelope feel slow.
 
    Same construction as the rain: one LineSegments, one buffer, points held in
    local space with the mesh parked on the camera each frame, so there is no

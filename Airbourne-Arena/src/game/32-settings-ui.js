@@ -37,7 +37,6 @@ bindRange('sVol','oVol','vol',function(v){return v+'%';});
 bindToggle('sEngine','engine');
 bindRange('sHud','oHud','hud',function(v){return v+'%';});
 bindToggle('sCb','cb');
-bindToggle('sZp','zp');
 bindToggle('sMotion','motion');
 bindToggle('sCoach','coach');
 

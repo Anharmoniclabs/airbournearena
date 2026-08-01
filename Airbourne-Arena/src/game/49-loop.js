@@ -619,10 +619,6 @@ function hudWork(dt){
   if(!IS_TOUCH&&!st.mouseSeen&&alive)pr='MOVE THE MOUSE TO STEER  ·  A / D TO TURN';
   else if(core.carrier===player)pr='F — PASS THE CORE';
   else if(player.stalled)pr='STALLED — EASE OFF AND LET THE NOSE DROP';
-  /* With zero-point on there is no stall to warn about, so the same line tells
-     you the field is carrying you instead — the state you need to know about at
-     the bottom of the envelope either way. */
-  else if(player.hover>.55)pr='ZERO-POINT HOVER — POINT AND THROTTLE TO MOVE';
   else if(!core.carrier&&alive&&player.pos.distanceTo(core.pos)<450)pr='FLY THROUGH THE CORE';
   el.prompt.textContent=pr; el.prompt.style.opacity=pr?1:0;
 
