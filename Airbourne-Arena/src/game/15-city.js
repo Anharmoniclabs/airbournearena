@@ -130,3 +130,31 @@ var proceduralCity=new THREE.Group();scene.add(proceduralCity);
   props.instanceMatrix.needsUpdate=true;props.frustumCulled=false;proceduralCity.add(props);
 })();
 
+/* Collapse scars, barricades and rubble make the lower city read as a place
+   that failed, not a clean collection of occupied tower blocks. These remain
+   separate from terrain collision so streets stay reliably traversable. */
+(function buildRuinedStreets(){
+  var ruinMat=new THREE.MeshPhongMaterial({map:bunkerSkin,color:0x756f67,flatShading:true,shininess:2});
+  var rustMat=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,color:0x704a38,flatShading:true,shininess:8});
+  var slabGeo=new THREE.BoxGeometry(1,1,1),m=new THREE.Matrix4(),q=new THREE.Quaternion(),
+      p=new THREE.Vector3(),s=new THREE.Vector3(),up=new THREE.Vector3(0,1,0),count=LOW?90:190;
+  var rubble=new THREE.InstancedMesh(slabGeo,ruinMat,count*3);
+  for(var i=0;i<count;i++){
+    var a=hash(i*2.7,4.1)*Math.PI*2,r=240+hash(i*7.3,9.2)*(CITY_REACH-300);
+    var x=Math.cos(a)*r,z=Math.sin(a)*r,gy=ground(x,z);
+    for(var j=0;j<3;j++){
+      p.set(x+(hash(i,j*4.2)-.5)*24,gy+1.2+j*.35,z+(hash(j*8.4,i)-.5)*24);
+      q.setFromEuler(new THREE.Euler((hash(i,j)-.5)*.45,a+j*1.7,(hash(j,i)-.5)*.55));
+      s.set(5+hash(i,j+2)*12,1.2+hash(j,i+8)*3,3+hash(i+5,j)*9);
+      m.compose(p,q,s);rubble.setMatrixAt(i*3+j,m);
+    }
+  }
+  rubble.instanceMatrix.needsUpdate=true;rubble.frustumCulled=false;scene.add(rubble);
+  var barriers=new THREE.InstancedMesh(new THREE.BoxGeometry(8,2.2,1.1),rustMat,LOW?26:54);
+  for(var k=0;k<(LOW?26:54);k++){
+    var lane=(k%2?670:-670),along=-1500+k*59;
+    p.set(along,ground(along,lane)+1.1,lane+(hash(k,22)-.5)*18);
+    q.setFromAxisAngle(up,(hash(k,33)-.5)*.45);s.set(1,1,1);m.compose(p,q,s);barriers.setMatrixAt(k,m);
+  }
+  barriers.instanceMatrix.needsUpdate=true;barriers.frustumCulled=false;scene.add(barriers);
+})();

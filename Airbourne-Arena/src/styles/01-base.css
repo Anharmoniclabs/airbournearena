@@ -62,6 +62,13 @@
   #zoomVig{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;
     transition:opacity .18s;
     background:radial-gradient(ellipse at center,transparent 42%,rgba(2,5,9,.62) 100%)}
+  #salvageHud{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:5;
+    min-width:310px;padding:9px 14px;border:1px solid rgba(255,179,71,.45);
+    background:rgba(5,10,16,.82);color:var(--ink);font-size:10px;letter-spacing:.14em;
+    text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(6px)}
+  body.ground #salvageHud{opacity:1}
+  #salvageHud b{color:var(--amber);font-weight:500}
+  #salvagePrompt{margin-top:5px;color:var(--teal)}
   #zoomTag{position:fixed;left:50%;top:calc(50% + 74px);transform:translateX(-50%);
     font-size:9px;letter-spacing:.26em;color:var(--teal);opacity:0;
     transition:opacity .18s;pointer-events:none;z-index:3;
@@ -189,4 +196,3 @@
     animation:pulse 1.8s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
   @media (prefers-reduced-motion:reduce){.go{animation:none;opacity:.85}}
-

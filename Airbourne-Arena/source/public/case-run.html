@@ -91,6 +91,13 @@
   #zoomVig{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;
     transition:opacity .18s;
     background:radial-gradient(ellipse at center,transparent 42%,rgba(2,5,9,.62) 100%)}
+  #salvageHud{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:5;
+    min-width:310px;padding:9px 14px;border:1px solid rgba(255,179,71,.45);
+    background:rgba(5,10,16,.82);color:var(--ink);font-size:10px;letter-spacing:.14em;
+    text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(6px)}
+  body.ground #salvageHud{opacity:1}
+  #salvageHud b{color:var(--amber);font-weight:500}
+  #salvagePrompt{margin-top:5px;color:var(--teal)}
   #zoomTag{position:fixed;left:50%;top:calc(50% + 74px);transform:translateX(-50%);
     font-size:9px;letter-spacing:.26em;color:var(--teal);opacity:0;
     transition:opacity .18s;pointer-events:none;z-index:3;
@@ -218,7 +225,6 @@
     animation:pulse 1.8s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
   @media (prefers-reduced-motion:reduce){.go{animation:none;opacity:.85}}
-
   /* ===================== boot ===================== */
   /* Thirty megabytes of art across thirty-nine files has to come down before
      anything looks like anything, and the game boots straight into the hangar
@@ -1032,6 +1038,8 @@
 <div id="rollHud"></div>
 <div id="zoomVig"></div>
 <div id="zoomTag">GUNSIGHT</div>
+<div id="salvageHud"><div id="salvageStock">PARTS 0 · HEALTH 0 · ARMOR 0</div>
+  <div id="salvagePrompt">WASD MOVE · SHIFT RUN · [G] BOARD AIRCRAFT</div></div>
 
 <div id="end"><div>
   <div id="endT"></div>
@@ -1104,6 +1112,7 @@
           <div class="row"><b>TAB</b><span>Lock the next bandit ahead</span></div>
           <div class="row"><b>F / Q / E</b><span>Pass the core · barrel roll</span></div>
           <div class="row"><b>C / M / P / O</b><span>Camera · map · pause · settings</span></div>
+          <div class="row"><b>G</b><span>Land / dismount · board aircraft near the parked Kestrel</span></div>
         </div>
       </div>
       <div class="row"><b>TOUCH</b><span>Left thumb flies, right thumb fires, passes, boosts and rolls</span></div>
@@ -2576,6 +2585,34 @@ var proceduralCity=new THREE.Group();scene.add(proceduralCity);
   props.instanceMatrix.needsUpdate=true;props.frustumCulled=false;proceduralCity.add(props);
 })();
 
+/* Collapse scars, barricades and rubble make the lower city read as a place
+   that failed, not a clean collection of occupied tower blocks. These remain
+   separate from terrain collision so streets stay reliably traversable. */
+(function buildRuinedStreets(){
+  var ruinMat=new THREE.MeshPhongMaterial({map:bunkerSkin,color:0x756f67,flatShading:true,shininess:2});
+  var rustMat=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,color:0x704a38,flatShading:true,shininess:8});
+  var slabGeo=new THREE.BoxGeometry(1,1,1),m=new THREE.Matrix4(),q=new THREE.Quaternion(),
+      p=new THREE.Vector3(),s=new THREE.Vector3(),up=new THREE.Vector3(0,1,0),count=LOW?90:190;
+  var rubble=new THREE.InstancedMesh(slabGeo,ruinMat,count*3);
+  for(var i=0;i<count;i++){
+    var a=hash(i*2.7,4.1)*Math.PI*2,r=240+hash(i*7.3,9.2)*(CITY_REACH-300);
+    var x=Math.cos(a)*r,z=Math.sin(a)*r,gy=ground(x,z);
+    for(var j=0;j<3;j++){
+      p.set(x+(hash(i,j*4.2)-.5)*24,gy+1.2+j*.35,z+(hash(j*8.4,i)-.5)*24);
+      q.setFromEuler(new THREE.Euler((hash(i,j)-.5)*.45,a+j*1.7,(hash(j,i)-.5)*.55));
+      s.set(5+hash(i,j+2)*12,1.2+hash(j,i+8)*3,3+hash(i+5,j)*9);
+      m.compose(p,q,s);rubble.setMatrixAt(i*3+j,m);
+    }
+  }
+  rubble.instanceMatrix.needsUpdate=true;rubble.frustumCulled=false;scene.add(rubble);
+  var barriers=new THREE.InstancedMesh(new THREE.BoxGeometry(8,2.2,1.1),rustMat,LOW?26:54);
+  for(var k=0;k<(LOW?26:54);k++){
+    var lane=(k%2?670:-670),along=-1500+k*59;
+    p.set(along,ground(along,lane)+1.1,lane+(hash(k,22)-.5)*18);
+    q.setFromAxisAngle(up,(hash(k,33)-.5)*.45);s.set(1,1,1);m.compose(p,q,s);barriers.setMatrixAt(k,m);
+  }
+  barriers.instanceMatrix.needsUpdate=true;barriers.frustumCulled=false;scene.add(barriers);
+})();
 /* Blender-authored hero architecture occupies the deliberately reserved
    downtown blocks. The generated 4K atlases are reassigned by material role,
    so they wrap real beveled shells, glazing, piers and rooftop hardware rather
@@ -4660,6 +4697,15 @@ function drawMap(){
     mctx.globalAlpha=1;
     mctx.strokeStyle='rgba(223,243,255,.5)';mctx.lineWidth=1;mctx.strokeRect(b.x-6,b.y-6,12,12);
   });
+  if(typeof loot!=='undefined')for(var li=0;li<loot.length;li++){
+    var L=loot[li];if(L.taken)continue;var lp=w2m(L.pos.x,L.pos.z);
+    mctx.globalAlpha=.72;mctx.fillStyle=L.kind==='parts'?'#ffb347':(L.kind==='health'?'#6fe3d0':'#78a9ff');
+    mctx.fillRect(lp.x-1.7,lp.y-1.7,3.4,3.4);
+  }
+  if(typeof salvage!=='undefined'&&salvage.on){
+    var foot=w2m(salvage.x,salvage.z);mctx.globalAlpha=1;mctx.fillStyle='#ffffff';
+    mctx.beginPath();mctx.arc(foot.x,foot.y,4,0,7);mctx.fill();
+  }
   /* ground structures: a filled mark while it stands, a hollow one counting
      back up while it rebuilds, so you can see the window you bought */
   for(var si=0;si<structs.length;si++){
@@ -4753,7 +4799,6 @@ function drawMap(){
       mctx.lineWidth=1.5;mctx.strokeRect(p.x-7,p.y-7,14,14);}
   }
 }
-
 /* ===================== input ===================== */
 var touchIn={fire:false,thrUp:false,thrDn:false,boost:false,zoom:false};
 var stick={id:null,ox:0,oy:0,dx:0,dy:0,active:false,R:64};
@@ -4923,6 +4968,15 @@ addEventListener('keydown',function(e){
   /* the hangar runs its own keys, and "any key launches" would fire the match
      off on the first step you took across the floor */
   if(st.phase==='hangar')return;
+  if(e.code==='KeyG'){
+    if(salvage.on)leaveGroundMode();else enterGroundMode();
+    e.preventDefault();return;
+  }
+  if(salvage.on){
+    if(e.code==='KeyM'){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
+    if(e.code==='KeyP')setPaused(!st.paused);
+    return;
+  }
   if(!st.started){launch();return;}
   if(e.code==='Tab'){cycleTarget();return;}
   if(e.code==='KeyX'){releaseLock();return;}
@@ -4939,7 +4993,6 @@ addEventListener('keydown',function(e){
   if(e.code==='KeyR'&&st.over)resetMatch();
 });
 addEventListener('keyup',function(e){keys[e.code]=false;});
-
 /* ===================== settings UI ===================== */
 var setEl=document.getElementById('settings');
 function applyCfg(){
@@ -5746,6 +5799,9 @@ if(new URLSearchParams(location.search).has('capture')){
        depends on declaration order rather than on hoisting, which matters
        because src/ is assembled in manifest order. */
     leaveHangar:leaveHangar,launch:launch,
+    enterGround:function(){return enterGroundMode();},
+    leaveGround:function(){return leaveGroundMode();},
+    getSalvage:function(){return salvage;},
     startMission:function(id){return startMission(id);},
     /* The net layer is declared in parts below this one, so every accessor here
        is a wrapper: reading the name inside the function defers the lookup to
@@ -5787,7 +5843,95 @@ addEventListener('keydown',function(e){
   if(e.code==='KeyF'){openFit();e.preventDefault();}
   if(e.code==='Enter'){leaveHangar();e.preventDefault();}
 });
-
+/* ===================== lower-city salvage free roam =====================
+   The flight aircraft is the landing/boarding anchor. A separate instance of
+   the production skinned pilot lives in the world scene; it is never replaced
+   by a primitive stand-in while the GLB is loading. */
+var groundAvatar=new THREE.Group(),groundMixer=null,groundActions={},groundAction='';
+groundAvatar.visible=false;scene.add(groundAvatar);
+characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
+  groundAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x5d83b4);
+  groundMixer=new THREE.AnimationMixer(gltf.scene);
+  groundActions=characterActions(groundMixer,gltf.animations);
+  groundAvatar.visible=salvage.on&&!!groundActions.Idle;
+},undefined,function(err){console.error('Free-roam pilot GLB failed to load.',err);});
+function setGroundAction(name){
+  if(!groundActions[name]||groundAction===name)return;
+  if(groundActions[groundAction])groundActions[groundAction].fadeOut(.16);
+  groundActions[name].reset().fadeIn(.16).play();groundAction=name;
+}
+var salvage={on:false,x:0,z:0,yaw:0,face:0,moving:0,parts:0,health:0,armor:0,banked:0};
+var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
+(function buildSalvage(){
+  var kindCol={parts:0xffb347,health:0x6fe3d0,armor:0x78a9ff};
+  for(var i=0;i<(LOW?24:42);i++){
+    var a=hash(i,81)*Math.PI*2,r=260+hash(i,93)*(CITY_REACH-340);
+    var x=Math.cos(a)*r,z=Math.sin(a)*r;
+    if(i%2)x=Math.round(x/670)*670+(hash(i,12)-.5)*70;
+    else z=Math.round(z/670)*670+(hash(i,14)-.5)*70;
+    var kind=i%5===0?'health':(i%5===1?'armor':'parts'),g=new THREE.Group();
+    var box=new THREE.Mesh(new THREE.BoxGeometry(3.4,1.9,2.5),new THREE.MeshPhongMaterial({
+      color:0x323b40,emissive:kindCol[kind],emissiveIntensity:.18,shininess:34}));
+    box.position.y=1;g.add(box);
+    var band=new THREE.Mesh(new THREE.BoxGeometry(3.55,.35,2.62),new THREE.MeshBasicMaterial({color:kindCol[kind]}));
+    band.position.y=1.05;g.add(band);
+    var lamp=new THREE.PointLight(kindCol[kind],.75,18);lamp.position.y=2.7;g.add(lamp);
+    g.position.set(x,ground(x,z),z);lootGroup.add(g);loot.push({kind:kind,pos:g.position,mesh:g,taken:false});
+  }
+})();
+function updateSalvageHud(msg){
+  var stock=document.getElementById('salvageStock'),prompt=document.getElementById('salvagePrompt');
+  if(stock)stock.innerHTML='<b>PARTS '+salvage.parts+'</b> · HEALTH '+salvage.health+' · ARMOR '+salvage.armor+
+    (salvage.banked?' · BASE STORES '+salvage.banked:'');
+  if(prompt)prompt.textContent=msg||'WASD MOVE · SHIFT RUN · [G] BOARD AIRCRAFT';
+}
+function enterGroundMode(){
+  if(salvage.on||!player.alive||st.phase==='hangar')return;
+  var agl=player.pos.y-ground(player.pos.x,player.pos.z);
+  if(agl>42||player.speed>115){banner('LAND BELOW 115 KTS · WITHIN 42 M',1.8);return;}
+  salvage.on=true;st.phase='ground';document.body.classList.add('ground');
+  salvage.x=player.pos.x;salvage.z=player.pos.z+7;salvage.yaw=Math.atan2(player.vel.x,-player.vel.z);
+  player.pos.y=ground(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;player.throttle=0;
+  groundAvatar.visible=!!groundActions.Idle;groundAvatar.position.set(salvage.x,ground(salvage.x,salvage.z),salvage.z);
+  setGroundAction('Idle');banner('LOWER CITY · SALVAGE RUN',2);updateSalvageHud();
+}
+function leaveGroundMode(){
+  if(!salvage.on)return;
+  if(Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z)>13){banner('RETURN TO YOUR AIRCRAFT',1.4);return;}
+  salvage.on=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
+  player.pos.y=ground(player.pos.x,player.pos.z)+9;player.vel.set(0,0,-28).applyQuaternion(player.quat);player.speed=28;
+  banner('AIRCRAFT BOARDED · THROTTLE UP',1.5);
+}
+function groundControl(dt){
+  var turn=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0);
+  salvage.yaw-=turn*dt*2.25;
+  var fwd=((keys.KeyW||keys.ArrowUp)?1:0)-((keys.KeyS||keys.ArrowDown)?1:0);
+  var side=(keys.KeyE?1:0)-(keys.KeyQ?1:0),run=keys.ShiftLeft||keys.ShiftRight;
+  var mx=-Math.sin(salvage.yaw)*fwd+Math.cos(salvage.yaw)*side;
+  var mz=-Math.cos(salvage.yaw)*fwd-Math.sin(salvage.yaw)*side,ml=Math.hypot(mx,mz),sp=run?18:10;
+  if(ml>.01){mx/=ml;mz/=ml;salvage.x+=mx*sp*dt;salvage.z+=mz*sp*dt;salvage.face=Math.atan2(-mx,-mz);}
+  salvage.x=clamp(salvage.x,-CITY_REACH,CITY_REACH);salvage.z=clamp(salvage.z,-CITY_REACH,CITY_REACH);
+  salvage.moving+=((ml>.01?1:0)-salvage.moving)*Math.min(1,dt*12);
+  groundAvatar.position.set(salvage.x,ground(salvage.x,salvage.z),salvage.z);groundAvatar.rotation.y=salvage.face;
+  setGroundAction(ml<.01?'Idle':(run?'Run':'Walk'));if(groundMixer)groundMixer.update(dt);
+  var nearest=null,nearD=1e9;
+  for(var i=0;i<loot.length;i++){
+    var L=loot[i];if(L.taken)continue;L.mesh.rotation.y+=dt*.5;
+    var d=Math.hypot(salvage.x-L.pos.x,salvage.z-L.pos.z);if(d<nearD){nearD=d;nearest=L;}
+    if(d<4.5){L.taken=true;L.mesh.visible=false;salvage[L.kind]++;
+      if(L.kind==='health')player.hp=Math.min(player.maxHp,player.hp+28);
+      if(L.kind==='armor')player.hp=Math.min(player.maxHp+25,player.hp+18);
+      feed('<span style="color:#ffb347">SALVAGED '+L.kind.toUpperCase()+'</span>');tone(740,.12,.1,'triangle',980);}
+  }
+  var home=BASES[player.team],homeD=Math.hypot(salvage.x-home.x,salvage.z-home.z);
+  if(homeD<245&&salvage.parts){salvage.banked+=salvage.parts;salvage.parts=0;feed('<span style="color:#6fe3d0">PARTS SECURED AT '+factionName(player.team)+' BASE</span>');}
+  var back=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
+  var msg=back<13?'[G] BOARD AIRCRAFT':(nearD<45?nearest.kind.toUpperCase()+' CACHE · '+Math.round(nearD)+' M':'SCAVENGE THE RUINED BLOCKS · RETURN PARTS TO BASE');
+  updateSalvageHud(msg);
+  var cf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
+  camera.position.set(salvage.x,ground(salvage.x,salvage.z)+5.6,salvage.z).addScaledVector(cf,-10);
+  camera.lookAt(salvage.x,ground(salvage.x,salvage.z)+2.3,salvage.z);camera.up.set(0,1,0);
+}
 /* ===================== PHASE 1 — FOUNDATION =====================
    STORY-BIBLE section 23. Everything narrative hangs off four structures kept
    deliberately separate from the flight code: a versioned save, a reputation
@@ -8131,7 +8275,7 @@ function env(dt){
 
   /* Airflow cue. Driven by the camera subject rather than the player, so it is
      right in the chase, the cockpit and a spectate camera alike. */
-  stepSpeedLines(dt,st.phase==='hangar'?null:player);
+  stepSpeedLines(dt,(st.phase==='hangar'||st.phase==='ground')?null:player);
 
   /* The sun is a shadow caster now, so its placement is the shadow frustum's
      placement — see frameShadowCamera in 08a-render-quality.js. With shadows
@@ -8278,7 +8422,7 @@ function step(dt){
     if(st.time<=0){st.time=0; if(!net.on)endMatch();}
   }
 
-  if(player.alive&&!st.over)playerControl(dt);
+  if(player.alive&&!st.over){if(salvage.on)groundControl(dt);else playerControl(dt);}
 
   for(var i=0;i<fighters.length;i++){
     var f=fighters[i];
@@ -8298,7 +8442,7 @@ function step(dt){
 
     /* Terrain and the ceiling are simulation, and a remote aircraft is not
        simulated here — its owner has already flown it into the hill or not. */
-    if(!remote){
+    if(!remote&&!(f===player&&salvage.on)){
       var gh=ground(f.pos.x,f.pos.z);
       if(f.pos.y-gh<8){kill(f,null);continue;}
       /* Open sky: altitude changes aircraft performance through airDensity, but
@@ -8330,8 +8474,7 @@ function step(dt){
   stepRadio(dt);
   if(mission.running)stepMission(dt);
   stepLock(dt);
-  gpwsCheck(dt);
-  camWork(dt);
+  if(!salvage.on){gpwsCheck(dt);camWork(dt);}
   hudWork(dt);
 }
 

@@ -69,6 +69,7 @@ game/31-input.js
 game/32-settings-ui.js
 game/33-hangar.js
 game/34-hangar-characters.js
+game/34a-salvage.js
 game/35-mission-foundation.js
 game/36-mission-entities.js
 game/37-hostile-behaviour.js

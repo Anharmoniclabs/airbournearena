@@ -500,6 +500,9 @@ if(new URLSearchParams(location.search).has('capture')){
        depends on declaration order rather than on hoisting, which matters
        because src/ is assembled in manifest order. */
     leaveHangar:leaveHangar,launch:launch,
+    enterGround:function(){return enterGroundMode();},
+    leaveGround:function(){return leaveGroundMode();},
+    getSalvage:function(){return salvage;},
     startMission:function(id){return startMission(id);},
     /* The net layer is declared in parts below this one, so every accessor here
        is a wrapper: reading the name inside the function defers the lookup to
@@ -541,4 +544,3 @@ addEventListener('keydown',function(e){
   if(e.code==='KeyF'){openFit();e.preventDefault();}
   if(e.code==='Enter'){leaveHangar();e.preventDefault();}
 });
-

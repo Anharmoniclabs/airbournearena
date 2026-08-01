@@ -118,7 +118,7 @@ function env(dt){
 
   /* Airflow cue. Driven by the camera subject rather than the player, so it is
      right in the chase, the cockpit and a spectate camera alike. */
-  stepSpeedLines(dt,st.phase==='hangar'?null:player);
+  stepSpeedLines(dt,(st.phase==='hangar'||st.phase==='ground')?null:player);
 
   /* The sun is a shadow caster now, so its placement is the shadow frustum's
      placement — see frameShadowCamera in 08a-render-quality.js. With shadows
@@ -265,7 +265,7 @@ function step(dt){
     if(st.time<=0){st.time=0; if(!net.on)endMatch();}
   }
 
-  if(player.alive&&!st.over)playerControl(dt);
+  if(player.alive&&!st.over){if(salvage.on)groundControl(dt);else playerControl(dt);}
 
   for(var i=0;i<fighters.length;i++){
     var f=fighters[i];
@@ -285,7 +285,7 @@ function step(dt){
 
     /* Terrain and the ceiling are simulation, and a remote aircraft is not
        simulated here — its owner has already flown it into the hill or not. */
-    if(!remote){
+    if(!remote&&!(f===player&&salvage.on)){
       var gh=ground(f.pos.x,f.pos.z);
       if(f.pos.y-gh<8){kill(f,null);continue;}
       /* Open sky: altitude changes aircraft performance through airDensity, but
@@ -317,8 +317,7 @@ function step(dt){
   stepRadio(dt);
   if(mission.running)stepMission(dt);
   stepLock(dt);
-  gpwsCheck(dt);
-  camWork(dt);
+  if(!salvage.on){gpwsCheck(dt);camWork(dt);}
   hudWork(dt);
 }
 

@@ -136,6 +136,15 @@ function drawMap(){
     mctx.globalAlpha=1;
     mctx.strokeStyle='rgba(223,243,255,.5)';mctx.lineWidth=1;mctx.strokeRect(b.x-6,b.y-6,12,12);
   });
+  if(typeof loot!=='undefined')for(var li=0;li<loot.length;li++){
+    var L=loot[li];if(L.taken)continue;var lp=w2m(L.pos.x,L.pos.z);
+    mctx.globalAlpha=.72;mctx.fillStyle=L.kind==='parts'?'#ffb347':(L.kind==='health'?'#6fe3d0':'#78a9ff');
+    mctx.fillRect(lp.x-1.7,lp.y-1.7,3.4,3.4);
+  }
+  if(typeof salvage!=='undefined'&&salvage.on){
+    var foot=w2m(salvage.x,salvage.z);mctx.globalAlpha=1;mctx.fillStyle='#ffffff';
+    mctx.beginPath();mctx.arc(foot.x,foot.y,4,0,7);mctx.fill();
+  }
   /* ground structures: a filled mark while it stands, a hollow one counting
      back up while it rebuilds, so you can see the window you bought */
   for(var si=0;si<structs.length;si++){
@@ -229,4 +238,3 @@ function drawMap(){
       mctx.lineWidth=1.5;mctx.strokeRect(p.x-7,p.y-7,14,14);}
   }
 }
-

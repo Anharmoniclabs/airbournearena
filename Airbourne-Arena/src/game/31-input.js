@@ -167,6 +167,15 @@ addEventListener('keydown',function(e){
   /* the hangar runs its own keys, and "any key launches" would fire the match
      off on the first step you took across the floor */
   if(st.phase==='hangar')return;
+  if(e.code==='KeyG'){
+    if(salvage.on)leaveGroundMode();else enterGroundMode();
+    e.preventDefault();return;
+  }
+  if(salvage.on){
+    if(e.code==='KeyM'){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
+    if(e.code==='KeyP')setPaused(!st.paused);
+    return;
+  }
   if(!st.started){launch();return;}
   if(e.code==='Tab'){cycleTarget();return;}
   if(e.code==='KeyX'){releaseLock();return;}
@@ -183,4 +192,3 @@ addEventListener('keydown',function(e){
   if(e.code==='KeyR'&&st.over)resetMatch();
 });
 addEventListener('keyup',function(e){keys[e.code]=false;});
-
