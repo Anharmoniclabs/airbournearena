@@ -20,7 +20,7 @@
     "unity:flight-golden": "node scripts/flight-golden.mjs",
     "unity:flight-check": "node scripts/flight-golden.mjs --check",
     "unity:assets": "bash scripts/export-unity-assets.sh",
-    "test:unity": "node --test tests/unity-phase-zero.test.mjs tests/unity-phase-one.test.mjs",
+    "test:unity": "node --test tests/unity-phase-zero.test.mjs tests/unity-phase-one.test.mjs tests/unity-flight-parity.test.mjs tests/unity-gunnery-numeric.test.mjs tests/unity-variable-delta.test.mjs",
     "assets:textures": "node scripts/optimise-web-textures.mjs",
     "assets:textures:write": "node scripts/optimise-web-textures.mjs --write",
     "assets:glb": "bash scripts/compress-glb.sh",
@@ -31,7 +31,9 @@
     "net:tail": "bash scripts/sites-env.sh -- wrangler tail --config wrangler.jsonc",
     "test:net": "node --test tests/net-protocol.test.mjs tests/net-room.test.mjs",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
+    "unity:parity": "node --test tests/unity-flight-parity.test.mjs tests/unity-gunnery-numeric.test.mjs tests/unity-variable-delta.test.mjs",
+    "unity:verify": "bash scripts/unity-verify.sh"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "asset": "vanguard-interceptor-v4.fbx",
+      "bytes": 476924,
+      "objects": 52,
+      "meshes": 52,
+      "triangles": 13236,
+      "materials": [
+        "Engine interior",
+        "Graphite mechanical structure",
+        "Heat shield metal",
+        "Smoked cockpit glass",
+        "Vanguard ceramic armor",
+        "Vanguard clean ceramic armor",
+        "Vanguard cobalt armor",
+        "Vanguard energy channel"
+      ]
+    },
+    {
+      "asset": "vanguard-interceptor-v4-lod1.fbx",
+      "bytes": 128316,
+      "objects": 10,
+      "meshes": 9,
+      "triangles": 3304,
+      "materials": [
+        "Heat shield metal.001",
+        "Smoked cockpit glass.001",
+        "Vanguard clean ceramic armor.001",
+        "Vanguard cobalt armor.001",
+        "Vanguard energy channel.001"
+      ]
+    },
+    {
+      "asset": "starter-coast-world-authored-v2.fbx",
+      "bytes": 2809372,
+      "objects": 16,
+      "meshes": 16,
+      "triangles": 163060,
+      "materials": [
+        "Airbase deck",
+        "Aviation hardware",
+        "Breakwater identity",
+        "Bunker concrete",
+        "City roof",
+        "Conifer foliage",
+        "Graphite structure",
+        "Inferno identity",
+        "Navigation ceramic",
+        "Recessed glazing",
+        "Road shoulder",
+        "Road surface",
+        "Runway surface",
+        "Safety orange",
+        "Terrain surface",
+        "Tree bark"
+      ]
+    },
+    {
+      "asset": "starter-coast-world-authored-v2-lod1.fbx",
+      "bytes": 622700,
+      "objects": 12,
+      "meshes": 12,
+      "triangles": 32044,
+      "materials": [
+        "Airbase deck.001",
+        "Aviation hardware.001",
+        "Bunker concrete.001",
+        "City roof.001",
+        "Graphite structure.001",
+        "Hangar metal",
+        "Recessed glazing.001",
+        "Road shoulder.001",
+        "Road surface.001",
+        "Runway surface.001",
+        "Safety orange.001",
+        "Terrain surface.001"
+      ]
+    },
+    {
+      "asset": "blackwing-drone.fbx",
+      "bytes": 20892,
+      "objects": 3,
+      "meshes": 2,
+      "triangles": 50,
+      "materials": [
+        "Black Wing armor",
+        "Warden energy"
+      ]
+    },
+    {
+      "asset": "breakwater-hangar-detail-authored-v1.fbx",
+      "bytes": 225388,
+      "objects": 5,
+      "meshes": 4,
+      "triangles": 6556,
+      "materials": [
+        "Graphite structural steel",
+        "Hangar work light",
+        "Safety orange.002",
+        "Weathered galvanized steel"
+      ]
+    },
+    {
+      "asset": "starter-coast-pilot-rig-v1.fbx",
+      "bytes": 5736732,
+      "objects": 19,
+      "meshes": 2,
+      "triangles": 11376,
+      "materials": [
+        "VanguardBodyMat",
+        "Vanguard_VisorMat"
+      ]
+    },
+    {
+      "asset": "kestrel-mk1-authored-v3.fbx",
+      "bytes": 3824988,
+      "objects": 60,
+      "meshes": 59,
+      "triangles": 22044,
+      "materials": [
+        "Engine internal ceramic",
+        "Faction accent",
+        "Graphite composite",
+        "Heat stained engine metal",
+        "Kestrel weathered ceramic",
+        "Maintenance warning",
+        "Sensor glass",
+        "Smoked cyan canopy"
+      ]
+    }
+  ]
+}

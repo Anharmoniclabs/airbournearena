@@ -1,0 +1,14 @@
+{
+  "name": "AirbourneArena.EditModeTests",
+  "rootNamespace": "AirbourneArena.Tests",
+  "references": [
+    "AirbourneArena.Runtime"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}

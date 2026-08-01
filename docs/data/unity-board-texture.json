@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "mode": "write",
+  "note": "Unity performs final platform GPU compression; PNG files are import intermediates.",
+  "totals": {
+    "sourceBytes": 769662,
+    "outputBytes": 1268452
+  },
+  "assets": [
+    {
+      "source": "flight-briefing-board-diffusion-4k-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 769662,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/ui_and_briefing/flight-briefing-board-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 1268452
+    }
+  ]
+}

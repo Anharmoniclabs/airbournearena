@@ -1,0 +1,12 @@
+{
+  "name": "AirbourneArena.Editor",
+  "rootNamespace": "AirbourneArena.Editor",
+  "references": [
+    "AirbourneArena.Runtime",
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true
+}

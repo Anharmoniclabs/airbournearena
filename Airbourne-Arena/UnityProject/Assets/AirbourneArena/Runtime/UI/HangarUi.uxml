@@ -1,0 +1,80 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="HangarUi.uss" />
+    <ui:VisualElement name="hangar-ui" class="screen">
+        <ui:VisualElement name="hangar-title" class="hangar-title">
+            <ui:Label text="BREAKWATER FIELD" class="hangar-heading" />
+            <ui:Label name="hangar-chapter" text="CHAPTER 1 — ROOKIE WINGS  ·  FIRST FLIGHT" class="hangar-chapter" />
+        </ui:VisualElement>
+        <ui:VisualElement class="hangar-sign">
+            <ui:Label text="FLIGHT" class="sign-small" />
+            <ui:Label name="hangar-team" text="INDEPENDENT" class="sign-team" />
+            <ui:Label name="hangar-call" text="" class="sign-small" />
+        </ui:VisualElement>
+        <ui:VisualElement class="button-bar">
+            <ui:Button name="fit-button" text="PICK FLIGHT" class="pill" />
+            <ui:Button name="campaign-button" text="CAMPAIGN" class="pill" />
+            <ui:Button name="settings-button" text="SETTINGS" class="pill" />
+            <ui:Button name="begin-button" text="BEGIN" class="pill" />
+        </ui:VisualElement>
+        <ui:VisualElement name="interaction-prompt" class="interaction-prompt hidden">
+            <ui:Label name="interaction-label" text="[E]  BOARD KESTREL" class="interaction-label" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="campaign-overlay" class="overlay hidden">
+            <ui:VisualElement class="modal mission-modal">
+                <ui:Label text="CAMPAIGN" class="modal-title" />
+                <ui:Label name="mission-meta" text="CHAPTER 1  ·  0 / 32 FLOWN" class="modal-meta" />
+                <ui:ScrollView name="mission-list" class="mission-list" />
+                <ui:VisualElement class="modal-buttons">
+                    <ui:Button name="campaign-close" text="BACK" class="action-button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="settings-overlay" class="overlay hidden">
+            <ui:VisualElement class="modal settings-modal">
+                <ui:Label text="SETTINGS" class="modal-title" />
+                <ui:VisualElement class="setting-row">
+                    <ui:Label text="MOUSE SENSITIVITY" class="setting-label" />
+                    <ui:SliderInt name="sensitivity" low-value="20" high-value="120" value="65" class="setting-control" />
+                    <ui:Label name="sensitivity-value" text="65" class="setting-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="setting-row">
+                    <ui:Label text="HUD SCALE" class="setting-label" />
+                    <ui:Slider name="hud-scale" low-value="0.8" high-value="1.3" value="1" class="setting-control" />
+                    <ui:Label name="hud-scale-value" text="100%" class="setting-value" />
+                </ui:VisualElement>
+                <ui:Toggle name="invert-y" text="INVERT FLIGHT Y" class="setting-toggle" />
+                <ui:Toggle name="reduced-motion" text="REDUCED MOTION" class="setting-toggle" />
+                <ui:Toggle name="colour-blind" text="COLOUR-BLIND TEAM PALETTE" class="setting-toggle" />
+                <ui:Label text="Settings are saved locally and applied to the Unity flight runtime." class="setting-note" />
+                <ui:VisualElement class="modal-buttons">
+                    <ui:Button name="settings-close" text="DONE" class="action-button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="fit-overlay" class="overlay hidden">
+            <ui:VisualElement class="modal fit-modal">
+                <ui:Label text="KESTREL FIT-OUT" class="modal-title" />
+                <ui:Label text="PICK A FLIGHT" class="section-heading" />
+                <ui:VisualElement class="segment-row">
+                    <ui:Button name="vanguard-button" text="VANGUARD" class="segment active-blue" />
+                    <ui:Button name="tempest-button" text="TEMPEST" class="segment" />
+                    <ui:Button name="inferno-button" text="INFERNO" class="segment" />
+                </ui:VisualElement>
+                <ui:TextField name="callsign" label="CALLSIGN" value="ROOKIE" max-length="14" class="callsign" />
+                <ui:Label text="LOADOUT" class="section-heading" />
+                <ui:DropdownField name="engine" label="ENGINE" class="fit-row" />
+                <ui:DropdownField name="wings" label="WINGS" class="fit-row" />
+                <ui:DropdownField name="armor" label="ARMOR" class="fit-row" />
+                <ui:DropdownField name="primary" label="PRIMARY" class="fit-row" />
+                <ui:Label text="Every part has a cost. There is no single perfect aircraft." class="setting-note" />
+                <ui:VisualElement class="modal-buttons">
+                    <ui:Button name="fit-close" text="DONE" class="action-button" />
+                    <ui:Button name="fit-launch" text="LAUNCH" class="action-button primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

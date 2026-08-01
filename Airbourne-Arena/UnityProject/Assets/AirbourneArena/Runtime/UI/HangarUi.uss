@@ -1,0 +1,283 @@
+:root {
+    --ink: rgb(223, 243, 255);
+    --teal: rgb(111, 227, 208);
+    --amber: rgb(255, 179, 71);
+    --line: rgba(111, 227, 208, 0.38);
+    --panel: rgba(5, 12, 18, 0.96);
+}
+
+.screen {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    color: var(--ink);
+    font-size: 10px;
+    letter-spacing: 1.6px;
+}
+
+.hangar-title {
+    position: absolute;
+    left: 34px;
+    top: 28px;
+    max-width: 520px;
+}
+
+.hangar-heading {
+    color: var(--teal);
+    font-size: 20px;
+    -unity-font-style: bold;
+    letter-spacing: 6px;
+    text-shadow: 0 2px 8px rgb(0, 0, 0);
+}
+
+.hangar-chapter {
+    color: var(--amber);
+    margin-top: 10px;
+    font-size: 10px;
+    letter-spacing: 2.1px;
+    text-shadow: 0 2px 8px rgb(0, 0, 0);
+}
+
+.hangar-sign {
+    position: absolute;
+    right: 34px;
+    top: 28px;
+    align-items: flex-end;
+}
+
+.sign-small {
+    color: rgba(223, 243, 255, 0.62);
+    line-height: 18px;
+    text-shadow: 0 2px 8px rgb(0, 0, 0);
+}
+
+.sign-team {
+    color: var(--ink);
+    font-size: 15px;
+    -unity-font-style: bold;
+    letter-spacing: 4px;
+    line-height: 22px;
+    text-shadow: 0 2px 8px rgb(0, 0, 0);
+}
+
+.button-bar {
+    position: absolute;
+    left: 50%;
+    bottom: 40px;
+    translate: -50% 0;
+    flex-direction: row;
+}
+
+.interaction-prompt {
+    position: absolute;
+    left: 50%;
+    bottom: 92px;
+    translate: -50% 0;
+    min-width: 390px;
+    padding: 10px 22px;
+    align-items: center;
+    background-color: rgba(3, 13, 18, 0.94);
+    border-color: rgba(111, 227, 208, 0.78);
+    border-width: 1px;
+    border-radius: 3px;
+}
+
+.interaction-label {
+    color: var(--teal);
+    font-size: 11px;
+    letter-spacing: 2px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.pill {
+    min-width: 124px;
+    height: 32px;
+    margin-left: 5px;
+    margin-right: 5px;
+    padding-left: 18px;
+    padding-right: 18px;
+    color: var(--teal);
+    background-color: rgba(3, 13, 18, 0.92);
+    border-color: rgba(111, 227, 208, 0.70);
+    border-width: 1px;
+    border-radius: 16px;
+    font-size: 9px;
+    letter-spacing: 2px;
+}
+
+.pill:hover, .action-button:hover, .segment:hover, .mission-row:hover {
+    background-color: rgba(111, 227, 208, 0.18);
+    border-color: var(--teal);
+}
+
+.overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(2, 5, 9, 0.90);
+}
+
+.hidden {
+    display: none;
+}
+
+.modal {
+    width: 460px;
+    max-height: 90%;
+    padding: 24px 26px;
+    background-color: var(--panel);
+    border-color: var(--line);
+    border-width: 1px;
+    border-top-color: var(--teal);
+    border-top-width: 2px;
+}
+
+.mission-modal {
+    width: 560px;
+    height: 84%;
+}
+
+.modal-title {
+    color: var(--teal);
+    font-size: 19px;
+    -unity-font-style: bold;
+    letter-spacing: 5px;
+    -unity-text-align: middle-center;
+    margin-bottom: 10px;
+}
+
+.modal-meta {
+    color: rgba(223, 243, 255, 0.5);
+    font-size: 9px;
+    letter-spacing: 2px;
+    -unity-text-align: middle-center;
+    margin-bottom: 14px;
+}
+
+.mission-list {
+    flex-grow: 1;
+}
+
+.chapter-heading {
+    color: var(--amber);
+    font-size: 9px;
+    letter-spacing: 2.6px;
+    margin-top: 14px;
+    margin-bottom: 5px;
+    padding-top: 9px;
+    border-top-color: rgba(111, 227, 208, 0.18);
+    border-top-width: 1px;
+}
+
+.mission-row {
+    min-height: 36px;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 9px;
+    padding-right: 9px;
+    margin-top: 2px;
+    color: rgba(223, 243, 255, 0.84);
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(0, 0, 0, 0);
+    border-width: 1px;
+    -unity-text-align: middle-left;
+}
+
+.mission-now {
+    color: var(--teal);
+    background-color: rgba(111, 227, 208, 0.08);
+    border-color: var(--line);
+}
+
+.mission-locked {
+    opacity: 0.36;
+}
+
+.setting-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 42px;
+    margin-top: 6px;
+}
+
+.setting-label {
+    flex-grow: 1;
+    color: rgba(223, 243, 255, 0.74);
+    font-size: 10px;
+}
+
+.setting-control {
+    width: 170px;
+}
+
+.setting-value {
+    width: 52px;
+    color: var(--teal);
+    -unity-text-align: middle-right;
+}
+
+.setting-toggle {
+    margin-top: 13px;
+    color: rgba(223, 243, 255, 0.74);
+}
+
+.setting-note {
+    color: rgba(223, 243, 255, 0.42);
+    font-size: 9px;
+    white-space: normal;
+    line-height: 15px;
+    margin-top: 16px;
+}
+
+.modal-buttons, .segment-row {
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.action-button, .segment {
+    min-height: 32px;
+    margin-left: 5px;
+    margin-right: 5px;
+    padding-left: 16px;
+    padding-right: 16px;
+    color: rgba(223, 243, 255, 0.72);
+    background-color: rgba(0, 0, 0, 0);
+    border-color: var(--line);
+    border-width: 1px;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+}
+
+.primary, .active-blue {
+    color: var(--teal);
+    background-color: rgba(111, 227, 208, 0.18);
+    border-color: var(--teal);
+}
+
+.section-heading {
+    color: var(--amber);
+    font-size: 9px;
+    letter-spacing: 2.6px;
+    margin-top: 12px;
+}
+
+.callsign, .fit-row {
+    margin-top: 13px;
+}
+
+@media (max-width: 700px) {
+    .hangar-title { left: 14px; top: 12px; }
+    .hangar-heading { font-size: 15px; letter-spacing: 4px; }
+    .hangar-sign { right: 14px; top: 12px; }
+    .button-bar { bottom: 18px; flex-wrap: wrap; width: 92%; justify-content: center; }
+    .pill { min-width: 110px; margin-top: 5px; }
+    .modal, .mission-modal { width: 92%; }
+}
