@@ -442,6 +442,7 @@ function rebuildTeams(){
 }
 
 function enterHangar(){
+  if(typeof worldFlow!=='undefined')worldFlow.active=false;
   st.phase='hangar';
   document.body.classList.add('hangar');
   walk.x=0; walk.z=26; walk.yaw=0; walk.pitch=0;
@@ -502,9 +503,19 @@ if(new URLSearchParams(location.search).has('capture')){
        depends on declaration order rather than on hoisting, which matters
        because src/ is assembled in manifest order. */
     leaveHangar:leaveHangar,launch:launch,
+    startOpenWorld:function(){return startOpenWorld();},
+    getSkyBases:function(){return skyBaseHosts;},
     enterGround:function(){return enterGroundMode();},
     leaveGround:function(){return leaveGroundMode();},
     getSalvage:function(){return salvage;},
+    placeGroundReview:function(kind){
+      startOpenWorld();worldFlow.activity=kind||'groundwar';
+      var x=420,z=360,y=ground(x,z);
+      player.pos.set(x,y+3.2,z);player.vel.set(0,0,0);player.speed=0;player.throttle=0;
+      salvage.landed=true;salvage.surface='ground';enterGroundMode();
+      return {x:x,y:y,z:z};
+    },
+    getGroundEnemies:function(){return groundCombat.enemies;},
     startMission:function(id){return startMission(id);},
     /* The net layer is declared in parts below this one, so every accessor here
        is a wrapper: reading the name inside the function defers the lookup to

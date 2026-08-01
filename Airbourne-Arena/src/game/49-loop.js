@@ -254,6 +254,7 @@ function playerControl(dt){
 
 function step(dt){
   env(dt);
+  stepWorldFlow();
   /* the match clock, the Core and the rings belong to an Arena match; a
      campaign mission owns its own pacing (STORY-BIBLE section 15). */
   if(st.mode==='arena'&&!st.over){
@@ -289,9 +290,10 @@ function step(dt){
     /* Terrain and the ceiling are simulation, and a remote aircraft is not
        simulated here — its owner has already flown it into the hill or not. */
     if(!remote&&!(f===player&&(salvage.on||salvage.landed))){
-      var gh=ground(f.pos.x,f.pos.z);
+      var deck=f===player&&st.mode==='world'?skyDeckAt(f.pos.x,f.pos.z):null;
+      var gh=deck?deck.height:ground(f.pos.x,f.pos.z);
       if(f.pos.y-gh<8){
-        if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft();continue;}
+        if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft(gh,deck?'skybase':'ground');continue;}
         kill(f,null);continue;
       }
       /* Open sky: altitude changes aircraft performance through airDensity, but

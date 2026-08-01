@@ -102,6 +102,44 @@ test("the Blender world and campaign story kit are runtime assets", () => {
   }
 });
 
+test("open world has a complete dock, launch, descent, landing, and exit loop", () => {
+  assert.match(canonical, /\['vanguard','tempest','inferno'\]\.forEach/);
+  assert.match(canonical, /'assets\/'\+faction\+'-ozone-base-v1\.glb'/);
+  assert.match(canonical, /'assets\/'\+faction\+'-ozone-base-v1-lod1\.glb'/);
+  assert.match(canonical, /function startOpenWorld\(\)/);
+  assert.match(canonical, /salvage\.landed=true;salvage\.surface='skybase'/);
+  assert.match(canonical, /function skyDeckAt\(x,z\)/);
+  assert.match(canonical, /function worldSurfaceAt\(x,z\)/);
+  assert.match(canonical, /function stepWorldFlow\(\)/);
+  assert.match(canonical, /LAUNCHED · DESCEND THROUGH THE WEATHER LAYER/);
+  assert.match(canonical, /settleAircraft\(gh,deck\?'skybase':'ground'\)/);
+  assert.match(canonical, /if\(e\.code==='KeyF'&&salvage\.surface==='skybase'\)\{openOperations\(\)/);
+});
+
+test("lower-city free roam includes a complete filler ground-combat encounter", () => {
+  assert.match(canonical, /function beginGroundEncounter\(\)/);
+  assert.match(canonical, /function fireGroundWeapon\(\)/);
+  assert.match(canonical, /function damageGroundPlayer\(amount\)/);
+  assert.match(canonical, /salvage\.shield-=absorbed/);
+  assert.match(canonical, /groundCombat\.kills>=groundCombat\.goal/);
+  assert.match(canonical, /BLOCK SECURE · RETURN TO AIRCRAFT AND EXTRACT/);
+  assert.match(canonical, /if\(keys\.Space\|\|mouseDown\|\|touchIn\.fire\|\|padIn\.fire\)fireGroundWeapon\(\)/);
+  assert.match(canonical, /assets\/ground-sentry-drone-v1\.glb/);
+  assert.match(canonical, /assets\/ground-sentry-drone-v1-lod1\.glb/);
+  assert.match(canonical, /host\.userData\.legacy\.visible=false/);
+});
+
+test("sky-base operations route every game mode and every input class", () => {
+  for (const id of ["opSalvage", "opGroundWar", "opArena", "opCampaign", "opClose"])
+    assert.match(canonical, new RegExp(`id=["']${id}["']`));
+  assert.match(canonical, /function openOperations\(\)/);
+  assert.match(canonical, /armWorldActivity\('groundwar'\)/);
+  assert.match(canonical, /function startArenaOperation\(\)/);
+  assert.match(canonical, /stick\.active\?stick\.dx:0/);
+  assert.match(canonical, /salvage\.on&&padTap\(gp,0\)/);
+  assert.match(canonical, /else if\(salvage\.surface==='skybase'\)openOperations\(\)/);
+});
+
 test("chase flight stays readable during hard banks on desktop and mobile", () => {
   // The device pixel ratio is still capped, and still capped harder at the
   // bottom end — but it now comes from the quality tier rather than a literal

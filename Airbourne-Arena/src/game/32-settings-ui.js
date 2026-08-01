@@ -73,6 +73,7 @@ bindBtn('briefKeysBtn',function(){
   if(k)k.classList.toggle('on');
 });
 bindBtn('briefGoBtn',function(){launch();});
+bindBtn('briefWorldBtn',function(){startOpenWorld();});
 bindBtn('briefStoryBtn',function(){
   /* one way back to the one place the campaign is run from */
   abandonMission(); st.mode='arena'; parkArena(false); enterHangar();
@@ -126,4 +127,3 @@ var C={dayTop:new THREE.Color(0x2b6fc9),dayBot:new THREE.Color(0xa9d6f2),
   sunWarm:new THREE.Color(0xffb469),sunHigh:new THREE.Color(0xfff4dc),grey:new THREE.Color(0x59636b)};
 var cTop=new THREE.Color(),cBot=new THREE.Color(),cSun=new THREE.Color(),
     cGround=new THREE.Color(),sunDir=new THREE.Vector3();
-

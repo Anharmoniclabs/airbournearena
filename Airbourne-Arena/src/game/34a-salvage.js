@@ -15,7 +15,7 @@ function setGroundAction(name){
   if(groundActions[groundAction])groundActions[groundAction].fadeOut(.16);
   groundActions[name].reset().fadeIn(.16).play();groundAction=name;
 }
-var salvage={on:false,landed:false,x:0,z:0,yaw:0,face:0,moving:0,parts:0,health:0,armor:0,banked:0};
+var salvage={on:false,landed:false,surface:null,x:0,z:0,yaw:0,face:0,moving:0,parts:0,health:0,armor:0,shield:0,banked:0};
 var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
 (function buildSalvage(){
   var kindCol={parts:0xffb347,health:0x6fe3d0,armor:0x78a9ff};
@@ -36,7 +36,7 @@ var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
 })();
 function updateSalvageHud(msg){
   var stock=document.getElementById('salvageStock'),prompt=document.getElementById('salvagePrompt');
-  if(stock)stock.innerHTML='<b>PARTS '+salvage.parts+'</b> · HEALTH '+salvage.health+' · ARMOR '+salvage.armor+
+  if(stock)stock.innerHTML='<b>PARTS '+salvage.parts+'</b> · HEALTH '+Math.ceil(player.hp)+' · ARMOR '+Math.ceil(salvage.shield)+
     (salvage.banked?' · BASE STORES '+salvage.banked:'');
   if(prompt)prompt.textContent=msg||'WASD MOVE · SHIFT RUN · [G] BOARD AIRCRAFT';
 }
@@ -46,22 +46,33 @@ function enterGroundMode(){
   salvage.on=true;st.phase='ground';document.body.classList.add('ground');
   salvage.x=player.pos.x;salvage.z=player.pos.z+7;salvage.yaw=Math.atan2(player.vel.x,-player.vel.z);
   player.pos.y=ground(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;player.throttle=0;
-  groundAvatar.visible=!!groundActions.Idle;groundAvatar.position.set(salvage.x,ground(salvage.x,salvage.z),salvage.z);
-  setGroundAction('Idle');banner('LOWER CITY · SALVAGE RUN',2);updateSalvageHud();
+  var sy=worldSurfaceAt(salvage.x,salvage.z);
+  groundAvatar.visible=!!groundActions.Idle;groundAvatar.position.set(salvage.x,sy,salvage.z);
+  setGroundAction('Idle');
+  if(salvage.surface!=='skybase'&&worldFlow.activity==='groundwar')beginGroundEncounter();
+  banner(salvage.surface==='skybase'?'OZONE BASE FLIGHT DECK':'LOWER CITY · SALVAGE RUN',2);updateSalvageHud();
 }
 function leaveGroundMode(){
   if(!salvage.on)return;
   if(Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z)>13){banner('RETURN TO YOUR AIRCRAFT',1.4);return;}
-  salvage.on=false;salvage.landed=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
-  player.pos.y=ground(player.pos.x,player.pos.z)+9;player.vel.set(0,0,-28).applyQuaternion(player.quat);player.speed=28;
-  banner('AIRCRAFT BOARDED · THROTTLE UP',1.5);
+  salvage.on=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
+  if(salvage.surface==='skybase'){
+    player.pos.y=worldSurfaceAt(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;
+    banner('AIRCRAFT BOARDED · W TO LAUNCH',1.5);
+  }else{
+    endGroundEncounter();
+    salvage.landed=false;player.pos.y=ground(player.pos.x,player.pos.z)+9;
+    player.vel.set(0,0,-28).applyQuaternion(player.quat);player.speed=28;
+    banner('AIRCRAFT BOARDED · THROTTLE UP',1.5);
+  }
 }
-function settleAircraft(){
+function settleAircraft(floorHeight,surface){
   if(salvage.landed||salvage.on)return;
   var heading=Math.atan2(player.vel.x,-player.vel.z);
   if(player.speed<2){axes(player);heading=Math.atan2(_f.x,-_f.z);}
   salvage.landed=true;
-  player.pos.y=ground(player.pos.x,player.pos.z)+3.2;
+  salvage.surface=surface||'ground';
+  player.pos.y=(floorHeight===undefined?ground(player.pos.x,player.pos.z):floorHeight)+3.2;
   player.vel.set(0,0,0);player.speed=0;player.throttle=0;
   player.quat.setFromEuler(new THREE.Euler(0,heading,0));
   burner.lit=false;
@@ -69,24 +80,39 @@ function settleAircraft(){
   updateSalvageHud('[G] EXIT AIRCRAFT');
 }
 function groundControl(dt){
-  var turn=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0);
+  var analogX=padIn.aimX||(stick.active?stick.dx:0),analogY=padIn.aimY||(stick.active?stick.dy:0);
+  var turn=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0)+analogX;
   salvage.yaw-=turn*dt*2.25;
-  var fwd=((keys.KeyW||keys.ArrowUp)?1:0)-((keys.KeyS||keys.ArrowDown)?1:0);
+  var fwd=((keys.KeyW||keys.ArrowUp)?1:0)-((keys.KeyS||keys.ArrowDown)?1:0)-analogY;
   var side=(keys.KeyE?1:0)-(keys.KeyQ?1:0),run=keys.ShiftLeft||keys.ShiftRight;
   var mx=-Math.sin(salvage.yaw)*fwd+Math.cos(salvage.yaw)*side;
   var mz=-Math.cos(salvage.yaw)*fwd-Math.sin(salvage.yaw)*side,ml=Math.hypot(mx,mz),sp=run?18:10;
   if(ml>.01){mx/=ml;mz/=ml;salvage.x+=mx*sp*dt;salvage.z+=mz*sp*dt;salvage.face=Math.atan2(-mx,-mz);}
-  salvage.x=clamp(salvage.x,-CITY_REACH,CITY_REACH);salvage.z=clamp(salvage.z,-CITY_REACH,CITY_REACH);
+  if(salvage.surface==='skybase'){
+    var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?265:335,limZ=worldFlow.faction==='tempest'?265:86;
+    salvage.x=clamp(salvage.x,bp.x-limX,bp.x+limX);salvage.z=clamp(salvage.z,bp.z-limZ,bp.z+limZ);
+  }else{
+    salvage.x=clamp(salvage.x,-CITY_REACH,CITY_REACH);salvage.z=clamp(salvage.z,-CITY_REACH,CITY_REACH);
+  }
   salvage.moving+=((ml>.01?1:0)-salvage.moving)*Math.min(1,dt*12);
-  groundAvatar.position.set(salvage.x,ground(salvage.x,salvage.z),salvage.z);groundAvatar.rotation.y=salvage.face;
+  var surfaceY=worldSurfaceAt(salvage.x,salvage.z);
+  groundAvatar.position.set(salvage.x,surfaceY,salvage.z);groundAvatar.rotation.y=salvage.face;
   setGroundAction(ml<.01?'Idle':(run?'Run':'Walk'));if(groundMixer)groundMixer.update(dt);
+  if(salvage.surface==='skybase'){
+    var shipD=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
+    updateSalvageHud(shipD<13?'[G] BOARD AIRCRAFT':'[F] OPERATIONS · RETURN TO AIRCRAFT TO BOARD');
+    var tp=document.getElementById('tPass');if(tp)tp.textContent=shipD<13?'BOARD':'OPS';
+    var sf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
+    camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(sf,-10);
+    camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);camera.up.set(0,1,0);return;
+  }
   var nearest=null,nearD=1e9;
   for(var i=0;i<loot.length;i++){
     var L=loot[i];if(L.taken)continue;L.mesh.rotation.y+=dt*.5;
     var d=Math.hypot(salvage.x-L.pos.x,salvage.z-L.pos.z);if(d<nearD){nearD=d;nearest=L;}
     if(d<4.5){L.taken=true;L.mesh.visible=false;salvage[L.kind]++;
       if(L.kind==='health')player.hp=Math.min(player.maxHp,player.hp+28);
-      if(L.kind==='armor')player.hp=Math.min(player.maxHp+25,player.hp+18);
+      if(L.kind==='armor')salvage.shield=Math.min(100,salvage.shield+35);
       feed('<span style="color:#ffb347">SALVAGED '+L.kind.toUpperCase()+'</span>');tone(740,.12,.1,'triangle',980);}
   }
   var home=BASES[player.team],homeD=Math.hypot(salvage.x-home.x,salvage.z-home.z);
@@ -94,7 +120,9 @@ function groundControl(dt){
   var back=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
   var msg=back<13?'[G] BOARD AIRCRAFT':(nearD<45?nearest.kind.toUpperCase()+' CACHE · '+Math.round(nearD)+' M':'SCAVENGE THE RUINED BLOCKS · RETURN PARTS TO BASE');
   updateSalvageHud(msg);
+  var tp=document.getElementById('tPass');if(tp)tp.textContent=back<13?'BOARD':'USE';
+  stepGroundCombat(dt);
   var cf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
-  camera.position.set(salvage.x,ground(salvage.x,salvage.z)+5.6,salvage.z).addScaledVector(cf,-10);
-  camera.lookAt(salvage.x,ground(salvage.x,salvage.z)+2.3,salvage.z);camera.up.set(0,1,0);
+  camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(cf,-10);
+  camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);camera.up.set(0,1,0);
 }

@@ -59,7 +59,7 @@ function padFocusMove(nodes,delta){
   nodes[at].focus({preventScroll:true});
 }
 function padMenuScope(){
-  var ids=['settings','pause','fitCard','missionCard','debrief','choiceCard','finaleCard'];
+  var ids=['settings','pause','fitCard','operationsCard','missionCard','debrief','choiceCard','finaleCard'];
   for(var i=0;i<ids.length;i++){
     var node=document.getElementById(ids[i]);
     if(node&&node.classList.contains('on'))return node;
@@ -72,6 +72,7 @@ function padCancelMenu(scope){
   if(scope.id==='settings')setOpen(false);
   else if(scope.id==='pause')setPaused(false);
   else if(scope.id==='fitCard')closeFit();
+  else if(scope.id==='operationsCard')closeOperations();
   else if(scope.id==='missionCard')closeMissions();
 }
 function padMenuTick(gp,scope){
@@ -159,6 +160,11 @@ function padTick(dt){
   if(st.over){if(padTap(gp,0))resetMatch();return;}
   if(st.paused)return;
 
+  if(salvage.on&&padTap(gp,0)){
+    var useD=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
+    if(useD<13)leaveGroundMode();else if(salvage.surface==='skybase')openOperations();
+  }
+
   padIn.fire=padHeld(gp,7);
   padIn.boost=padHeld(gp,0);
   padIn.idle=padHeld(gp,6);
@@ -173,4 +179,3 @@ function padTick(dt){
   if(padTap(gp,3))st.camMode=(st.camMode+1)%3;
   if(padTap(gp,8)){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
 }
-

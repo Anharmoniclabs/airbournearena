@@ -413,7 +413,7 @@
      on a short phone the buttons at the bottom of a long card could not be
      scrolled to at all. */
   #pause,#pause *,#end,#end *,#brief,#brief *,
-  #missionCard,#missionCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
+  #missionCard,#missionCard *,#operationsCard,#operationsCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
   .card,.setCard,.pauseCard,#end>div{max-height:92vh;overflow-y:auto;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
   /* The way out of a panel has to be on screen.
@@ -434,7 +434,6 @@
   .card:after,.setCard:after,.pauseCard:after{z-index:1}
   body.touch #coach{top:auto;bottom:calc(214px + env(safe-area-inset-bottom));left:10px;width:min(270px,70vw)}
   @media(max-width:720px){#coach{width:min(250px,54vw)}}
-
   /* ===================== phone layouts =====================
      These come after every base `body.touch` rule on purpose. A media query
      adds no specificity, so an orientation override placed above them loses to
@@ -683,17 +682,23 @@
   .objMeta{margin-top:8px;padding-top:7px;border-top:1px solid rgba(111,227,208,.18);
     font-size:9px;letter-spacing:.18em;line-height:1.9;color:rgba(223,243,255,.55)}
   .objMeta b{color:var(--teal);font-weight:600}
-  #debrief,#choiceCard,#missionCard,#finaleCard{position:fixed;inset:0;display:grid;
+  #debrief,#choiceCard,#missionCard,#operationsCard,#finaleCard{position:fixed;inset:0;display:grid;
     place-items:center;z-index:11;background:rgba(2,5,9,.9);opacity:0;pointer-events:none;
     transition:opacity .2s}
-  #debrief.on,#choiceCard.on,#missionCard.on,#finaleCard.on{opacity:1;pointer-events:auto}
-  #debrief *,#choiceCard *,#missionCard *,#finaleCard *{touch-action:auto}
+  #debrief.on,#choiceCard.on,#missionCard.on,#operationsCard.on,#finaleCard.on{opacity:1;pointer-events:auto}
+  #debrief *,#choiceCard *,#missionCard *,#operationsCard *,#finaleCard *{touch-action:auto}
   #debriefStats,#finaleStats{display:grid;
     grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:9px;margin:18px 0 0}
   #campaignRow{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
   /* mission select — every chapter and every mission, with what is reachable
      and what is already flown stated plainly rather than implied */
   #missionCard .setCard{width:min(560px,94vw)}
+  #operationsCard .setCard{width:min(620px,94vw)}
+  .opLead{font-size:10px;line-height:1.7;color:rgba(223,243,255,.65);text-align:center;margin:12px 0 18px}
+  .opGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .opGrid .actionBtn{text-align:left;display:grid;gap:7px;line-height:1.35}
+  .opGrid .actionBtn span{font-size:9px;letter-spacing:.04em;color:rgba(223,243,255,.58);font-weight:400}
+  @media(max-width:560px){.opGrid{grid-template-columns:1fr}}
   #missionMeta{font-size:9px;letter-spacing:.2em;color:rgba(223,243,255,.5);
     text-align:center;margin-top:10px;line-height:2}
   #missionList{margin-top:16px}
@@ -720,7 +725,6 @@
   .fnRow{font-size:10.5px;line-height:1.8;color:rgba(223,243,255,.7);
     padding:3px 0 3px 14px;position:relative}
   .fnRow:before{content:"\2022";position:absolute;left:2px;color:var(--teal)}
-
   /* ===================== end screen ===================== */
   #endStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px;
     margin:22px auto 0;max-width:420px}
@@ -1089,6 +1093,7 @@
       <b>enemy end</b>. Shoot the carrier down and it drops where they died, free for anyone.</p>
     <div class="btnRow">
       <button class="actionBtn" id="briefGoBtn">LAUNCH</button>
+      <button class="actionBtn" id="briefWorldBtn">OPEN WORLD</button>
       <button class="actionBtn" id="briefNetBtn">FLY ONLINE</button>
       <button class="actionBtn" id="briefStoryBtn">BACK TO THE HANGAR</button>
       <button class="actionBtn" id="briefSetBtn">SETTINGS</button>
@@ -1132,6 +1137,20 @@
       <button class="actionBtn" id="missionClose">CLOSE</button>
       <button class="actionBtn" id="missionReset">RESTART CAMPAIGN</button>
     </div>
+  </div>
+</div>
+
+<div id="operationsCard">
+  <div class="setCard">
+    <h2>OZONE OPERATIONS</h2>
+    <p class="opLead">Select the rules for your next sortie. Open-world activities begin after you board, launch, descend, and land in the lower city.</p>
+    <div class="opGrid">
+      <button class="actionBtn" id="opSalvage"><b>SALVAGE RUN</b><span>Explore the ruins and recover parts, health, and armor.</span></button>
+      <button class="actionBtn" id="opGroundWar"><b>GROUND WAR</b><span>Clear hostile city blocks, secure parts, and extract.</span></button>
+      <button class="actionBtn" id="opArena"><b>4v4 CORE ARENA</b><span>Enter the competitive aircraft match immediately.</span></button>
+      <button class="actionBtn" id="opCampaign"><b>CAMPAIGN MISSIONS</b><span>Select a story operation from the full mission board.</span></button>
+    </div>
+    <div class="btnRow"><button class="actionBtn" id="opClose">RETURN TO DECK</button></div>
   </div>
 </div>
 
@@ -2898,6 +2917,71 @@ var CASE_GRAB=85;
 var core={pos:new THREE.Vector3(0,600,0),vel:new THREE.Vector3(),carrier:null,
   lockout:null,lockT:0,charge:100};
 
+/* ===================== ozone-layer faction bases =====================
+   Separate authored GLBs keep the three faction silhouettes independent.
+   Each host is a THREE.LOD so the mobile tier can switch early without
+   duplicating the bases as procedural primitives. */
+var SKYBASE_ALT=15000;
+var SKYBASE_POS={
+  vanguard:new THREE.Vector3(-2400,SKYBASE_ALT,900),
+  tempest:new THREE.Vector3(0,SKYBASE_ALT+1100,-1800),
+  inferno:new THREE.Vector3(2400,SKYBASE_ALT,900)
+};
+var skyBaseHosts={};
+var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salvage'};
+['vanguard','tempest','inferno'].forEach(function(faction){
+  var host=new THREE.LOD();host.name=faction+' ozone base';host.position.copy(SKYBASE_POS[faction]);
+  host.userData.ready=0;scene.add(host);skyBaseHosts[faction]=host;
+  function add(url,distance){
+    makeGltfLoader().load(url,function(gltf){
+      gltf.scene.traverse(function(o){if(o.isMesh){o.castShadow=!LOW;o.receiveShadow=true;}});
+      host.addLevel(gltf.scene,distance);host.userData.ready++;
+    },undefined,function(err){console.error(faction+' ozone base failed to load',url,err);});
+  }
+  add('assets/'+faction+'-ozone-base-v1.glb',0);
+  add('assets/'+faction+'-ozone-base-v1-lod1.glb',LOW?700:1500);
+  var beacon=new THREE.PointLight(faction==='inferno'?0xff5325:(faction==='tempest'?0x22ddc8:0x4fc3ff),
+    LOW?1.2:2.4,1300);beacon.position.set(0,100,0);host.add(beacon);
+});
+
+function skyDeckAt(x,z){
+  for(var faction in SKYBASE_POS){
+    var p=SKYBASE_POS[faction],dx=x-p.x,dz=z-p.z;
+    var inside=faction==='tempest'?(dx*dx+dz*dz<300*300):(Math.abs(dx)<360&&Math.abs(dz)<105);
+    if(inside)return {height:p.y+10,faction:faction};
+  }
+  return null;
+}
+function worldSurfaceAt(x,z){
+  var deck=st.mode==='world'?skyDeckAt(x,z):null;
+  return deck?deck.height:ground(x,z);
+}
+function stepWorldFlow(){
+  if(!worldFlow.active)return;
+  worldFlow.zone=player.pos.y>8000?'ozone':(player.pos.y>1800?'descent':'surface');
+  if(salvage.landed&&!salvage.on&&salvage.surface==='skybase'&&
+     (keys.KeyW||keys.ShiftLeft||keys.ShiftRight||touchIn.thrUp||padIn.thrUp||padIn.boost)){
+    salvage.landed=false;salvage.surface=null;
+    player.pos.y+=9;player.throttle=.52;
+    player.vel.set(worldFlow.faction==='inferno'?-62:62,-2,0);player.speed=62;
+    banner('LAUNCHED · DESCEND THROUGH THE WEATHER LAYER',2.2);
+  }
+}
+
+function startOpenWorld(){
+  abandonMission();st.mode='world';st.phase='flight';st.started=true;st.over=false;
+  parkArena(true);salvage.on=false;salvage.landed=true;salvage.surface='skybase';document.body.classList.remove('ground','hangar');
+  var faction=factionKey(),base=SKYBASE_POS[faction]||SKYBASE_POS.vanguard;
+  worldFlow.active=true;worldFlow.zone='ozone';worldFlow.faction=faction;worldFlow.base=base;
+  worldFlow.activity='salvage';
+  player.alive=true;player.mesh.visible=true;player.hp=player.maxHp;
+  player.pos.copy(base).add(new THREE.Vector3(faction==='inferno'?-250:250,13.2,0));
+  player.quat.identity();player.vel.set(0,0,0);player.speed=0;player.throttle=0;
+  st.camMode=0;camLookReady=false;el.brief.classList.add('gone');el.hud.classList.add('live');
+  document.body.classList.add('playing');sortie.startedAt=performance.now();
+  emit('match_start',{mode:'open_world'});banner(factionName(faction)+' OZONE BASE · G EXIT · W LAUNCH',3);
+  audioInit();audioResume();if(!IS_TOUCH)lock();
+}
 /* ===================== fighters ===================== */
 /* Slot 0 of whichever side you sign with gets overwritten by your callsign, so
    both rosters carry a real name and neither has a hole in it. */
@@ -4405,7 +4489,7 @@ function padFocusMove(nodes,delta){
   nodes[at].focus({preventScroll:true});
 }
 function padMenuScope(){
-  var ids=['settings','pause','fitCard','missionCard','debrief','choiceCard','finaleCard'];
+  var ids=['settings','pause','fitCard','operationsCard','missionCard','debrief','choiceCard','finaleCard'];
   for(var i=0;i<ids.length;i++){
     var node=document.getElementById(ids[i]);
     if(node&&node.classList.contains('on'))return node;
@@ -4418,6 +4502,7 @@ function padCancelMenu(scope){
   if(scope.id==='settings')setOpen(false);
   else if(scope.id==='pause')setPaused(false);
   else if(scope.id==='fitCard')closeFit();
+  else if(scope.id==='operationsCard')closeOperations();
   else if(scope.id==='missionCard')closeMissions();
 }
 function padMenuTick(gp,scope){
@@ -4505,6 +4590,11 @@ function padTick(dt){
   if(st.over){if(padTap(gp,0))resetMatch();return;}
   if(st.paused)return;
 
+  if(salvage.on&&padTap(gp,0)){
+    var useD=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
+    if(useD<13)leaveGroundMode();else if(salvage.surface==='skybase')openOperations();
+  }
+
   padIn.fire=padHeld(gp,7);
   padIn.boost=padHeld(gp,0);
   padIn.idle=padHeld(gp,6);
@@ -4519,15 +4609,18 @@ function padTick(dt){
   if(padTap(gp,3))st.camMode=(st.camMode+1)%3;
   if(padTap(gp,8)){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
 }
-
 /* ===================== rematch =====================
    A soft reset. Reloading the page would re-download every texture and the
    Three.js bundle just to zero a scoreboard. */
 function resetMatch(){
   if(typeof salvage!=='undefined'){
-    salvage.on=false;salvage.landed=false;groundAvatar.visible=false;
+    salvage.on=false;salvage.landed=false;salvage.surface=null;groundAvatar.visible=false;
     document.body.classList.remove('ground');
   }
+  if(typeof worldFlow!=='undefined'){
+    worldFlow.active=false;worldFlow.zone='surface';worldFlow.faction=null;worldFlow.base=null;
+  }
+  if(typeof endGroundEncounter==='function')endGroundEncounter();
   st.scoreB=0; st.scoreR=0; st.time=MATCH_TIME; st.over=false; st.paused=false;
   st.dmgFlash=0; st.hitmark=0; shake=0; st.ringWarned=false;
   lockOn.target=null;lockOn.manual=false;lockOn.assisted=false;
@@ -4830,6 +4923,7 @@ function launch(){
   if(st.phase==='hangar')return;
   if(st.over||document.getElementById('settings').classList.contains('on'))return;
   var first=!st.started;
+  if(st.mode==='arena'&&typeof worldFlow!=='undefined')worldFlow.active=false;
   /* the audio context can only be created from a gesture, and this is the
      first one the game is guaranteed to get */
   audioInit(); audioResume();
@@ -4931,7 +5025,12 @@ document.addEventListener('pointerlockchange',function(){
   hold('tUp',function(){touchIn.thrUp=true;},function(){touchIn.thrUp=false;});
   hold('tDn',function(){touchIn.thrDn=true;},function(){touchIn.thrDn=false;});
   hold('tBoost',function(){touchIn.boost=true;},function(){touchIn.boost=false;});
-  hold('tPass',function(){if(core.carrier===player)passCore(player);});
+  hold('tPass',function(){
+    if(salvage.on){
+      var d=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
+      if(d<13)leaveGroundMode();else if(salvage.surface==='skybase')openOperations();
+    }else if(core.carrier===player)passCore(player);
+  });
   hold('tRoll',function(){startRoll(player,stick.dx>0?-1:1);});
   hold('tLock',function(){if(lockOn.manual)releaseLock(); else cycleTarget();});
   hold('tZoom',function(){touchIn.zoom=true;},function(){touchIn.zoom=false;});
@@ -4976,6 +5075,7 @@ addEventListener('keydown',function(e){
     e.preventDefault();return;
   }
   if(salvage.on){
+    if(e.code==='KeyF'&&salvage.surface==='skybase'){openOperations();e.preventDefault();return;}
     if(e.code==='KeyM'){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
     if(e.code==='KeyP')setPaused(!st.paused);
     return;
@@ -5071,6 +5171,7 @@ bindBtn('briefKeysBtn',function(){
   if(k)k.classList.toggle('on');
 });
 bindBtn('briefGoBtn',function(){launch();});
+bindBtn('briefWorldBtn',function(){startOpenWorld();});
 bindBtn('briefStoryBtn',function(){
   /* one way back to the one place the campaign is run from */
   abandonMission(); st.mode='arena'; parkArena(false); enterHangar();
@@ -5124,7 +5225,6 @@ var C={dayTop:new THREE.Color(0x2b6fc9),dayBot:new THREE.Color(0xa9d6f2),
   sunWarm:new THREE.Color(0xffb469),sunHigh:new THREE.Color(0xfff4dc),grey:new THREE.Color(0x59636b)};
 var cTop=new THREE.Color(),cBot=new THREE.Color(),cSun=new THREE.Color(),
     cGround=new THREE.Color(),sunDir=new THREE.Vector3();
-
 /* ===================== the hangar =====================
    Everything before the sortie happens here: a room you walk around in rather
    than a menu you click through. Two airframes on the deck, one contract each,
@@ -5744,6 +5844,7 @@ function rebuildTeams(){
 }
 
 function enterHangar(){
+  if(typeof worldFlow!=='undefined')worldFlow.active=false;
   st.phase='hangar';
   document.body.classList.add('hangar');
   walk.x=0; walk.z=26; walk.yaw=0; walk.pitch=0;
@@ -5804,9 +5905,19 @@ if(new URLSearchParams(location.search).has('capture')){
        depends on declaration order rather than on hoisting, which matters
        because src/ is assembled in manifest order. */
     leaveHangar:leaveHangar,launch:launch,
+    startOpenWorld:function(){return startOpenWorld();},
+    getSkyBases:function(){return skyBaseHosts;},
     enterGround:function(){return enterGroundMode();},
     leaveGround:function(){return leaveGroundMode();},
     getSalvage:function(){return salvage;},
+    placeGroundReview:function(kind){
+      startOpenWorld();worldFlow.activity=kind||'groundwar';
+      var x=420,z=360,y=ground(x,z);
+      player.pos.set(x,y+3.2,z);player.vel.set(0,0,0);player.speed=0;player.throttle=0;
+      salvage.landed=true;salvage.surface='ground';enterGroundMode();
+      return {x:x,y:y,z:z};
+    },
+    getGroundEnemies:function(){return groundCombat.enemies;},
     startMission:function(id){return startMission(id);},
     /* The net layer is declared in parts below this one, so every accessor here
        is a wrapper: reading the name inside the function defers the lookup to
@@ -5865,7 +5976,7 @@ function setGroundAction(name){
   if(groundActions[groundAction])groundActions[groundAction].fadeOut(.16);
   groundActions[name].reset().fadeIn(.16).play();groundAction=name;
 }
-var salvage={on:false,landed:false,x:0,z:0,yaw:0,face:0,moving:0,parts:0,health:0,armor:0,banked:0};
+var salvage={on:false,landed:false,surface:null,x:0,z:0,yaw:0,face:0,moving:0,parts:0,health:0,armor:0,shield:0,banked:0};
 var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
 (function buildSalvage(){
   var kindCol={parts:0xffb347,health:0x6fe3d0,armor:0x78a9ff};
@@ -5886,7 +5997,7 @@ var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
 })();
 function updateSalvageHud(msg){
   var stock=document.getElementById('salvageStock'),prompt=document.getElementById('salvagePrompt');
-  if(stock)stock.innerHTML='<b>PARTS '+salvage.parts+'</b> · HEALTH '+salvage.health+' · ARMOR '+salvage.armor+
+  if(stock)stock.innerHTML='<b>PARTS '+salvage.parts+'</b> · HEALTH '+Math.ceil(player.hp)+' · ARMOR '+Math.ceil(salvage.shield)+
     (salvage.banked?' · BASE STORES '+salvage.banked:'');
   if(prompt)prompt.textContent=msg||'WASD MOVE · SHIFT RUN · [G] BOARD AIRCRAFT';
 }
@@ -5896,22 +6007,33 @@ function enterGroundMode(){
   salvage.on=true;st.phase='ground';document.body.classList.add('ground');
   salvage.x=player.pos.x;salvage.z=player.pos.z+7;salvage.yaw=Math.atan2(player.vel.x,-player.vel.z);
   player.pos.y=ground(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;player.throttle=0;
-  groundAvatar.visible=!!groundActions.Idle;groundAvatar.position.set(salvage.x,ground(salvage.x,salvage.z),salvage.z);
-  setGroundAction('Idle');banner('LOWER CITY · SALVAGE RUN',2);updateSalvageHud();
+  var sy=worldSurfaceAt(salvage.x,salvage.z);
+  groundAvatar.visible=!!groundActions.Idle;groundAvatar.position.set(salvage.x,sy,salvage.z);
+  setGroundAction('Idle');
+  if(salvage.surface!=='skybase'&&worldFlow.activity==='groundwar')beginGroundEncounter();
+  banner(salvage.surface==='skybase'?'OZONE BASE FLIGHT DECK':'LOWER CITY · SALVAGE RUN',2);updateSalvageHud();
 }
 function leaveGroundMode(){
   if(!salvage.on)return;
   if(Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z)>13){banner('RETURN TO YOUR AIRCRAFT',1.4);return;}
-  salvage.on=false;salvage.landed=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
-  player.pos.y=ground(player.pos.x,player.pos.z)+9;player.vel.set(0,0,-28).applyQuaternion(player.quat);player.speed=28;
-  banner('AIRCRAFT BOARDED · THROTTLE UP',1.5);
+  salvage.on=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
+  if(salvage.surface==='skybase'){
+    player.pos.y=worldSurfaceAt(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;
+    banner('AIRCRAFT BOARDED · W TO LAUNCH',1.5);
+  }else{
+    endGroundEncounter();
+    salvage.landed=false;player.pos.y=ground(player.pos.x,player.pos.z)+9;
+    player.vel.set(0,0,-28).applyQuaternion(player.quat);player.speed=28;
+    banner('AIRCRAFT BOARDED · THROTTLE UP',1.5);
+  }
 }
-function settleAircraft(){
+function settleAircraft(floorHeight,surface){
   if(salvage.landed||salvage.on)return;
   var heading=Math.atan2(player.vel.x,-player.vel.z);
   if(player.speed<2){axes(player);heading=Math.atan2(_f.x,-_f.z);}
   salvage.landed=true;
-  player.pos.y=ground(player.pos.x,player.pos.z)+3.2;
+  salvage.surface=surface||'ground';
+  player.pos.y=(floorHeight===undefined?ground(player.pos.x,player.pos.z):floorHeight)+3.2;
   player.vel.set(0,0,0);player.speed=0;player.throttle=0;
   player.quat.setFromEuler(new THREE.Euler(0,heading,0));
   burner.lit=false;
@@ -5919,24 +6041,39 @@ function settleAircraft(){
   updateSalvageHud('[G] EXIT AIRCRAFT');
 }
 function groundControl(dt){
-  var turn=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0);
+  var analogX=padIn.aimX||(stick.active?stick.dx:0),analogY=padIn.aimY||(stick.active?stick.dy:0);
+  var turn=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0)+analogX;
   salvage.yaw-=turn*dt*2.25;
-  var fwd=((keys.KeyW||keys.ArrowUp)?1:0)-((keys.KeyS||keys.ArrowDown)?1:0);
+  var fwd=((keys.KeyW||keys.ArrowUp)?1:0)-((keys.KeyS||keys.ArrowDown)?1:0)-analogY;
   var side=(keys.KeyE?1:0)-(keys.KeyQ?1:0),run=keys.ShiftLeft||keys.ShiftRight;
   var mx=-Math.sin(salvage.yaw)*fwd+Math.cos(salvage.yaw)*side;
   var mz=-Math.cos(salvage.yaw)*fwd-Math.sin(salvage.yaw)*side,ml=Math.hypot(mx,mz),sp=run?18:10;
   if(ml>.01){mx/=ml;mz/=ml;salvage.x+=mx*sp*dt;salvage.z+=mz*sp*dt;salvage.face=Math.atan2(-mx,-mz);}
-  salvage.x=clamp(salvage.x,-CITY_REACH,CITY_REACH);salvage.z=clamp(salvage.z,-CITY_REACH,CITY_REACH);
+  if(salvage.surface==='skybase'){
+    var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?265:335,limZ=worldFlow.faction==='tempest'?265:86;
+    salvage.x=clamp(salvage.x,bp.x-limX,bp.x+limX);salvage.z=clamp(salvage.z,bp.z-limZ,bp.z+limZ);
+  }else{
+    salvage.x=clamp(salvage.x,-CITY_REACH,CITY_REACH);salvage.z=clamp(salvage.z,-CITY_REACH,CITY_REACH);
+  }
   salvage.moving+=((ml>.01?1:0)-salvage.moving)*Math.min(1,dt*12);
-  groundAvatar.position.set(salvage.x,ground(salvage.x,salvage.z),salvage.z);groundAvatar.rotation.y=salvage.face;
+  var surfaceY=worldSurfaceAt(salvage.x,salvage.z);
+  groundAvatar.position.set(salvage.x,surfaceY,salvage.z);groundAvatar.rotation.y=salvage.face;
   setGroundAction(ml<.01?'Idle':(run?'Run':'Walk'));if(groundMixer)groundMixer.update(dt);
+  if(salvage.surface==='skybase'){
+    var shipD=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
+    updateSalvageHud(shipD<13?'[G] BOARD AIRCRAFT':'[F] OPERATIONS · RETURN TO AIRCRAFT TO BOARD');
+    var tp=document.getElementById('tPass');if(tp)tp.textContent=shipD<13?'BOARD':'OPS';
+    var sf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
+    camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(sf,-10);
+    camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);camera.up.set(0,1,0);return;
+  }
   var nearest=null,nearD=1e9;
   for(var i=0;i<loot.length;i++){
     var L=loot[i];if(L.taken)continue;L.mesh.rotation.y+=dt*.5;
     var d=Math.hypot(salvage.x-L.pos.x,salvage.z-L.pos.z);if(d<nearD){nearD=d;nearest=L;}
     if(d<4.5){L.taken=true;L.mesh.visible=false;salvage[L.kind]++;
       if(L.kind==='health')player.hp=Math.min(player.maxHp,player.hp+28);
-      if(L.kind==='armor')player.hp=Math.min(player.maxHp+25,player.hp+18);
+      if(L.kind==='armor')salvage.shield=Math.min(100,salvage.shield+35);
       feed('<span style="color:#ffb347">SALVAGED '+L.kind.toUpperCase()+'</span>');tone(740,.12,.1,'triangle',980);}
   }
   var home=BASES[player.team],homeD=Math.hypot(salvage.x-home.x,salvage.z-home.z);
@@ -5944,10 +6081,139 @@ function groundControl(dt){
   var back=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
   var msg=back<13?'[G] BOARD AIRCRAFT':(nearD<45?nearest.kind.toUpperCase()+' CACHE · '+Math.round(nearD)+' M':'SCAVENGE THE RUINED BLOCKS · RETURN PARTS TO BASE');
   updateSalvageHud(msg);
+  var tp=document.getElementById('tPass');if(tp)tp.textContent=back<13?'BOARD':'USE';
+  stepGroundCombat(dt);
   var cf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
-  camera.position.set(salvage.x,ground(salvage.x,salvage.z)+5.6,salvage.z).addScaledVector(cf,-10);
-  camera.lookAt(salvage.x,ground(salvage.x,salvage.z)+2.3,salvage.z);camera.up.set(0,1,0);
+  camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(cf,-10);
+  camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);camera.up.set(0,1,0);
 }
+/* ===================== ground combat encounter =====================
+   Hostiles are deliberately temporary rigid sentry-drone fillers. They provide
+   complete combat timing, damage, objective and extraction mechanics while the
+   final enemy character/vehicle art remains a separate production asset pass. */
+var groundCombat={active:false,kills:0,goal:0,shotCd:0,hurtCd:0,enemies:[]};
+var groundEnemyGroup=new THREE.Group();groundEnemyGroup.name='ground combat fillers';scene.add(groundEnemyGroup);
+
+function makeGroundSentry(i){
+  var host=new THREE.LOD(),root=new THREE.Group(),dark=new THREE.MeshPhongMaterial({color:0x242a31,shininess:48}),
+      hostile=new THREE.MeshPhongMaterial({color:0x7d1919,emissive:0xff2e19,emissiveIntensity:.24});
+  var body=new THREE.Mesh(new THREE.CylinderGeometry(1.05,1.35,2.3,8),dark);body.position.y=2.15;root.add(body);
+  var eye=new THREE.Mesh(new THREE.BoxGeometry(1.45,.34,.3),hostile);eye.position.set(0,2.45,-1.05);root.add(eye);
+  var legs=new THREE.Mesh(new THREE.CylinderGeometry(.72,1.65,1.1,6),dark);legs.position.y=.65;root.add(legs);
+  host.userData.legacy=root;host.userData.runtimeReady=false;host.add(root);
+  host.visible=false;groundEnemyGroup.add(host);
+  return {mesh:host,x:0,z:0,hp:50,cd:.5+i*.12,alive:false};
+}
+(function(){for(var i=0;i<(LOW?6:9);i++)groundCombat.enemies.push(makeGroundSentry(i));})();
+
+/* Load each rigid render asset once, then clone it across encounter instances.
+   Combat collision remains the independent 1.42 m numeric body represented by
+   ground-sentry-drone-v1-collision.glb in the source asset contract. */
+function installGroundSentryLevel(url,distance,isPrimary){
+  makeGltfLoader().load(url,function(gltf){
+    for(var i=0;i<groundCombat.enemies.length;i++){
+      var host=groundCombat.enemies[i].mesh,model=gltf.scene.clone(true);
+      model.traverse(function(o){if(o.isMesh){o.castShadow=!LOW;o.receiveShadow=true;}});
+      host.addLevel(model,distance);
+      if(isPrimary){host.userData.runtimeReady=true;host.userData.legacy.visible=false;}
+    }
+  },undefined,function(err){console.error('Ground sentry asset failed to load.',url,err);});
+}
+installGroundSentryLevel('assets/ground-sentry-drone-v1.glb',0,true);
+installGroundSentryLevel('assets/ground-sentry-drone-v1-lod1.glb',LOW?42:75,false);
+
+function beginGroundEncounter(){
+  if(groundCombat.active)return;
+  groundCombat.active=true;groundCombat.kills=0;groundCombat.goal=LOW?4:6;groundCombat.shotCd=0;groundCombat.hurtCd=0;
+  for(var i=0;i<groundCombat.enemies.length;i++){
+    var e=groundCombat.enemies[i],a=(i/groundCombat.enemies.length)*Math.PI*2+.35,r=42+(i%3)*18;
+    e.x=clamp(salvage.x+Math.cos(a)*r,-CITY_REACH+15,CITY_REACH-15);
+    e.z=clamp(salvage.z+Math.sin(a)*r,-CITY_REACH+15,CITY_REACH-15);
+    e.hp=50;e.cd=.45+i*.09;e.alive=i<groundCombat.goal;e.mesh.visible=e.alive;
+    e.mesh.position.set(e.x,ground(e.x,e.z),e.z);
+  }
+  banner('GROUND WAR · CLEAR '+groundCombat.goal+' SENTRIES · EXTRACT',2.5);
+}
+function endGroundEncounter(){
+  groundCombat.active=false;
+  for(var i=0;i<groundCombat.enemies.length;i++)groundCombat.enemies[i].mesh.visible=false;
+}
+function damageGroundPlayer(amount){
+  if(groundCombat.hurtCd>0)return;
+  groundCombat.hurtCd=.22;
+  var absorbed=Math.min(salvage.shield,amount);salvage.shield-=absorbed;player.hp-=amount-absorbed;
+  st.dmgFlash=Math.max(st.dmgFlash,.45);shake=Math.max(shake,.22);
+  if(player.hp<=0){
+    player.hp=Math.max(35,player.maxHp*.5);salvage.shield=0;
+    salvage.x=player.pos.x;salvage.z=player.pos.z+7;
+    banner('DOWNED · RECOVERED AT AIRCRAFT',2.2);
+  }
+}
+function fireGroundWeapon(){
+  if(groundCombat.shotCd>0)return;
+  groundCombat.shotCd=.16;tone(155,.045,.07,'sawtooth',95);
+  var fx=-Math.sin(salvage.yaw),fz=-Math.cos(salvage.yaw),best=null,bestScore=1e9;
+  for(var i=0;i<groundCombat.enemies.length;i++){
+    var e=groundCombat.enemies[i];if(!e.alive)continue;
+    var dx=e.x-salvage.x,dz=e.z-salvage.z,d=Math.hypot(dx,dz);if(d>125)continue;
+    var ahead=(dx*fx+dz*fz)/Math.max(1,d),off=Math.abs(dx*fz-dz*fx);
+    if(ahead>.93&&off<3.6&&d<bestScore){best=e;bestScore=d;}
+  }
+  if(!best)return;
+  best.hp-=25;st.hitmark=.12;
+  if(best.hp<=0){
+    best.alive=false;best.mesh.visible=false;groundCombat.kills++;
+    salvage.parts+=2;feed('<span style="color:#ff8b72">SENTRY DISABLED · 2 PARTS</span>');
+    if(groundCombat.kills>=groundCombat.goal)banner('BLOCK SECURE · RETURN TO AIRCRAFT AND EXTRACT',2.5);
+  }
+}
+function stepGroundCombat(dt){
+  if(!groundCombat.active||salvage.surface==='skybase')return;
+  groundCombat.shotCd=Math.max(0,groundCombat.shotCd-dt);groundCombat.hurtCd=Math.max(0,groundCombat.hurtCd-dt);
+  if(keys.Space||mouseDown||touchIn.fire||padIn.fire)fireGroundWeapon();
+  var nearest=1e9;
+  for(var i=0;i<groundCombat.enemies.length;i++){
+    var e=groundCombat.enemies[i];if(!e.alive)continue;
+    var dx=salvage.x-e.x,dz=salvage.z-e.z,d=Math.hypot(dx,dz);nearest=Math.min(nearest,d);
+    if(d>13){var speed=d>35?3.8:2.1;e.x+=dx/d*speed*dt;e.z+=dz/d*speed*dt;}
+    e.mesh.position.set(e.x,ground(e.x,e.z),e.z);e.mesh.rotation.y=Math.atan2(dx,dz);
+    e.cd-=dt;
+    if(d<48&&e.cd<=0){e.cd=1.1+hash(i,groundCombat.kills+17)*.75;damageGroundPlayer(d<20?12:7);}
+  }
+  if(groundCombat.kills<groundCombat.goal){
+    updateSalvageHud('GROUND WAR '+groundCombat.kills+'/'+groundCombat.goal+' · SPACE/CLICK FIRE · HOSTILE '+Math.round(nearest)+' M');
+  }else{
+    var back=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
+    updateSalvageHud(back<13?'BLOCK SECURE · [G] BOARD AND EXTRACT':'BLOCK SECURE · RETURN TO AIRCRAFT');
+  }
+}
+/* ===================== sky-base operations =====================
+   This is the explicit bridge between the shared base and each playable loop.
+   Choosing an open-world activity arms the next surface landing; Arena and
+   Campaign deliberately leave the world state before starting their own rules. */
+function openOperations(){
+  var card=document.getElementById('operationsCard');if(!card)return;
+  card.classList.add('on');if(document.exitPointerLock)document.exitPointerLock();
+}
+function closeOperations(){
+  var card=document.getElementById('operationsCard');if(card)card.classList.remove('on');
+  if(!IS_TOUCH&&st.started&&!st.paused)lock();
+}
+function armWorldActivity(kind){
+  worldFlow.activity=kind;closeOperations();
+  banner(kind==='groundwar'?'GROUND WAR ARMED · BOARD AND LAUNCH':'SALVAGE RUN ARMED · BOARD AND LAUNCH',2.3);
+  updateSalvageHud('[G] RETURN TO AIRCRAFT · '+(kind==='groundwar'?'HOSTILES EXPECTED':'RECOVERY PRIORITY'));
+}
+function startArenaOperation(){
+  closeOperations();if(salvage.on){salvage.on=false;groundAvatar.visible=false;document.body.classList.remove('ground');}
+  st.mode='arena';st.phase='flight';worldFlow.active=false;resetMatch();st.started=true;
+  el.brief.classList.add('gone');el.hud.classList.add('live');document.body.classList.add('playing');
+}
+bindBtn('opSalvage',function(){armWorldActivity('salvage');});
+bindBtn('opGroundWar',function(){armWorldActivity('groundwar');});
+bindBtn('opArena',startArenaOperation);
+bindBtn('opCampaign',function(){closeOperations();openMissions();});
+bindBtn('opClose',closeOperations);
 /* ===================== PHASE 1 — FOUNDATION =====================
    STORY-BIBLE section 23. Everything narrative hangs off four structures kept
    deliberately separate from the flight code: a versioned save, a reputation
@@ -6546,6 +6812,13 @@ function objText(){
 function startMission(id){
   var def=MISSIONS[id];
   if(!def)return false;
+  if(typeof worldFlow!=='undefined'){
+    worldFlow.active=false;worldFlow.zone='surface';worldFlow.faction=null;worldFlow.base=null;
+  }
+  if(typeof salvage!=='undefined'){
+    salvage.on=false;salvage.landed=false;salvage.surface=null;
+    document.body.classList.remove('ground');
+  }
   if(rEl.debrief)rEl.debrief.classList.remove('on');
   if(rEl.choiceCard)rEl.choiceCard.classList.remove('on');
   var fc=document.getElementById('finaleCard'); if(fc)fc.classList.remove('on');
@@ -6638,7 +6911,6 @@ function parkArena(on){
   if(on){core.carrier=null;}
 }
 var BREAKWATER=new THREE.Vector3(-BASE_X,460,0);
-
 /* ===================== THE CAMPAIGN =====================
    Six chapters, section 10, written as data on the runtime above. Registration
    order is play order: M() appends to ORDERED and to the chapter it declares,
@@ -8427,6 +8699,7 @@ function playerControl(dt){
 
 function step(dt){
   env(dt);
+  stepWorldFlow();
   /* the match clock, the Core and the rings belong to an Arena match; a
      campaign mission owns its own pacing (STORY-BIBLE section 15). */
   if(st.mode==='arena'&&!st.over){
@@ -8462,9 +8735,10 @@ function step(dt){
     /* Terrain and the ceiling are simulation, and a remote aircraft is not
        simulated here — its owner has already flown it into the hill or not. */
     if(!remote&&!(f===player&&(salvage.on||salvage.landed))){
-      var gh=ground(f.pos.x,f.pos.z);
+      var deck=f===player&&st.mode==='world'?skyDeckAt(f.pos.x,f.pos.z):null;
+      var gh=deck?deck.height:ground(f.pos.x,f.pos.z);
       if(f.pos.y-gh<8){
-        if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft();continue;}
+        if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft(gh,deck?'skybase':'ground');continue;}
         kill(f,null);continue;
       }
       /* Open sky: altitude changes aircraft performance through airDensity, but

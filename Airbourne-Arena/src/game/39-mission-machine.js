@@ -17,6 +17,13 @@ function objText(){
 function startMission(id){
   var def=MISSIONS[id];
   if(!def)return false;
+  if(typeof worldFlow!=='undefined'){
+    worldFlow.active=false;worldFlow.zone='surface';worldFlow.faction=null;worldFlow.base=null;
+  }
+  if(typeof salvage!=='undefined'){
+    salvage.on=false;salvage.landed=false;salvage.surface=null;
+    document.body.classList.remove('ground');
+  }
   if(rEl.debrief)rEl.debrief.classList.remove('on');
   if(rEl.choiceCard)rEl.choiceCard.classList.remove('on');
   var fc=document.getElementById('finaleCard'); if(fc)fc.classList.remove('on');
@@ -109,4 +116,3 @@ function parkArena(on){
   if(on){core.carrier=null;}
 }
 var BREAKWATER=new THREE.Vector3(-BASE_X,460,0);
-

@@ -3,9 +3,13 @@
    Three.js bundle just to zero a scoreboard. */
 function resetMatch(){
   if(typeof salvage!=='undefined'){
-    salvage.on=false;salvage.landed=false;groundAvatar.visible=false;
+    salvage.on=false;salvage.landed=false;salvage.surface=null;groundAvatar.visible=false;
     document.body.classList.remove('ground');
   }
+  if(typeof worldFlow!=='undefined'){
+    worldFlow.active=false;worldFlow.zone='surface';worldFlow.faction=null;worldFlow.base=null;
+  }
+  if(typeof endGroundEncounter==='function')endGroundEncounter();
   st.scoreB=0; st.scoreR=0; st.time=MATCH_TIME; st.over=false; st.paused=false;
   st.dmgFlash=0; st.hitmark=0; shake=0; st.ringWarned=false;
   lockOn.target=null;lockOn.manual=false;lockOn.assisted=false;

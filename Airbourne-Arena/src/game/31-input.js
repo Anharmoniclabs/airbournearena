@@ -26,6 +26,7 @@ function launch(){
   if(st.phase==='hangar')return;
   if(st.over||document.getElementById('settings').classList.contains('on'))return;
   var first=!st.started;
+  if(st.mode==='arena'&&typeof worldFlow!=='undefined')worldFlow.active=false;
   /* the audio context can only be created from a gesture, and this is the
      first one the game is guaranteed to get */
   audioInit(); audioResume();
@@ -127,7 +128,12 @@ document.addEventListener('pointerlockchange',function(){
   hold('tUp',function(){touchIn.thrUp=true;},function(){touchIn.thrUp=false;});
   hold('tDn',function(){touchIn.thrDn=true;},function(){touchIn.thrDn=false;});
   hold('tBoost',function(){touchIn.boost=true;},function(){touchIn.boost=false;});
-  hold('tPass',function(){if(core.carrier===player)passCore(player);});
+  hold('tPass',function(){
+    if(salvage.on){
+      var d=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
+      if(d<13)leaveGroundMode();else if(salvage.surface==='skybase')openOperations();
+    }else if(core.carrier===player)passCore(player);
+  });
   hold('tRoll',function(){startRoll(player,stick.dx>0?-1:1);});
   hold('tLock',function(){if(lockOn.manual)releaseLock(); else cycleTarget();});
   hold('tZoom',function(){touchIn.zoom=true;},function(){touchIn.zoom=false;});
@@ -172,6 +178,7 @@ addEventListener('keydown',function(e){
     e.preventDefault();return;
   }
   if(salvage.on){
+    if(e.code==='KeyF'&&salvage.surface==='skybase'){openOperations();e.preventDefault();return;}
     if(e.code==='KeyM'){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
     if(e.code==='KeyP')setPaused(!st.paused);
     return;

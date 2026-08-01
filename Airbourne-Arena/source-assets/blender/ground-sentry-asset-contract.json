@@ -1,0 +1,23 @@
+{
+  "asset": "ground-sentry-drone-v1",
+  "class": "rigid autonomous combat vehicle",
+  "dimensions_m": [2.8, 2.5, 3.4],
+  "runtime_axes": "glTF Y-up, forward -Z, origin at ground contact",
+  "camera_distance_m": "8-125",
+  "identity": "unaffiliated lower-city salvage security drone; dark weathered shell with hostile red optics",
+  "collision": "separate simplified cylindrical GLB",
+  "budgets": {
+    "lod0_triangles_max": 6000,
+    "lod1_triangles_max": 1800,
+    "materials_max": 4,
+    "textures_mb_max": 0,
+    "runtime_glb_kb_max_each": 500
+  },
+  "artifacts": [
+    "ground-sentry-drone-authored-v1.blend",
+    "ground-sentry-drone-v1.glb",
+    "ground-sentry-drone-v1-lod1.glb",
+    "ground-sentry-drone-v1-collision.glb",
+    "ground-sentry-drone-mesh-review-v1.png"
+  ]
+}

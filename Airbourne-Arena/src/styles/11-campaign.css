@@ -19,17 +19,23 @@
   .objMeta{margin-top:8px;padding-top:7px;border-top:1px solid rgba(111,227,208,.18);
     font-size:9px;letter-spacing:.18em;line-height:1.9;color:rgba(223,243,255,.55)}
   .objMeta b{color:var(--teal);font-weight:600}
-  #debrief,#choiceCard,#missionCard,#finaleCard{position:fixed;inset:0;display:grid;
+  #debrief,#choiceCard,#missionCard,#operationsCard,#finaleCard{position:fixed;inset:0;display:grid;
     place-items:center;z-index:11;background:rgba(2,5,9,.9);opacity:0;pointer-events:none;
     transition:opacity .2s}
-  #debrief.on,#choiceCard.on,#missionCard.on,#finaleCard.on{opacity:1;pointer-events:auto}
-  #debrief *,#choiceCard *,#missionCard *,#finaleCard *{touch-action:auto}
+  #debrief.on,#choiceCard.on,#missionCard.on,#operationsCard.on,#finaleCard.on{opacity:1;pointer-events:auto}
+  #debrief *,#choiceCard *,#missionCard *,#operationsCard *,#finaleCard *{touch-action:auto}
   #debriefStats,#finaleStats{display:grid;
     grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:9px;margin:18px 0 0}
   #campaignRow{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
   /* mission select — every chapter and every mission, with what is reachable
      and what is already flown stated plainly rather than implied */
   #missionCard .setCard{width:min(560px,94vw)}
+  #operationsCard .setCard{width:min(620px,94vw)}
+  .opLead{font-size:10px;line-height:1.7;color:rgba(223,243,255,.65);text-align:center;margin:12px 0 18px}
+  .opGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .opGrid .actionBtn{text-align:left;display:grid;gap:7px;line-height:1.35}
+  .opGrid .actionBtn span{font-size:9px;letter-spacing:.04em;color:rgba(223,243,255,.58);font-weight:400}
+  @media(max-width:560px){.opGrid{grid-template-columns:1fr}}
   #missionMeta{font-size:9px;letter-spacing:.2em;color:rgba(223,243,255,.5);
     text-align:center;margin-top:10px;line-height:2}
   #missionList{margin-top:16px}
@@ -56,4 +62,3 @@
   .fnRow{font-size:10.5px;line-height:1.8;color:rgba(223,243,255,.7);
     padding:3px 0 3px 14px;position:relative}
   .fnRow:before{content:"\2022";position:absolute;left:2px;color:var(--teal)}
-

@@ -162,7 +162,7 @@
      on a short phone the buttons at the bottom of a long card could not be
      scrolled to at all. */
   #pause,#pause *,#end,#end *,#brief,#brief *,
-  #missionCard,#missionCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
+  #missionCard,#missionCard *,#operationsCard,#operationsCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
   .card,.setCard,.pauseCard,#end>div{max-height:92vh;overflow-y:auto;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
   /* The way out of a panel has to be on screen.
@@ -183,4 +183,3 @@
   .card:after,.setCard:after,.pauseCard:after{z-index:1}
   body.touch #coach{top:auto;bottom:calc(214px + env(safe-area-inset-bottom));left:10px;width:min(270px,70vw)}
   @media(max-width:720px){#coach{width:min(250px,54vw)}}
-
