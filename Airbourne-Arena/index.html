@@ -2929,39 +2929,59 @@ var SKYBASE_POS={
   tempest:new THREE.Vector3(0,SKYBASE_ALT+1100,-1800),
   inferno:new THREE.Vector3(2400,SKYBASE_ALT,900)
 };
+/* The bases live above a real visible cloud datum, not in empty black space.
+   The additive storm plate makes the black source background disappear while
+   keeping the authored cloud volume readable from the flight deck. */
+var ozoneCloudLayer=new THREE.Group();ozoneCloudLayer.name='ozone cloud ocean';scene.add(ozoneCloudLayer);
+var ozoneCloudMat=new THREE.MeshBasicMaterial({map:stormCloudVfxSkin,color:0xb8d7ef,
+  transparent:true,opacity:LOW ? .28 : .45,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+for(var cloudN=0;cloudN<(LOW?1:2);cloudN++){
+  /* Overscan keeps the rectangular texture boundary outside every base camera;
+     the second rotated sheet breaks the single-image repetition. */
+  var ozoneCloud=new THREE.Mesh(new THREE.PlaneGeometry(16000,10500),ozoneCloudMat);
+  ozoneCloud.rotation.x=-Math.PI/2;ozoneCloud.rotation.z=cloudN*2.17;
+  ozoneCloud.position.set(cloudN?1100:-800,SKYBASE_ALT-760-cloudN*170,cloudN?-900:600);ozoneCloudLayer.add(ozoneCloud);
+}
 var skyBaseHosts={};
 var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salvage',transition:null};
 var worldFlowPrev=new THREE.Vector3(),worldFlowDir=new THREE.Vector3();
 var SKYBASE_ASSETS={
-  vanguard:['assets/vanguard-ozone-base-v1.glb','assets/vanguard-ozone-base-v1-lod1.glb'],
-  tempest:['assets/tempest-ozone-base-v1.glb','assets/tempest-ozone-base-v1-lod1.glb'],
-  inferno:['assets/inferno-ozone-base-v1.glb','assets/inferno-ozone-base-v1-lod1.glb']
+  vanguard:[['assets/vanguard-ozone-base-v2.glb','assets/vanguard-ozone-base-v1.glb'],
+    ['assets/vanguard-ozone-base-v2-lod1.glb','assets/vanguard-ozone-base-v1-lod1.glb']],
+  tempest:[['assets/tempest-ozone-base-v2.glb','assets/tempest-ozone-base-v1.glb'],
+    ['assets/tempest-ozone-base-v2-lod1.glb','assets/tempest-ozone-base-v1-lod1.glb']],
+  inferno:[['assets/inferno-ozone-base-v2.glb','assets/inferno-ozone-base-v1.glb'],
+    ['assets/inferno-ozone-base-v2-lod1.glb','assets/inferno-ozone-base-v1-lod1.glb']]
 };
 function calibrateSkyBase(root,faction){
-  var shell={vanguard:0x243b4a,tempest:0x174642,inferno:0x202126}[faction],
+  var shell={vanguard:0xd7e4eb,tempest:0x174642,inferno:0x17181c}[faction],
       accent={vanguard:0x159bd1,tempest:0x10a998,inferno:0xd64a1d}[faction];
   root.traverse(function(o){
     if(!o.isMesh||!o.material)return;o.material=o.material.clone();
     var name=(o.material.name||'').toLowerCase();
-    if(name.indexOf('aerospace shell')>=0){o.material.color.setHex(shell);o.material.roughness=.48;}
-    else if(name.indexOf('structural frame')>=0){o.material.color.setHex(0x080d12);o.material.roughness=.34;}
+    if(name.indexOf('aerospace shell')>=0||name.indexOf('orbital armor')>=0){o.material.color.setHex(shell);o.material.roughness=.48;}
+    else if(name.indexOf('structural frame')>=0||name.indexOf('structural shadow')>=0){o.material.color.setHex(0x080d12);o.material.roughness=.34;}
     else if(name.indexOf('emissive guidance')>=0){o.material.color.setHex(accent);o.material.emissive.setHex(accent);o.material.emissiveIntensity=1.35;}
-    else if(name.indexOf('recessed glazing')>=0){o.material.color.setHex(0x071923);o.material.emissive.setHex(0x062330);o.material.emissiveIntensity=.5;}
+    else if(name.indexOf('recessed glazing')>=0){o.material.color.setHex(faction==='inferno'?0x250903:0x071923);o.material.emissive.setHex(accent);o.material.emissiveIntensity=.42;}
     o.material.needsUpdate=true;
   });
 }
 Object.keys(SKYBASE_ASSETS).forEach(function(faction){
   var host=new THREE.LOD();host.name=faction+' ozone base';host.position.copy(SKYBASE_POS[faction]);
   host.userData.ready=0;scene.add(host);skyBaseHosts[faction]=host;
-  function add(url,distance){
+  function add(urls,distance,index){
+    index=index||0;var url=urls[index];
     makeGltfLoader().load(url,function(gltf){
       calibrateSkyBase(gltf.scene,faction);
       gltf.scene.traverse(function(o){if(o.isMesh){o.castShadow=!LOW;o.receiveShadow=true;}});
       host.addLevel(gltf.scene,distance);host.userData.ready++;
-    },undefined,function(err){console.error(faction+' ozone base failed to load',url,err);});
+    },undefined,function(err){
+      if(index+1<urls.length){console.warn(faction+' v2 base unavailable; loading fallback',url);add(urls,distance,index+1);}
+      else console.error(faction+' ozone base failed to load',url,err);
+    });
   }
-  add(SKYBASE_ASSETS[faction][0],0);
-  add(SKYBASE_ASSETS[faction][1],LOW?700:1500);
+  add(SKYBASE_ASSETS[faction][0],0,0);
+  add(SKYBASE_ASSETS[faction][1],LOW?700:1500,0);
   var beacon=new THREE.PointLight(faction==='inferno'?0xff5325:(faction==='tempest'?0x22ddc8:0x4fc3ff),
     LOW?1.2:2.4,1300);beacon.position.set(0,100,0);host.add(beacon);
 });
@@ -2969,7 +2989,8 @@ Object.keys(SKYBASE_ASSETS).forEach(function(faction){
 function skyDeckAt(x,z){
   for(var faction in SKYBASE_POS){
     var p=SKYBASE_POS[faction],dx=x-p.x,dz=z-p.z;
-    var inside=faction==='tempest'?(dx*dx+dz*dz<300*300):(Math.abs(dx)<360&&Math.abs(dz)<105);
+    var inside=faction==='tempest'?(dx*dx+dz*dz<330*330):
+      (Math.abs(dx)<(faction==='inferno'?430:410)&&Math.abs(dz)<(faction==='inferno'?160:140));
     if(inside)return {height:p.y+10,faction:faction};
   }
   return null;
@@ -6268,7 +6289,8 @@ function groundControl(dt){
   var mz=-Math.cos(salvage.yaw)*fwd-Math.sin(salvage.yaw)*side,ml=Math.hypot(mx,mz),sp=run?18:10;
   if(ml>.01){mx/=ml;mz/=ml;salvage.x+=mx*sp*dt;salvage.z+=mz*sp*dt;salvage.face=Math.atan2(-mx,-mz);}
   if(salvage.surface==='skybase'){
-    var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?265:335,limZ=worldFlow.faction==='tempest'?265:86;
+    var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?300:(worldFlow.faction==='inferno'?390:370),
+      limZ=worldFlow.faction==='tempest'?300:(worldFlow.faction==='inferno'?135:115);
     salvage.x=clamp(salvage.x,bp.x-limX,bp.x+limX);salvage.z=clamp(salvage.z,bp.z-limZ,bp.z+limZ);
   }else{
     salvage.x=clamp(salvage.x,-CITY_REACH,CITY_REACH);salvage.z=clamp(salvage.z,-CITY_REACH,CITY_REACH);

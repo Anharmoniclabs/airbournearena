@@ -13,17 +13,17 @@ const browser=await chromium.launch({executablePath,headless:!headful,args:headf
   ['--no-sandbox','--disable-dev-shm-usage','--disable-gpu-sandbox']:
   ['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const failures=[];
-async function canvasPng(page,path){
+async function canvasPng(page,path,scale=.25){
   // Render and read in one browser task. WebGL may clear its back buffer after
   // presenting, so a later toDataURL call can produce a false all-black frame.
-  const data=await page.evaluate(()=>{
+  const data=await page.evaluate((renderScale)=>{
     const c=window.__AIRBOURNE_CAPTURE__;
-    c.renderer.setPixelRatio(.25);
+    c.renderer.setPixelRatio(renderScale);
     c.renderer.setSize(innerWidth,innerHeight,false);
     c.renderer.shadowMap.enabled=false;
     c.renderer.render(c.scene,c.camera);
     return c.renderer.domElement.toDataURL('image/png');
-  });
+  },scale);
   await fs.writeFile(path,Buffer.from(data.split(',')[1],'base64'));
 }
 async function pageFor(context,label){
@@ -38,6 +38,24 @@ if(reviewLow)await desktop.addInitScript(()=>localStorage.setItem('airbourne:set
 if(captureStage!=='ground'){
   const sky=await pageFor(desktop,'sky base');
   await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__;c.startOpenWorld();document.querySelector('#boot')?.classList.add('gone');c.settleFlightCamera();});
+  if(captureStage==='showcase'){
+    await sky.waitForFunction(()=>Object.values(window.__AIRBOURNE_CAPTURE__.getSkyBases()).every(base=>base.userData.ready>0));
+    for(const faction of ['vanguard','tempest','inferno']){
+      const data=await sky.evaluate((name)=>{
+        const c=window.__AIRBOURNE_CAPTURE__,base=c.getSkyBases()[name],p=base.position;
+        c.getPlayer().mesh.visible=false;
+        c.camera.position.set(p.x,p.y+430,p.z+790);
+        c.camera.up.set(0,1,0);c.camera.lookAt(p.x,p.y-25,p.z);
+        c.camera.near=.1;c.camera.far=6000;c.camera.updateProjectionMatrix();
+        c.renderer.setPixelRatio(.5);c.renderer.setSize(innerWidth,innerHeight,false);
+        c.renderer.render(c.scene,c.camera);
+        return c.renderer.domElement.toDataURL('image/png');
+      },faction);
+      await fs.writeFile(out+'/ozone-'+faction+'-runtime.png',Buffer.from(data.split(',')[1],'base64'));
+    }
+    await sky.close();await desktop.close();await browser.close();
+    console.log(JSON.stringify({stage:'showcase',failures}));process.exit(failures.length?1:0);
+  }
   if(captureStage==='skywalk'){
     await sky.evaluate(()=>window.__AIRBOURNE_CAPTURE__.enterGround());
     await sky.waitForTimeout(700);
