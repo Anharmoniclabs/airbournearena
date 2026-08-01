@@ -111,8 +111,8 @@ test("open world has a complete dock, launch, descent, landing, and exit loop", 
   assert.match(canonical, /salvage\.landed=true;salvage\.surface='skybase'/);
   assert.match(canonical, /function skyDeckAt\(x,z\)/);
   assert.match(canonical, /function worldSurfaceAt\(x,z\)/);
-  assert.match(canonical, /function stepWorldFlow\(\)/);
-  assert.match(canonical, /LAUNCHED · DESCEND THROUGH THE WEATHER LAYER/);
+  assert.match(canonical, /function stepWorldFlow\(dt\)/);
+  assert.match(canonical, /LAUNCHED · INSERTION ROUTE LOCKED/);
   assert.match(canonical, /settleAircraft\(gh,deck\?'skybase':'ground'\)/);
   assert.match(canonical, /if\(e\.code==='KeyF'&&salvage\.surface==='skybase'\)\{openOperations\(\)/);
 });
@@ -139,6 +139,34 @@ test("sky-base operations route every game mode and every input class", () => {
   assert.match(canonical, /stick\.active\?stick\.dx:0/);
   assert.match(canonical, /salvage\.on&&padTap\(gp,0\)/);
   assert.match(canonical, /else if\(salvage\.surface==='skybase'\)openOperations\(\)/);
+});
+
+test("sky-base launch inserts the aircraft into a dressed open world", () => {
+  assert.match(canonical, /worldFlow\.transition=\{t:0,duration:7/);
+  assert.match(canonical, /ATMOSPHERIC INSERTION · LOWER CITY AHEAD/);
+  assert.match(canonical, /FLIGHT CONTROL RETURNED/);
+  assert.match(canonical, /!\(worldFlow\.active&&worldFlow\.transition\)/);
+  for (const district of ["CRASHYARD", "CIVIC COLLAPSE", "FLOODED WORKS"])
+    assert.match(canonical, new RegExp(`name:'${district}'`));
+  assert.match(canonical, /function stepWorldDistricts\(dt\)/);
+  assert.match(canonical, /function nearestWorldDistrict\(x,z\)/);
+  assert.match(canonical, /new THREE\.InstancedMesh\(new THREE\.BoxGeometry\(1,1,1\),districtMetal,debrisCount\)/);
+  assert.match(canonical, /def\.name\+' extraction pad'/);
+  for (const asset of [
+    "assets/lower-city-districts-authored-v1.glb",
+    "assets/lower-city-districts-authored-v1-lod1.glb",
+    "assets/lower-city-districts-authored-v1-collision.glb",
+  ]) assert.match(canonical, new RegExp(asset.replaceAll(".", "\\.")));
+  for (const faction of ["vanguard", "tempest", "inferno"])
+    assert.match(canonical, new RegExp(`${faction}:\\{x:`));
+  assert.match(canonical, /function aircraftMayEnterCity\(fighter\)/);
+  assert.match(canonical, /function districtObstacleHeightAt\(x,z\)/);
+  assert.match(canonical, /worldDistrictFallback\.visible=false/);
+  assert.equal(
+    [...canonical.matchAll(/camera\.up\.set\(0,1,0\);camera\.lookAt\(/g)].length,
+    2,
+    "both on-foot cameras must reset up before calculating their view rotation",
+  );
 });
 
 test("chase flight stays readable during hard banks on desktop and mobile", () => {

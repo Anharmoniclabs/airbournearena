@@ -1,0 +1,24 @@
+{
+  "asset": "lower-city-districts-authored-v1",
+  "class": "rigid open-world architecture set",
+  "districts": ["Crashyard", "Civic Collapse", "Flooded Works"],
+  "world_extent_m": [2600, 2000],
+  "runtime_axes": "glTF Y-up, local district ground at Y=0, forward -Z",
+  "camera_distance_m": "8-2200",
+  "collision": "separate simplified GLB plus matching runtime obstacle bounds",
+  "budgets": {
+    "lod0_triangles_max": 22000,
+    "lod1_triangles_max": 6500,
+    "materials_max": 4,
+    "draw_primitives_max": 14,
+    "textures_mb_max": 0,
+    "runtime_glb_mb_max_each": 2
+  },
+  "artifacts": [
+    "lower-city-districts-authored-v1.blend",
+    "lower-city-districts-authored-v1.glb",
+    "lower-city-districts-authored-v1-lod1.glb",
+    "lower-city-districts-authored-v1-collision.glb",
+    "lower-city-districts-mesh-review-v1.png"
+  ]
+}

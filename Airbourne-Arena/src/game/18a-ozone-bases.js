@@ -9,7 +9,8 @@ var SKYBASE_POS={
   inferno:new THREE.Vector3(2400,SKYBASE_ALT,900)
 };
 var skyBaseHosts={};
-var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salvage'};
+var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salvage',transition:null};
+var worldFlowPrev=new THREE.Vector3(),worldFlowDir=new THREE.Vector3();
 var SKYBASE_ASSETS={
   vanguard:['assets/vanguard-ozone-base-v1.glb','assets/vanguard-ozone-base-v1-lod1.glb'],
   tempest:['assets/tempest-ozone-base-v1.glb','assets/tempest-ozone-base-v1-lod1.glb'],
@@ -42,15 +43,38 @@ function worldSurfaceAt(x,z){
   var deck=st.mode==='world'?skyDeckAt(x,z):null;
   return deck?deck.height:ground(x,z);
 }
-function stepWorldFlow(){
+function stepWorldFlow(dt){
   if(!worldFlow.active)return;
   worldFlow.zone=player.pos.y>8000?'ozone':(player.pos.y>1800?'descent':'surface');
-  if(salvage.landed&&!salvage.on&&salvage.surface==='skybase'&&
+  if(worldFlow.transition){
+    var tr=worldFlow.transition;tr.t=Math.min(tr.duration,tr.t+dt);
+    var u=tr.t/tr.duration,ease=u*u*(3-2*u);
+    worldFlowPrev.copy(player.pos);player.pos.lerpVectors(tr.from,tr.to,ease);
+    player.pos.y+=Math.sin(Math.PI*u)*520;
+    worldFlowDir.copy(player.pos).sub(worldFlowPrev);
+    if(worldFlowDir.lengthSq()>.01){
+      worldFlowDir.normalize();player.speed=360+Math.sin(Math.PI*u)*150;
+      player.vel.copy(worldFlowDir).multiplyScalar(player.speed);
+      player.quat.setFromUnitVectors(new THREE.Vector3(0,0,-1),worldFlowDir);
+    }
+    player.throttle=.72;
+    if(!tr.weatherCalled&&u>.28){tr.weatherCalled=true;banner('ATMOSPHERIC INSERTION · LOWER CITY AHEAD',2);}
+    if(u>=1){
+      worldFlow.transition=null;worldFlow.zone='surface';
+      player.pos.copy(tr.to);player.vel.set(0,-12,-155);player.speed=155;player.throttle=.62;
+      player.quat.setFromUnitVectors(new THREE.Vector3(0,0,-1),player.vel.clone().normalize());
+      camLookReady=false;banner((worldFlow.activity==='groundwar'?'GROUND WAR':'SALVAGE')+' AO · FLIGHT CONTROL RETURNED',2.5);
+    }
+    return;
+  }
+  if(aircraftMayEnterCity(player)&&salvage.landed&&!salvage.on&&salvage.surface==='skybase'&&
      (keys.KeyW||keys.ShiftLeft||keys.ShiftRight||touchIn.thrUp||padIn.thrUp||padIn.boost)){
     salvage.landed=false;salvage.surface=null;
-    player.pos.y+=9;player.throttle=.52;
-    player.vel.set(worldFlow.faction==='inferno'?-62:62,-2,0);player.speed=62;
-    banner('LAUNCHED · DESCEND THROUGH THE WEATHER LAYER',2.2);
+    var entry=cityEntryLane(worldFlow.faction),lane=entry.x,entryZ=entry.z;
+    worldFlow.transition={t:0,duration:7,from:player.pos.clone(),
+      to:new THREE.Vector3(lane,ground(lane,entryZ)+1050,entryZ),weatherCalled:false};
+    player.pos.y+=9;player.throttle=.72;player.vel.set(0,-1,0);player.speed=1;
+    banner('LAUNCHED · INSERTION ROUTE LOCKED',2.2);
   }
 }
 
@@ -59,7 +83,7 @@ function startOpenWorld(){
   parkArena(true);salvage.on=false;salvage.landed=true;salvage.surface='skybase';document.body.classList.remove('ground','hangar');
   var faction=factionKey(),base=SKYBASE_POS[faction]||SKYBASE_POS.vanguard;
   worldFlow.active=true;worldFlow.zone='ozone';worldFlow.faction=faction;worldFlow.base=base;
-  worldFlow.activity='salvage';
+  worldFlow.activity='salvage';worldFlow.transition=null;
   player.alive=true;player.mesh.visible=true;player.hp=player.maxHp;
   player.pos.copy(base).add(new THREE.Vector3(faction==='inferno'?-250:250,13.2,0));
   player.quat.identity();player.vel.set(0,0,0);player.speed=0;player.throttle=0;

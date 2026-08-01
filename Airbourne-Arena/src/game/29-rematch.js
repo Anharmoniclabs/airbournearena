@@ -7,7 +7,7 @@ function resetMatch(){
     document.body.classList.remove('ground');
   }
   if(typeof worldFlow!=='undefined'){
-    worldFlow.active=false;worldFlow.zone='surface';worldFlow.faction=null;worldFlow.base=null;
+    worldFlow.active=false;worldFlow.zone='surface';worldFlow.faction=null;worldFlow.base=null;worldFlow.transition=null;
   }
   if(typeof endGroundEncounter==='function')endGroundEncounter();
   st.scoreB=0; st.scoreR=0; st.time=MATCH_TIME; st.over=false; st.paused=false;

@@ -254,7 +254,8 @@ function playerControl(dt){
 
 function step(dt){
   env(dt);
-  stepWorldFlow();
+  stepWorldFlow(dt);
+  stepWorldDistricts(dt);
   /* the match clock, the Core and the rings belong to an Arena match; a
      campaign mission owns its own pacing (STORY-BIBLE section 15). */
   if(st.mode==='arena'&&!st.over){
@@ -268,7 +269,7 @@ function step(dt){
 
   if(player.alive&&!st.over){
     if(salvage.on)groundControl(dt);
-    else if(!salvage.landed)playerControl(dt);
+    else if(!salvage.landed&&!(worldFlow.active&&worldFlow.transition))playerControl(dt);
   }
 
   for(var i=0;i<fighters.length;i++){
@@ -292,6 +293,8 @@ function step(dt){
     if(!remote&&!(f===player&&(salvage.on||salvage.landed))){
       var deck=f===player&&st.mode==='world'?skyDeckAt(f.pos.x,f.pos.z):null;
       var gh=deck?deck.height:ground(f.pos.x,f.pos.z);
+      var districtTop=f===player&&st.mode==='world'?districtObstacleHeightAt(f.pos.x,f.pos.z):null;
+      if(districtTop!==null&&f.pos.y<districtTop+5){kill(f,null);continue;}
       if(f.pos.y-gh<8){
         if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft(gh,deck?'skybase':'ground');continue;}
         kill(f,null);continue;
@@ -623,7 +626,8 @@ function hudWork(dt){
   else if(bannerT>0){bannerT-=dt; if(bannerT<=0)el.center.textContent='';}
 
   var pr='';
-  if(salvage.landed&&!salvage.on)pr='LANDED · G TO EXIT AIRCRAFT';
+  if(worldFlow.active&&worldFlow.transition)pr='ATMOSPHERIC INSERTION · AUTO ROUTE';
+  else if(salvage.landed&&!salvage.on)pr='LANDED · G TO EXIT AIRCRAFT';
   else if(!IS_TOUCH&&!st.mouseSeen&&alive)pr='MOVE THE MOUSE TO STEER  ·  A / D TO TURN';
   else if(core.carrier===player)pr='F — PASS THE CORE';
   else if(player.stalled)pr='STALLED — EASE OFF AND LET THE NOSE DROP';

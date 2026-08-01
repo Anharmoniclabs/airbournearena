@@ -475,7 +475,7 @@ enterHangar();
    is present. */
 if(new URLSearchParams(location.search).has('capture')){
   Object.defineProperty(window,'__AIRBOURNE_CAPTURE__',{value:{
-    renderer:renderer,camera:camera,st:st,hangarPlanes:hangarPlanes,
+    renderer:renderer,scene:scene,camera:camera,st:st,hangarPlanes:hangarPlanes,
     getPlayer:function(){return player;},
     getWorld:function(){return authoredWorld;},
     getPhase:function(){return st.phase;},
@@ -505,14 +505,21 @@ if(new URLSearchParams(location.search).has('capture')){
     leaveHangar:leaveHangar,launch:launch,
     startOpenWorld:function(){return startOpenWorld();},
     getSkyBases:function(){return skyBaseHosts;},
+    getWorldFlow:function(){return worldFlow;},
+    getWorldDistricts:function(){return WORLD_DISTRICTS;},
+    getAuthoredDistrictReady:function(){return authoredDistrictReady;},
+    tickWorldFlow:function(dt){stepWorldFlow(dt);stepWorldDistricts(dt);},
     enterGround:function(){return enterGroundMode();},
     leaveGround:function(){return leaveGroundMode();},
     getSalvage:function(){return salvage;},
     placeGroundReview:function(kind){
       startOpenWorld();worldFlow.activity=kind||'groundwar';
-      var x=420,z=360,y=ground(x,z);
+      /* Flat approach south of Civic Collapse: the review camera faces the
+         authored district instead of spawning beneath the central road mesh. */
+      var x=80,z=1100,y=ground(x,z);
       player.pos.set(x,y+3.2,z);player.vel.set(0,0,0);player.speed=0;player.throttle=0;
       salvage.landed=true;salvage.surface='ground';enterGroundMode();
+      salvage.yaw=Math.PI;stepWorldDistricts(.016);groundControl(.016);
       return {x:x,y:y,z:z};
     },
     getGroundEnemies:function(){return groundCombat.enemies;},

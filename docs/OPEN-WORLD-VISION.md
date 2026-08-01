@@ -17,6 +17,14 @@ The first implementation compresses the real ozone altitude into the engine's es
 
 ## Phase plan
 
+### Current playable vertical slice
+
+- Ozone deck spawn, on-foot operations access, aircraft boarding, and launch are implemented.
+- Launch enters a seven-second atmospheric insertion route and returns full control above the lower city.
+- Crashyard, Civic Collapse, and Flooded Works are named LOD districts with rigid landmarks, extraction pads, navigation beacons, instanced debris, and minimap markers.
+- Surface landing, auto-land, pilot dismount, salvage, Ground War combat, return-to-aircraft, and extraction are implemented.
+- The production Blender world remains the terrain and architecture source; district dressing is a separate performance-bounded procedural layer.
+
 ### Phase 0 — Visual and technical contract
 
 - Approved concept: `Airbourne-Arena/source-assets/concepts/sky-bases-ozone-concept-v1.png`.

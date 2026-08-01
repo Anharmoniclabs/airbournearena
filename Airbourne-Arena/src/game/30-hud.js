@@ -141,6 +141,11 @@ function drawMap(){
     mctx.globalAlpha=.72;mctx.fillStyle=L.kind==='parts'?'#ffb347':(L.kind==='health'?'#6fe3d0':'#78a9ff');
     mctx.fillRect(lp.x-1.7,lp.y-1.7,3.4,3.4);
   }
+  if(typeof WORLD_DISTRICTS!=='undefined'&&st.mode==='world')for(var di=0;di<WORLD_DISTRICTS.length;di++){
+    var district=WORLD_DISTRICTS[di],dp=w2m(district.x,district.z);
+    mctx.globalAlpha=.9;mctx.strokeStyle='#6fe3d0';mctx.lineWidth=1.5;
+    mctx.beginPath();mctx.moveTo(dp.x,dp.y-5);mctx.lineTo(dp.x+5,dp.y);mctx.lineTo(dp.x,dp.y+5);mctx.lineTo(dp.x-5,dp.y);mctx.closePath();mctx.stroke();
+  }
   if(typeof salvage!=='undefined'&&salvage.on){
     var foot=w2m(salvage.x,salvage.z);mctx.globalAlpha=1;mctx.fillStyle='#ffffff';
     mctx.beginPath();mctx.arc(foot.x,foot.y,4,0,7);mctx.fill();

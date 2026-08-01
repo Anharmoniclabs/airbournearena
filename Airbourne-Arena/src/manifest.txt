@@ -53,6 +53,7 @@ game/16-authored-world.js
 game/17-story-kit.js
 game/18-core-visual.js
 game/18a-ozone-bases.js
+game/18b-open-world-districts.js
 game/19-fighters.js
 game/20-pilot.js
 game/21-flight-model.js

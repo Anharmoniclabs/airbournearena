@@ -104,7 +104,7 @@ function groundControl(dt){
     var tp=document.getElementById('tPass');if(tp)tp.textContent=shipD<13?'BOARD':'OPS';
     var sf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
     camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(sf,-10);
-    camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);camera.up.set(0,1,0);return;
+    camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);return;
   }
   var nearest=null,nearD=1e9;
   for(var i=0;i<loot.length;i++){
@@ -118,11 +118,13 @@ function groundControl(dt){
   var home=BASES[player.team],homeD=Math.hypot(salvage.x-home.x,salvage.z-home.z);
   if(homeD<245&&salvage.parts){salvage.banked+=salvage.parts;salvage.parts=0;feed('<span style="color:#6fe3d0">PARTS SECURED AT '+factionName(player.team)+' BASE</span>');}
   var back=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
-  var msg=back<13?'[G] BOARD AIRCRAFT':(nearD<45?nearest.kind.toUpperCase()+' CACHE · '+Math.round(nearD)+' M':'SCAVENGE THE RUINED BLOCKS · RETURN PARTS TO BASE');
+  var district=nearestWorldDistrict(salvage.x,salvage.z);
+  var msg=back<13?'[G] BOARD AIRCRAFT':(nearD<45?nearest.kind.toUpperCase()+' CACHE · '+Math.round(nearD)+' M':
+    (district.distance<180?district.district.name+' · SEARCH THE DISTRICT':'SCAVENGE THE RUINED BLOCKS · '+district.district.name+' '+Math.round(district.distance)+' M'));
   updateSalvageHud(msg);
   var tp=document.getElementById('tPass');if(tp)tp.textContent=back<13?'BOARD':'USE';
   stepGroundCombat(dt);
   var cf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
   camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(cf,-10);
-  camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);camera.up.set(0,1,0);
+  camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);
 }
