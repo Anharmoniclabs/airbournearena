@@ -2929,7 +2929,12 @@ var SKYBASE_POS={
 };
 var skyBaseHosts={};
 var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salvage'};
-['vanguard','tempest','inferno'].forEach(function(faction){
+var SKYBASE_ASSETS={
+  vanguard:['assets/vanguard-ozone-base-v1.glb','assets/vanguard-ozone-base-v1-lod1.glb'],
+  tempest:['assets/tempest-ozone-base-v1.glb','assets/tempest-ozone-base-v1-lod1.glb'],
+  inferno:['assets/inferno-ozone-base-v1.glb','assets/inferno-ozone-base-v1-lod1.glb']
+};
+Object.keys(SKYBASE_ASSETS).forEach(function(faction){
   var host=new THREE.LOD();host.name=faction+' ozone base';host.position.copy(SKYBASE_POS[faction]);
   host.userData.ready=0;scene.add(host);skyBaseHosts[faction]=host;
   function add(url,distance){
@@ -2938,8 +2943,8 @@ var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salv
       host.addLevel(gltf.scene,distance);host.userData.ready++;
     },undefined,function(err){console.error(faction+' ozone base failed to load',url,err);});
   }
-  add('assets/'+faction+'-ozone-base-v1.glb',0);
-  add('assets/'+faction+'-ozone-base-v1-lod1.glb',LOW?700:1500);
+  add(SKYBASE_ASSETS[faction][0],0);
+  add(SKYBASE_ASSETS[faction][1],LOW?700:1500);
   var beacon=new THREE.PointLight(faction==='inferno'?0xff5325:(faction==='tempest'?0x22ddc8:0x4fc3ff),
     LOW?1.2:2.4,1300);beacon.position.set(0,100,0);host.add(beacon);
 });

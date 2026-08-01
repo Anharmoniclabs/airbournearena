@@ -103,9 +103,10 @@ test("the Blender world and campaign story kit are runtime assets", () => {
 });
 
 test("open world has a complete dock, launch, descent, landing, and exit loop", () => {
-  assert.match(canonical, /\['vanguard','tempest','inferno'\]\.forEach/);
-  assert.match(canonical, /'assets\/'\+faction\+'-ozone-base-v1\.glb'/);
-  assert.match(canonical, /'assets\/'\+faction\+'-ozone-base-v1-lod1\.glb'/);
+  for (const faction of ["vanguard", "tempest", "inferno"]) {
+    assert.match(canonical, new RegExp(`assets/${faction}-ozone-base-v1\\.glb`));
+    assert.match(canonical, new RegExp(`assets/${faction}-ozone-base-v1-lod1\\.glb`));
+  }
   assert.match(canonical, /function startOpenWorld\(\)/);
   assert.match(canonical, /salvage\.landed=true;salvage\.surface='skybase'/);
   assert.match(canonical, /function skyDeckAt\(x,z\)/);
