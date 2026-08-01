@@ -3022,7 +3022,9 @@ function startOpenWorld(){
   worldFlow.activity='salvage';worldFlow.transition=null;
   player.maxHp=Number.isFinite(player.maxHp)?player.maxHp:100;
   player.alive=true;player.mesh.visible=true;player.hp=player.maxHp;
-  player.pos.copy(base).add(new THREE.Vector3(faction==='inferno'?-250:250,13.2,0));
+  /* Every island sits on the negative-X half of its deck. Spawn on the clear
+     runway end so Inferno never starts inside its command tower. */
+  player.pos.copy(base).add(new THREE.Vector3(250,13.2,0));
   player.quat.identity();player.vel.set(0,0,0);player.speed=0;player.throttle=0;
   st.camMode=0;camLookReady=false;el.brief.classList.add('gone');el.hud.classList.add('live');
   document.body.classList.add('playing');sortie.startedAt=performance.now();
@@ -8965,6 +8967,10 @@ function step(dt){
       var districtTop=f===player&&st.mode==='world'?districtObstacleHeightAt(f.pos.x,f.pos.z):null;
       if(districtTop!==null&&f.pos.y<districtTop+5){kill(f,null);continue;}
       if(f.pos.y-gh<8){
+        /* Free-roam contact is an assisted landing. The player asked for the
+           aircraft to settle automatically when it reaches the floor; speed
+           and descent-rate gates turned ordinary approaches into explosions. */
+        if(f===player&&st.mode==='world'){settleAircraft(gh,deck?'skybase':'ground');continue;}
         if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft(gh,deck?'skybase':'ground');continue;}
         kill(f,null);continue;
       }

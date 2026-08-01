@@ -300,6 +300,10 @@ function step(dt){
       var districtTop=f===player&&st.mode==='world'?districtObstacleHeightAt(f.pos.x,f.pos.z):null;
       if(districtTop!==null&&f.pos.y<districtTop+5){kill(f,null);continue;}
       if(f.pos.y-gh<8){
+        /* Free-roam contact is an assisted landing. The player asked for the
+           aircraft to settle automatically when it reaches the floor; speed
+           and descent-rate gates turned ordinary approaches into explosions. */
+        if(f===player&&st.mode==='world'){settleAircraft(gh,deck?'skybase':'ground');continue;}
         if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft(gh,deck?'skybase':'ground');continue;}
         kill(f,null);continue;
       }

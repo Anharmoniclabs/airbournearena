@@ -101,7 +101,9 @@ function startOpenWorld(){
   worldFlow.activity='salvage';worldFlow.transition=null;
   player.maxHp=Number.isFinite(player.maxHp)?player.maxHp:100;
   player.alive=true;player.mesh.visible=true;player.hp=player.maxHp;
-  player.pos.copy(base).add(new THREE.Vector3(faction==='inferno'?-250:250,13.2,0));
+  /* Every island sits on the negative-X half of its deck. Spawn on the clear
+     runway end so Inferno never starts inside its command tower. */
+  player.pos.copy(base).add(new THREE.Vector3(250,13.2,0));
   player.quat.identity();player.vel.set(0,0,0);player.speed=0;player.throttle=0;
   st.camMode=0;camLookReady=false;el.brief.classList.add('gone');el.hud.classList.add('live');
   document.body.classList.add('playing');sortie.startedAt=performance.now();
