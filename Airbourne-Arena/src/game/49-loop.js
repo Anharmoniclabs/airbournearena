@@ -48,7 +48,11 @@ function env(dt){
   skyU.top.value.copy(cTop); skyU.bottom.value.copy(cBot);
   skyU.sunCol.value.copy(cSun); skyU.sunDir.value.copy(sunDir); skyU.glow.value=1-wx.cover*.8;
   skyU.cover.value=wx.cover;skyU.time.value=performance.now()*.001;
-  scene.fog.color.copy(cBot).lerp(C.grey,.18); scene.fog.density=wx.fog;
+  scene.fog.color.copy(cBot).lerp(C.grey,.18);
+  /* Weather haze belongs to the lower atmosphere. Keeping sea-level fog at a
+     15 km sky base erased its deck, structures and faction markings. */
+  var ozoneClear=worldFlow.active?smooth(4200,11000,camera.position.y):0;
+  scene.fog.density=wx.fog*(1-ozoneClear*.9);
 
   var shade=1-wx.cover*.62,nightF=1-dayF;
   sunLight.color.copy(cSun); sunLight.intensity=(.08+dayF*1.12)*shade+st.flash*2.2;
@@ -610,7 +614,11 @@ function hudWork(dt){
   el.aimRet.classList.toggle('stall',player.stalled);
 
   /* mouse reticle */
-  if(alive&&(st.locked||IS_TOUCH)){
+  if(salvage.on){
+    el.aimRet.style.opacity=.9;
+    el.aimRet.style.left=(innerWidth*.5)+'px';
+    el.aimRet.style.top=(innerHeight*.5)+'px';
+  } else if(alive&&(st.locked||IS_TOUCH)){
     el.aimRet.style.opacity=.9;
     el.aimRet.style.left=((aim.x*.5+.5)*innerWidth)+'px';
     el.aimRet.style.top=((-aim.y*.5+.5)*innerHeight)+'px';

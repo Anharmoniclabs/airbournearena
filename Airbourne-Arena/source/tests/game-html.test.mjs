@@ -115,6 +115,18 @@ test("open world has a complete dock, launch, descent, landing, and exit loop", 
   assert.match(canonical, /LAUNCHED · INSERTION ROUTE LOCKED/);
   assert.match(canonical, /settleAircraft\(gh,deck\?'skybase':'ground'\)/);
   assert.match(canonical, /if\(e\.code==='KeyF'&&salvage\.surface==='skybase'\)\{openOperations\(\)/);
+  assert.match(canonical, /hp:100,maxHp:100,alive:true/);
+  assert.match(canonical, /if\(typeof applyLoadout==='function'\)applyLoadout\(\)/);
+  assert.match(canonical, /player\.maxHp=Number\.isFinite\(player\.maxHp\)\?player\.maxHp:100/);
+  assert.match(canonical, /player\.pos\.y=worldSurfaceAt\(player\.pos\.x,player\.pos\.z\)\+3\.2/);
+  assert.match(canonical, /function calibrateSkyBase\(root,faction\)/);
+  assert.match(canonical, /scene\.fog\.density=wx\.fog\*\(1-ozoneClear\*\.9\)/);
+  assert.match(canonical, /salvage\.yaw-=e\.movementX\*gs/);
+  assert.match(canonical, /salvage\.lookPitch=clamp\(salvage\.lookPitch-e\.movementY\*gs\*\.72/);
+  assert.match(canonical, /exitForward=new THREE\.Vector3\(0,0,-1\)\.applyQuaternion\(player\.quat\)/);
+  assert.match(canonical, /exitRight=new THREE\.Vector3\(1,0,0\)\.applyQuaternion\(player\.quat\)/);
+  assert.match(canonical, /salvage\.x=player\.pos\.x-exitForward\.x\*8\+exitRight\.x\*7/);
+  assert.match(canonical, /MOUSE LOOK · WASD MOVE · SHIFT RUN/);
 });
 
 test("lower-city free roam includes a complete filler ground-combat encounter", () => {

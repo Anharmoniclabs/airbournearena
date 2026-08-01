@@ -15,7 +15,7 @@ function setGroundAction(name){
   if(groundActions[groundAction])groundActions[groundAction].fadeOut(.16);
   groundActions[name].reset().fadeIn(.16).play();groundAction=name;
 }
-var salvage={on:false,landed:false,surface:null,x:0,z:0,yaw:0,face:0,moving:0,parts:0,health:0,armor:0,shield:0,banked:0};
+var salvage={on:false,landed:false,surface:null,x:0,z:0,yaw:0,lookPitch:0,face:0,moving:0,parts:0,health:0,armor:0,shield:0,banked:0};
 var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
 (function buildSalvage(){
   var kindCol={parts:0xffb347,health:0x6fe3d0,armor:0x78a9ff};
@@ -38,14 +38,21 @@ function updateSalvageHud(msg){
   var stock=document.getElementById('salvageStock'),prompt=document.getElementById('salvagePrompt');
   if(stock)stock.innerHTML='<b>PARTS '+salvage.parts+'</b> · HEALTH '+Math.ceil(player.hp)+' · ARMOR '+Math.ceil(salvage.shield)+
     (salvage.banked?' · BASE STORES '+salvage.banked:'');
-  if(prompt)prompt.textContent=msg||'WASD MOVE · SHIFT RUN · [G] BOARD AIRCRAFT';
+  if(prompt)prompt.textContent=msg||'MOUSE LOOK · WASD MOVE · SHIFT RUN · [G] BOARD AIRCRAFT';
 }
 function enterGroundMode(){
   if(salvage.on||!player.alive||st.phase==='hangar')return;
   if(!salvage.landed){banner('TOUCH DOWN FIRST · G EXITS AFTER LANDING',1.8);return;}
   salvage.on=true;st.phase='ground';document.body.classList.add('ground');
-  salvage.x=player.pos.x;salvage.z=player.pos.z+7;salvage.yaw=Math.atan2(player.vel.x,-player.vel.z);
-  player.pos.y=ground(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;player.throttle=0;
+  /* A landed aircraft has zero velocity, and atan2(0,-0) resolves to PI. That
+     put the exit camera through the fuselage. Use the airframe orientation so
+     the pilot always steps out behind the tail and looks along the nose. */
+  var exitForward=new THREE.Vector3(0,0,-1).applyQuaternion(player.quat).setY(0).normalize();
+  var exitRight=new THREE.Vector3(1,0,0).applyQuaternion(player.quat).setY(0).normalize();
+  salvage.x=player.pos.x-exitForward.x*8+exitRight.x*7;
+  salvage.z=player.pos.z-exitForward.z*8+exitRight.z*7;
+  salvage.yaw=Math.atan2(exitForward.x,-exitForward.z);salvage.lookPitch=0;
+  player.pos.y=worldSurfaceAt(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;player.throttle=0;
   var sy=worldSurfaceAt(salvage.x,salvage.z);
   groundAvatar.visible=!!groundActions.Idle;groundAvatar.position.set(salvage.x,sy,salvage.z);
   setGroundAction('Idle');
@@ -104,7 +111,7 @@ function groundControl(dt){
     var tp=document.getElementById('tPass');if(tp)tp.textContent=shipD<13?'BOARD':'OPS';
     var sf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
     camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(sf,-10);
-    camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);return;
+    camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3+Math.tan(salvage.lookPitch)*7,salvage.z);return;
   }
   var nearest=null,nearD=1e9;
   for(var i=0;i<loot.length;i++){
@@ -126,5 +133,5 @@ function groundControl(dt){
   stepGroundCombat(dt);
   var cf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
   camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(cf,-10);
-  camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3,salvage.z);
+  camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3+Math.tan(salvage.lookPitch)*7,salvage.z);
 }

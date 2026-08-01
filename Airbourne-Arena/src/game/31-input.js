@@ -144,6 +144,17 @@ document.addEventListener('pointerlockchange',function(){
 })();
 addEventListener('mousemove',function(e){
   st.mouseSeen=true;
+  if(typeof salvage!=='undefined'&&salvage.on&&!IS_TOUCH){
+    /* On foot the mouse owns the character/camera heading. Pointer lock gives
+       unlimited travel; the canvas-position fallback still turns the view if
+       a browser refuses lock until the player clicks again. */
+    if(st.locked||e.target===renderer.domElement){
+      var gs=clamp(cfg.sens,20,180)/24000;
+      salvage.yaw-=e.movementX*gs;
+      salvage.lookPitch=clamp(salvage.lookPitch-e.movementY*gs*.72,-.82,.68);
+    }
+    return;
+  }
   if(st.phase==='hangar'&&!IS_TOUCH){
     if(st.locked&&(!hEl.fitCard||!hEl.fitCard.classList.contains('on'))){
       var hs=clamp(cfg.sens,20,120)/18000;

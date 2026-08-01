@@ -16,11 +16,25 @@ var SKYBASE_ASSETS={
   tempest:['assets/tempest-ozone-base-v1.glb','assets/tempest-ozone-base-v1-lod1.glb'],
   inferno:['assets/inferno-ozone-base-v1.glb','assets/inferno-ozone-base-v1-lod1.glb']
 };
+function calibrateSkyBase(root,faction){
+  var shell={vanguard:0x243b4a,tempest:0x174642,inferno:0x202126}[faction],
+      accent={vanguard:0x159bd1,tempest:0x10a998,inferno:0xd64a1d}[faction];
+  root.traverse(function(o){
+    if(!o.isMesh||!o.material)return;o.material=o.material.clone();
+    var name=(o.material.name||'').toLowerCase();
+    if(name.indexOf('aerospace shell')>=0){o.material.color.setHex(shell);o.material.roughness=.48;}
+    else if(name.indexOf('structural frame')>=0){o.material.color.setHex(0x080d12);o.material.roughness=.34;}
+    else if(name.indexOf('emissive guidance')>=0){o.material.color.setHex(accent);o.material.emissive.setHex(accent);o.material.emissiveIntensity=1.35;}
+    else if(name.indexOf('recessed glazing')>=0){o.material.color.setHex(0x071923);o.material.emissive.setHex(0x062330);o.material.emissiveIntensity=.5;}
+    o.material.needsUpdate=true;
+  });
+}
 Object.keys(SKYBASE_ASSETS).forEach(function(faction){
   var host=new THREE.LOD();host.name=faction+' ozone base';host.position.copy(SKYBASE_POS[faction]);
   host.userData.ready=0;scene.add(host);skyBaseHosts[faction]=host;
   function add(url,distance){
     makeGltfLoader().load(url,function(gltf){
+      calibrateSkyBase(gltf.scene,faction);
       gltf.scene.traverse(function(o){if(o.isMesh){o.castShadow=!LOW;o.receiveShadow=true;}});
       host.addLevel(gltf.scene,distance);host.userData.ready++;
     },undefined,function(err){console.error(faction+' ozone base failed to load',url,err);});
@@ -80,10 +94,12 @@ function stepWorldFlow(dt){
 
 function startOpenWorld(){
   abandonMission();st.mode='world';st.phase='flight';st.started=true;st.over=false;
+  if(typeof applyLoadout==='function')applyLoadout();
   parkArena(true);salvage.on=false;salvage.landed=true;salvage.surface='skybase';document.body.classList.remove('ground','hangar');
   var faction=factionKey(),base=SKYBASE_POS[faction]||SKYBASE_POS.vanguard;
   worldFlow.active=true;worldFlow.zone='ozone';worldFlow.faction=faction;worldFlow.base=base;
   worldFlow.activity='salvage';worldFlow.transition=null;
+  player.maxHp=Number.isFinite(player.maxHp)?player.maxHp:100;
   player.alive=true;player.mesh.visible=true;player.hp=player.maxHp;
   player.pos.copy(base).add(new THREE.Vector3(faction==='inferno'?-250:250,13.2,0));
   player.quat.identity();player.vel.set(0,0,0);player.speed=0;player.throttle=0;

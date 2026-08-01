@@ -278,7 +278,7 @@ function buildPlane(team,isPlayer){
 function makeFighter(team,idx,isPlayer){
   var f={team:team,slot:idx,name:NAMES[team][idx],isPlayer:!!isPlayer,mesh:buildPlane(team,isPlayer),
     vel:new THREE.Vector3(),speed:0,alpha:0,gLoad:1,stalled:false,
-    hp:100,alive:true,respawnT:0,invuln:3,throttle:.8,cannonCd:0,
+    hp:100,maxHp:100,alive:true,respawnT:0,invuln:3,throttle:.8,cannonCd:0,
     kills:0,caps:0,carrying:false,aiJink:0,boundT:0,spread:.0105,
     roll:{t:0,dir:0,cd:0},evade:0,lastSeen:null,lastSeenT:0,
     dmgEng:0,dmgAil:0,ailSign:1,strike:null,strikeTarget:null,strikeT:0,ceilT:0};
@@ -300,7 +300,8 @@ function respawnFighter(f,instant){
   f.mesh.quaternion.setFromUnitVectors(_rsFwd.set(0,0,-1),_rsTo);
   var fwd=new THREE.Vector3(0,0,-1).applyQuaternion(f.quat);
   f.vel.copy(fwd).multiplyScalar(185);
-  f.speed=185; f.hp=100; f.alive=true; f.throttle=.85; f.invuln=instant?2:3;
+  f.maxHp=Number.isFinite(f.maxHp)?f.maxHp:100;
+  f.speed=185; f.hp=f.maxHp; f.alive=true; f.throttle=.85; f.invuln=instant?2:3;
   f.mesh.visible=true; f.carrying=false; f.boundT=0; f.stalled=false;
   f.dmgEng=0; f.dmgAil=0;      /* a fresh airframe is a repaired airframe */
   f.strike=null; f.strikeTarget=null; f.strikeT=0; f.ceilT=0;

@@ -13,8 +13,8 @@
   html,body{height:100%;overflow:hidden;background:#05070d;color:var(--ink);
     font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
     -webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
-  body.locked{cursor:none}
-  body.playing #app canvas{cursor:none}
+  body.playing #app canvas{cursor:crosshair}
+  body.locked,body.locked #app canvas{cursor:none}
   #app{position:fixed;inset:0} canvas{display:block}
   .lbl{font-size:9px;letter-spacing:.22em;color:rgba(223,243,255,.5)}
   .val{font-size:19px;font-weight:600;line-height:1;color:var(--teal);text-shadow:0 0 14px rgba(111,227,208,.3)}
@@ -67,6 +67,8 @@
     background:rgba(5,10,16,.82);color:var(--ink);font-size:10px;letter-spacing:.14em;
     text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(6px)}
   body.ground #salvageHud{opacity:1}
+  body.ground #tl,body.ground #tr,body.ground #score,body.ground #tape,
+  body.ground #bl,body.ground #rollHud,body.ground #vpath{opacity:0!important}
   #salvageHud b{color:var(--amber);font-weight:500}
   #salvagePrompt{margin-top:5px;color:var(--teal)}
   #zoomTag{position:fixed;left:50%;top:calc(50% + 74px);transform:translateX(-50%);

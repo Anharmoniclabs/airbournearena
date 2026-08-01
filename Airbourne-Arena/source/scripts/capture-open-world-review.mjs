@@ -38,6 +38,29 @@ if(reviewLow)await desktop.addInitScript(()=>localStorage.setItem('airbourne:set
 if(captureStage!=='ground'){
   const sky=await pageFor(desktop,'sky base');
   await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__;c.startOpenWorld();document.querySelector('#boot')?.classList.add('gone');c.settleFlightCamera();});
+  if(captureStage==='skywalk'){
+    await sky.evaluate(()=>window.__AIRBOURNE_CAPTURE__.enterGround());
+    await sky.waitForTimeout(700);
+    const before=await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__,s=c.getSalvage();return {x:s.x,z:s.z,yaw:s.yaw,pitch:s.lookPitch};});
+    await sky.evaluate(()=>{
+      const canvas=window.__AIRBOURNE_CAPTURE__.renderer.domElement;
+      const event=new MouseEvent('mousemove',{bubbles:true});
+      Object.defineProperties(event,{movementX:{value:72},movementY:{value:-18}});
+      canvas.dispatchEvent(event);
+    });
+    await sky.keyboard.down('w');await sky.waitForTimeout(320);await sky.keyboard.up('w');await sky.waitForTimeout(180);
+    const diagnostic=await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__,s=c.getSalvage();return {phase:c.getPhase(),health:c.getPlayer().hp,maxHealth:c.getPlayer().maxHp,yaw:s.yaw,pitch:s.lookPitch,flightHudHidden:getComputedStyle(document.querySelector('#tl')).opacity==='0',skyBaseReady:Object.values(c.getSkyBases()).every(base=>base.userData.ready>0)};});
+    if(diagnostic.yaw===before.yaw||diagnostic.pitch===before.pitch)failures.push('sky walk: mouse look did not change yaw and pitch');
+    const afterPosition=await sky.evaluate(()=>{const s=window.__AIRBOURNE_CAPTURE__.getSalvage();return {x:s.x,z:s.z};});
+    if(Math.hypot(afterPosition.x-before.x,afterPosition.z-before.z)<.5)failures.push('sky walk: W did not move the pilot');
+    if(!Number.isFinite(diagnostic.health)||!Number.isFinite(diagnostic.maxHealth))failures.push('sky walk: non-finite player health');
+    await canvasPng(sky,out+'/open-world-sky-walk-desktop.png');
+    const boarded=await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__;c.leaveGround();return {phase:c.getPhase(),onFoot:c.getSalvage().on};});
+    if(boarded.phase!=='flight'||boarded.onFoot)failures.push('sky walk: G/board transition did not return to flight');
+    await sky.close();await desktop.close();await browser.close();
+    await fs.writeFile(out+'/sky-walk-report.json',JSON.stringify({before,afterPosition,diagnostic,boarded,failures},null,2)+'\n');
+    console.log(JSON.stringify({diagnostic,boarded}));process.exit(failures.length?1:0);
+  }
   if(diagnosticOnly){
     await sky.waitForFunction(()=>window.__AIRBOURNE_CAPTURE__.getAuthoredDistrictReady()>=3);
     const diagnostic=await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__;return {districtsReady:c.getAuthoredDistrictReady(),districts:c.getWorldDistricts().map(d=>d.name),skyBases:Object.keys(c.getSkyBases()),phase:c.getPhase(),triangles:c.renderer.info.render.triangles,calls:c.renderer.info.render.calls};});
