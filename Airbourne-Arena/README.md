@@ -83,17 +83,10 @@ The setting, factions, cast and chapter beats are documented in
 
 Press `O`, or use the button on the briefing, pause and end screens. Mouse
 sensitivity, invert pitch, master volume, engine tone, HUD scale, AI
-difficulty, colour-blind team colours, zero-point flight, reduced motion and
-tutorial coaching all persist across sessions.
+difficulty, colour-blind team colours, reduced motion and tutorial coaching all
+persist across sessions.
 
 Reduced motion defaults to whatever the operating system asks for.
-
-**ZERO-POINT FLIGHT** is on by default. It gives the airframe full pointing
-authority at any airspeed, removes the stall, and holds station when you cut the
-throttle — the aircraft hovers instead of falling. It blends out by ~165 kn, so
-fast flight is unchanged. Switching it off restores the pure energy model, which
-is also what the first-sortie coaching and the gunnery solver were originally
-tuned against.
 
 ## Accessibility
 
