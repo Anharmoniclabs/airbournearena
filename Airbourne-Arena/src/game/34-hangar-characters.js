@@ -511,6 +511,7 @@ if(new URLSearchParams(location.search).has('capture')){
     tickWorldFlow:function(dt){stepWorldFlow(dt);stepWorldDistricts(dt);},
     enterGround:function(){return enterGroundMode();},
     leaveGround:function(){return leaveGroundMode();},
+    tickGround:function(dt){return groundControl(dt);},
     getSalvage:function(){return salvage;},
     placeGroundReview:function(kind){
       startOpenWorld();worldFlow.activity=kind||'groundwar';

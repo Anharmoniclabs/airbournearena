@@ -48,7 +48,7 @@ if(captureStage!=='ground'){
       Object.defineProperties(event,{movementX:{value:72},movementY:{value:-18}});
       canvas.dispatchEvent(event);
     });
-    await sky.keyboard.down('w');await sky.waitForTimeout(320);await sky.keyboard.up('w');await sky.waitForTimeout(180);
+    await sky.keyboard.down('w');await sky.evaluate(()=>window.__AIRBOURNE_CAPTURE__.tickGround(.32));await sky.keyboard.up('w');await sky.waitForTimeout(180);
     const diagnostic=await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__,s=c.getSalvage();return {phase:c.getPhase(),health:c.getPlayer().hp,maxHealth:c.getPlayer().maxHp,yaw:s.yaw,pitch:s.lookPitch,flightHudHidden:getComputedStyle(document.querySelector('#tl')).opacity==='0',skyBaseReady:Object.values(c.getSkyBases()).every(base=>base.userData.ready>0)};});
     if(diagnostic.yaw===before.yaw||diagnostic.pitch===before.pitch)failures.push('sky walk: mouse look did not change yaw and pitch');
     const afterPosition=await sky.evaluate(()=>{const s=window.__AIRBOURNE_CAPTURE__.getSalvage();return {x:s.x,z:s.z};});
