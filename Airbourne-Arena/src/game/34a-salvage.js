@@ -96,8 +96,7 @@ function groundControl(dt){
   var mz=-Math.cos(salvage.yaw)*fwd-Math.sin(salvage.yaw)*side,ml=Math.hypot(mx,mz),sp=run?18:10;
   if(ml>.01){mx/=ml;mz/=ml;salvage.x+=mx*sp*dt;salvage.z+=mz*sp*dt;salvage.face=Math.atan2(-mx,-mz);}
   if(salvage.surface==='skybase'){
-    var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?300:(worldFlow.faction==='inferno'?390:370),
-      limZ=worldFlow.faction==='tempest'?300:(worldFlow.faction==='inferno'?135:115);
+    var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?265:335,limZ=worldFlow.faction==='tempest'?265:86;
     salvage.x=clamp(salvage.x,bp.x-limX,bp.x+limX);salvage.z=clamp(salvage.z,bp.z-limZ,bp.z+limZ);
   }else{
     salvage.x=clamp(salvage.x,-CITY_REACH,CITY_REACH);salvage.z=clamp(salvage.z,-CITY_REACH,CITY_REACH);
