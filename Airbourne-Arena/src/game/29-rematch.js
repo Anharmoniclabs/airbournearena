@@ -2,6 +2,10 @@
    A soft reset. Reloading the page would re-download every texture and the
    Three.js bundle just to zero a scoreboard. */
 function resetMatch(){
+  if(typeof salvage!=='undefined'){
+    salvage.on=false;salvage.landed=false;groundAvatar.visible=false;
+    document.body.classList.remove('ground');
+  }
   st.scoreB=0; st.scoreR=0; st.time=MATCH_TIME; st.over=false; st.paused=false;
   st.dmgFlash=0; st.hitmark=0; shake=0; st.ringWarned=false;
   lockOn.target=null;lockOn.manual=false;lockOn.assisted=false;
@@ -36,4 +40,3 @@ function resetMatch(){
   audioResume();
   if(!IS_TOUCH)lock();
 }
-

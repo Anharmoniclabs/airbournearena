@@ -265,7 +265,10 @@ function step(dt){
     if(st.time<=0){st.time=0; if(!net.on)endMatch();}
   }
 
-  if(player.alive&&!st.over){if(salvage.on)groundControl(dt);else playerControl(dt);}
+  if(player.alive&&!st.over){
+    if(salvage.on)groundControl(dt);
+    else if(!salvage.landed)playerControl(dt);
+  }
 
   for(var i=0;i<fighters.length;i++){
     var f=fighters[i];
@@ -285,9 +288,12 @@ function step(dt){
 
     /* Terrain and the ceiling are simulation, and a remote aircraft is not
        simulated here — its owner has already flown it into the hill or not. */
-    if(!remote&&!(f===player&&salvage.on)){
+    if(!remote&&!(f===player&&(salvage.on||salvage.landed))){
       var gh=ground(f.pos.x,f.pos.z);
-      if(f.pos.y-gh<8){kill(f,null);continue;}
+      if(f.pos.y-gh<8){
+        if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft();continue;}
+        kill(f,null);continue;
+      }
       /* Open sky: altitude changes aircraft performance through airDensity, but
          does not inflict arbitrary damage. The final clamp is numerical safety
          beyond the visible atmosphere, not a tactical boundary. */
@@ -615,7 +621,8 @@ function hudWork(dt){
   else if(bannerT>0){bannerT-=dt; if(bannerT<=0)el.center.textContent='';}
 
   var pr='';
-  if(!IS_TOUCH&&!st.mouseSeen&&alive)pr='MOVE THE MOUSE TO STEER  ·  A / D TO TURN';
+  if(salvage.landed&&!salvage.on)pr='LANDED · G TO EXIT AIRCRAFT';
+  else if(!IS_TOUCH&&!st.mouseSeen&&alive)pr='MOVE THE MOUSE TO STEER  ·  A / D TO TURN';
   else if(core.carrier===player)pr='F — PASS THE CORE';
   else if(player.stalled)pr='STALLED — EASE OFF AND LET THE NOSE DROP';
   else if(!core.carrier&&alive&&player.pos.distanceTo(core.pos)<450)pr='FLY THROUGH THE CORE';

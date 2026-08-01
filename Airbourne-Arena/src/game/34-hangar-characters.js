@@ -449,6 +449,8 @@ function enterHangar(){
 }
 function leaveHangar(){
   st.phase='brief';
+  if(typeof salvage!=='undefined'){salvage.on=false;salvage.landed=false;}
+  document.body.classList.remove('ground');
   document.body.classList.remove('hangar');
   /* hangarStep owns this class and stops running here, so it has to be dropped
      on the way out rather than left in whatever state the last frame saw */

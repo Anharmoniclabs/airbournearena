@@ -15,7 +15,7 @@ function setGroundAction(name){
   if(groundActions[groundAction])groundActions[groundAction].fadeOut(.16);
   groundActions[name].reset().fadeIn(.16).play();groundAction=name;
 }
-var salvage={on:false,x:0,z:0,yaw:0,face:0,moving:0,parts:0,health:0,armor:0,banked:0};
+var salvage={on:false,landed:false,x:0,z:0,yaw:0,face:0,moving:0,parts:0,health:0,armor:0,banked:0};
 var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
 (function buildSalvage(){
   var kindCol={parts:0xffb347,health:0x6fe3d0,armor:0x78a9ff};
@@ -42,8 +42,7 @@ function updateSalvageHud(msg){
 }
 function enterGroundMode(){
   if(salvage.on||!player.alive||st.phase==='hangar')return;
-  var agl=player.pos.y-ground(player.pos.x,player.pos.z);
-  if(agl>42||player.speed>115){banner('LAND BELOW 115 KTS · WITHIN 42 M',1.8);return;}
+  if(!salvage.landed){banner('TOUCH DOWN FIRST · G EXITS AFTER LANDING',1.8);return;}
   salvage.on=true;st.phase='ground';document.body.classList.add('ground');
   salvage.x=player.pos.x;salvage.z=player.pos.z+7;salvage.yaw=Math.atan2(player.vel.x,-player.vel.z);
   player.pos.y=ground(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;player.throttle=0;
@@ -53,9 +52,21 @@ function enterGroundMode(){
 function leaveGroundMode(){
   if(!salvage.on)return;
   if(Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z)>13){banner('RETURN TO YOUR AIRCRAFT',1.4);return;}
-  salvage.on=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
+  salvage.on=false;salvage.landed=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
   player.pos.y=ground(player.pos.x,player.pos.z)+9;player.vel.set(0,0,-28).applyQuaternion(player.quat);player.speed=28;
   banner('AIRCRAFT BOARDED · THROTTLE UP',1.5);
+}
+function settleAircraft(){
+  if(salvage.landed||salvage.on)return;
+  var heading=Math.atan2(player.vel.x,-player.vel.z);
+  if(player.speed<2){axes(player);heading=Math.atan2(_f.x,-_f.z);}
+  salvage.landed=true;
+  player.pos.y=ground(player.pos.x,player.pos.z)+3.2;
+  player.vel.set(0,0,0);player.speed=0;player.throttle=0;
+  player.quat.setFromEuler(new THREE.Euler(0,heading,0));
+  burner.lit=false;
+  banner('LANDED · PRESS G TO EXIT',2.4);
+  updateSalvageHud('[G] EXIT AIRCRAFT');
 }
 function groundControl(dt){
   var turn=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0);
