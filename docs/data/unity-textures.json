@@ -1,0 +1,955 @@
+{
+  "schemaVersion": 1,
+  "mode": "plan",
+  "note": "Unity performs final platform GPU compression; PNG files are import intermediates.",
+  "totals": {
+    "sourceBytes": 44699522,
+    "outputBytes": 0
+  },
+  "assets": [
+    {
+      "source": "airbase-deck-diffusion-4k-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 1260514,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/airbase-deck-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "airbourne-icon-192.png",
+      "class": "ui_and_briefing",
+      "sourceBytes": 57175,
+      "sourceSize": [
+        192,
+        192
+      ],
+      "targetSize": [
+        192,
+        192
+      ],
+      "output": "unity-import/textures/ui_and_briefing/airbourne-icon-192.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "airbourne-icon-512.png",
+      "class": "ui_and_briefing",
+      "sourceBytes": 282658,
+      "sourceSize": [
+        512,
+        512
+      ],
+      "targetSize": [
+        512,
+        512
+      ],
+      "output": "unity-import/textures/ui_and_briefing/airbourne-icon-512.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "airbourne-icon-v2-192.png",
+      "class": "ui_and_briefing",
+      "sourceBytes": 73077,
+      "sourceSize": [
+        192,
+        192
+      ],
+      "targetSize": [
+        192,
+        192
+      ],
+      "output": "unity-import/textures/ui_and_briefing/airbourne-icon-v2-192.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "airbourne-icon-v2-512.png",
+      "class": "ui_and_briefing",
+      "sourceBytes": 513244,
+      "sourceSize": [
+        512,
+        512
+      ],
+      "targetSize": [
+        512,
+        512
+      ],
+      "output": "unity-import/textures/ui_and_briefing/airbourne-icon-v2-512.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "arena-core-objective-v3.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 26994,
+      "sourceSize": [
+        512,
+        256
+      ],
+      "targetSize": [
+        512,
+        256
+      ],
+      "output": "unity-import/textures/ui_and_briefing/arena-core-objective-v3.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "arena-core-skin-v2.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 84460,
+      "sourceSize": [
+        512,
+        512
+      ],
+      "targetSize": [
+        512,
+        512
+      ],
+      "output": "unity-import/textures/ui_and_briefing/arena-core-skin-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "arena-core-skin.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 28940,
+      "sourceSize": [
+        512,
+        512
+      ],
+      "targetSize": [
+        512,
+        512
+      ],
+      "output": "unity-import/textures/ui_and_briefing/arena-core-skin.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "aviation-explosion-vfx-diffusion-4k-v1.webp",
+      "class": "vfx",
+      "sourceBytes": 552556,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/vfx/aviation-explosion-vfx-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "aviation-hardware-diffusion-4k-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 1431228,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/aviation-hardware-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "black-wing-surface-diffusion-4k-v1.webp",
+      "class": "aircraft",
+      "sourceBytes": 589556,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "output": "unity-import/textures/aircraft/black-wing-surface-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "blue-airstrip-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 189158,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/blue-airstrip-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "blue-fighter-v2.png",
+      "class": "aircraft",
+      "sourceBytes": 1068990,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1254,
+        1254
+      ],
+      "output": "unity-import/textures/aircraft/blue-fighter-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "blue-fighter-v2.webp",
+      "class": "aircraft",
+      "sourceBytes": 84128,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1254,
+        1254
+      ],
+      "output": "unity-import/textures/aircraft/blue-fighter-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "blue-fighter-v3.webp",
+      "class": "aircraft",
+      "sourceBytes": 260832,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1254,
+        1254
+      ],
+      "output": "unity-import/textures/aircraft/blue-fighter-v3.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "breakwater-field-surface-diffusion-4k-v1.webp",
+      "class": "terrain",
+      "sourceBytes": 1783818,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "output": "unity-import/textures/terrain/breakwater-field-surface-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "bunker-concrete-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 740320,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/bunker-concrete-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "case-run-briefing-v2.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 323806,
+      "sourceSize": [
+        1536,
+        864
+      ],
+      "targetSize": [
+        1024,
+        576
+      ],
+      "output": "unity-import/textures/ui_and_briefing/case-run-briefing-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "case-run-briefing.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 91184,
+      "sourceSize": [
+        1536,
+        864
+      ],
+      "targetSize": [
+        1024,
+        576
+      ],
+      "output": "unity-import/textures/ui_and_briefing/case-run-briefing.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "city-facades-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 635798,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/city-facades-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "city-roofs-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 915652,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/city-roofs-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "conifer-foliage-diffusion-v1.webp",
+      "class": "terrain",
+      "sourceBytes": 1195084,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "output": "unity-import/textures/terrain/conifer-foliage-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "factory-facade-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 633058,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/factory-facade-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "flight-briefing-board-diffusion-4k-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 769662,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/flight-briefing-board-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "hangar-floor-diffusion-4k-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 1861498,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/hangar-floor-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "hangar-metal-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 703070,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/hangar-metal-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "independent-pilot-rear-diffusion-4k-v1.webp",
+      "class": "character_reference",
+      "sourceBytes": 483954,
+      "sourceSize": [
+        2731,
+        4096
+      ],
+      "targetSize": [
+        683,
+        1024
+      ],
+      "output": "unity-import/textures/character_reference/independent-pilot-rear-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "industrial-tank-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 733106,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/industrial-tank-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "inferno-surface-diffusion-4k-v1.webp",
+      "class": "aircraft",
+      "sourceBytes": 1598402,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "output": "unity-import/textures/aircraft/inferno-surface-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "kestrel-mk1-surface-diffusion-4k-v1.webp",
+      "class": "aircraft",
+      "sourceBytes": 1115666,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "output": "unity-import/textures/aircraft/kestrel-mk1-surface-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "kestrel-mk1-tileable-albedo-diffusion-v2.png",
+      "class": "aircraft",
+      "sourceBytes": 3117286,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1254,
+        1254
+      ],
+      "output": "unity-import/textures/aircraft/kestrel-mk1-tileable-albedo-diffusion-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "mara-switch-voss-diffusion-4k-v1.webp",
+      "class": "character_reference",
+      "sourceBytes": 474242,
+      "sourceSize": [
+        2201,
+        4096
+      ],
+      "targetSize": [
+        550,
+        1024
+      ],
+      "output": "unity-import/textures/character_reference/mara-switch-voss-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "ready-room-equipment-diffusion-4k-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 1116342,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/ready-room-equipment-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "red-airstrip-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 177968,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/red-airstrip-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "red-fighter-v2.png",
+      "class": "aircraft",
+      "sourceBytes": 928091,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1254,
+        1254
+      ],
+      "output": "unity-import/textures/aircraft/red-fighter-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "red-fighter-v2.webp",
+      "class": "aircraft",
+      "sourceBytes": 69968,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1254,
+        1254
+      ],
+      "output": "unity-import/textures/aircraft/red-fighter-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "red-fighter-v3.webp",
+      "class": "aircraft",
+      "sourceBytes": 195770,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1254,
+        1254
+      ],
+      "output": "unity-import/textures/aircraft/red-fighter-v3.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "residential-facade-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 552380,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/residential-facade-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "road-surface-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 1014072,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/road-surface-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "rooftop-equipment-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 813416,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/rooftop-equipment-diffusion-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "skyway-navigation-surface-diffusion-4k-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 1336778,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/architecture/skyway-navigation-surface-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "starter-coast-ocean-diffusion-4k-v1.webp",
+      "class": "terrain",
+      "sourceBytes": 1659748,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "output": "unity-import/textures/terrain/starter-coast-ocean-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "starter-coast-pilot-albedo-diffusion-v2.png",
+      "class": "ui_and_briefing",
+      "sourceBytes": 2012584,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/starter-coast-pilot-albedo-diffusion-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "storm-cloud-vfx-diffusion-4k-v1.webp",
+      "class": "vfx",
+      "sourceBytes": 207672,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/vfx/storm-cloud-vfx-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "storm-cloud-vfx-diffusion-4k-v2.webp",
+      "class": "vfx",
+      "sourceBytes": 424142,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/vfx/storm-cloud-vfx-diffusion-4k-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "team-airbases-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 146466,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/team-airbases-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "team-airbases-v2.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 525816,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/team-airbases-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "team-goal-portals-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 97068,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/team-goal-portals-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "team-goal-portals-v2.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 202888,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/team-goal-portals-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "team-skins-v2.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 401652,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/team-skins-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "team-skins.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 135570,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/team-skins.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "tempest-surface-diffusion-4k-v1.webp",
+      "class": "aircraft",
+      "sourceBytes": 1405272,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "output": "unity-import/textures/aircraft/tempest-surface-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "touch-control-pill-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 16838,
+      "sourceSize": [
+        640,
+        320
+      ],
+      "targetSize": [
+        640,
+        320
+      ],
+      "output": "unity-import/textures/ui_and_briefing/touch-control-pill-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "touch-control-round-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 42992,
+      "sourceSize": [
+        512,
+        512
+      ],
+      "targetSize": [
+        512,
+        512
+      ],
+      "output": "unity-import/textures/ui_and_briefing/touch-control-round-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "vanguard-interceptor-v4-tileable-albedo.png",
+      "class": "ui_and_briefing",
+      "sourceBytes": 2813999,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/vanguard-interceptor-v4-tileable-albedo.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "vanguard-surface-diffusion-4k-v1.webp",
+      "class": "aircraft",
+      "sourceBytes": 1387584,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "output": "unity-import/textures/aircraft/vanguard-surface-diffusion-4k-v1.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "volcanic-terrain-buildings-4k.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 2590376,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/volcanic-terrain-buildings-4k.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "volcanic-terrain-v2.webp",
+      "class": "terrain",
+      "sourceBytes": 496152,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/terrain/volcanic-terrain-v2.png",
+      "written": false,
+      "outputBytes": null
+    },
+    {
+      "source": "volcanic-terrain.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 248802,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "output": "unity-import/textures/ui_and_briefing/volcanic-terrain.png",
+      "written": false,
+      "outputBytes": null
+    }
+  ]
+}

@@ -12,20 +12,26 @@ var skyBaseHosts={};
 var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salvage',transition:null};
 var worldFlowPrev=new THREE.Vector3(),worldFlowDir=new THREE.Vector3();
 var SKYBASE_ASSETS={
-  vanguard:['assets/vanguard-ozone-base-v1.glb','assets/vanguard-ozone-base-v1-lod1.glb'],
-  tempest:['assets/tempest-ozone-base-v1.glb','assets/tempest-ozone-base-v1-lod1.glb'],
-  inferno:['assets/inferno-ozone-base-v1.glb','assets/inferno-ozone-base-v1-lod1.glb']
+  vanguard:['assets/vanguard-ozone-base-v3.glb','assets/vanguard-ozone-base-v3-lod1.glb'],
+  tempest:['assets/tempest-ozone-base-v3.glb','assets/tempest-ozone-base-v3-lod1.glb'],
+  inferno:['assets/inferno-ozone-base-v3.glb','assets/inferno-ozone-base-v3-lod1.glb']
 };
 function calibrateSkyBase(root,faction){
-  var shell={vanguard:0x243b4a,tempest:0x174642,inferno:0x202126}[faction],
-      accent={vanguard:0x159bd1,tempest:0x10a998,inferno:0xd64a1d}[faction];
+  /* The v3 bases carry their own tiled diffusion surfaces, so calibration
+     only tunes light response and emissive energy — repainting base colors
+     here would tint the authored textures into mud. */
   root.traverse(function(o){
     if(!o.isMesh||!o.material)return;o.material=o.material.clone();
     var name=(o.material.name||'').toLowerCase();
-    if(name.indexOf('aerospace shell')>=0){o.material.color.setHex(shell);o.material.roughness=.48;}
-    else if(name.indexOf('structural frame')>=0){o.material.color.setHex(0x080d12);o.material.roughness=.34;}
-    else if(name.indexOf('emissive guidance')>=0){o.material.color.setHex(accent);o.material.emissive.setHex(accent);o.material.emissiveIntensity=1.35;}
-    else if(name.indexOf('recessed glazing')>=0){o.material.color.setHex(0x071923);o.material.emissive.setHex(0x062330);o.material.emissiveIntensity=.5;}
+    if(name.indexOf('hull plating')>=0||name.indexOf('deck surface')>=0){
+      /* no environment map in the scene: high metalness reads as soot */
+      o.material.metalness=Math.min(o.material.metalness,.38);o.material.roughness=.6;
+    }else if(name.indexOf('structural frame')>=0){o.material.metalness=.55;o.material.roughness=.4;}
+    else if(name.indexOf('emissive guidance')>=0){o.material.emissiveIntensity=1.5;}
+    else if(name.indexOf('lift beam')>=0){
+      o.material.emissiveIntensity=2.2;o.material.transparent=true;o.material.opacity=.82;
+      o.material.blending=THREE.AdditiveBlending;o.material.depthWrite=false;
+    }else if(name.indexOf('recessed glazing')>=0){o.material.emissiveIntensity=1.1;}
     o.material.needsUpdate=true;
   });
 }

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "mode": "write",
+  "note": "Unity performs final platform GPU compression; PNG files are import intermediates.",
+  "totals": {
+    "sourceBytes": 3874082,
+    "outputBytes": 3318246
+  },
+  "assets": [
+    {
+      "source": "hangar-floor-diffusion-4k-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 1861498,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/architecture/hangar-floor-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 1931827
+    },
+    {
+      "source": "starter-coast-pilot-albedo-diffusion-v2.png",
+      "class": "character_reference",
+      "sourceBytes": 2012584,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/character_reference/starter-coast-pilot-albedo-diffusion-v2.png",
+      "written": true,
+      "outputBytes": 1386419
+    }
+  ]
+}

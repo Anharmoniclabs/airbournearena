@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "mode": "write",
+  "note": "Unity performs final platform GPU compression; PNG files are import intermediates.",
+  "totals": {
+    "sourceBytes": 16111978,
+    "outputBytes": 45377870
+  },
+  "assets": [
+    {
+      "source": "airbase-deck-diffusion-4k-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 1260514,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/architecture/airbase-deck-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 1588435
+    },
+    {
+      "source": "aviation-hardware-diffusion-4k-v1.webp",
+      "class": "ui_and_briefing",
+      "sourceBytes": 1431228,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/ui_and_briefing/aviation-hardware-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 1762039
+    },
+    {
+      "source": "black-wing-surface-diffusion-4k-v1.webp",
+      "class": "aircraft",
+      "sourceBytes": 589556,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/aircraft/black-wing-surface-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 2753955
+    },
+    {
+      "source": "breakwater-field-surface-diffusion-4k-v1.webp",
+      "class": "terrain",
+      "sourceBytes": 1783818,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/terrain/breakwater-field-surface-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 6047801
+    },
+    {
+      "source": "bunker-concrete-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 740320,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": {
+        "screen": "#3b3d3a",
+        "colour": "#9b9c92"
+      },
+      "output": "UnityProject/Assets/Art/Textures/architecture/bunker-concrete-diffusion-v1.png",
+      "written": true,
+      "outputBytes": 1274930
+    },
+    {
+      "source": "city-roofs-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 915652,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": {
+        "screen": "#353a3c",
+        "colour": "#899398"
+      },
+      "output": "UnityProject/Assets/Art/Textures/architecture/city-roofs-diffusion-v1.png",
+      "written": true,
+      "outputBytes": 1759594
+    },
+    {
+      "source": "conifer-foliage-diffusion-v1.webp",
+      "class": "terrain",
+      "sourceBytes": 1195084,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "transform": {
+        "screen": "#46513d",
+        "colour": "#91a978"
+      },
+      "output": "UnityProject/Assets/Art/Textures/terrain/conifer-foliage-diffusion-v1.png",
+      "written": true,
+      "outputBytes": 6178347
+    },
+    {
+      "source": "hangar-metal-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 703070,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/architecture/hangar-metal-diffusion-v1.png",
+      "written": true,
+      "outputBytes": 1598432
+    },
+    {
+      "source": "inferno-surface-diffusion-4k-v1.webp",
+      "class": "aircraft",
+      "sourceBytes": 1598402,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/aircraft/inferno-surface-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 5577461
+    },
+    {
+      "source": "road-surface-diffusion-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 1014072,
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/architecture/road-surface-diffusion-v1.png",
+      "written": true,
+      "outputBytes": 2033570
+    },
+    {
+      "source": "skyway-navigation-surface-diffusion-4k-v1.webp",
+      "class": "architecture",
+      "sourceBytes": 1336778,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/architecture/skyway-navigation-surface-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 1706027
+    },
+    {
+      "source": "starter-coast-ocean-diffusion-4k-v1.webp",
+      "class": "terrain",
+      "sourceBytes": 1659748,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/terrain/starter-coast-ocean-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 6152087
+    },
+    {
+      "source": "vanguard-surface-diffusion-4k-v1.webp",
+      "class": "aircraft",
+      "sourceBytes": 1387584,
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "targetSize": [
+        2048,
+        2048
+      ],
+      "transform": null,
+      "output": "UnityProject/Assets/Art/Textures/aircraft/vanguard-surface-diffusion-4k-v1.png",
+      "written": true,
+      "outputBytes": 5133983
+    },
+    {
+      "source": "volcanic-terrain-v2.webp",
+      "class": "terrain",
+      "sourceBytes": 496152,
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "targetSize": [
+        1024,
+        1024
+      ],
+      "transform": {
+        "screen": "#78787a",
+        "colour": "#c0ab86"
+      },
+      "output": "UnityProject/Assets/Art/Textures/terrain/volcanic-terrain-v2.png",
+      "written": true,
+      "outputBytes": 1811209
+    }
+  ]
+}
