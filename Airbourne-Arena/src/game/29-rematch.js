@@ -14,14 +14,16 @@ function resetMatch(){
   st.dmgFlash=0; st.hitmark=0; shake=0; st.ringWarned=false;
   lockOn.target=null;lockOn.manual=false;lockOn.assisted=false;
   lockOn.hover=null;lockOn.hoverT=0;lockOn.grace=0;
-  bullets.length=0;
+  while(bullets.length)bulletFree(bullets.pop());
   for(var s=0;s<structs.length;s++){
     var sc=structs[s];
     sc.alive=true; sc.hp=sc.maxHp; sc.respawnT=0; sc.cd=0; sc.mesh.visible=true;
   }
   clearDrones();
   stepGoalRings(0);
-  for(var i=fx.length-1;i>=0;i--){scene.remove(fx[i].s);fx[i].s.material.dispose();}
+  /* explosion sprites are pooled now — a rematch shelves them, it does not
+     dispose them; see the fx pool in 22-bullets.js */
+  for(var i=fx.length-1;i>=0;i--){fx[i].s.visible=false;fxPool.push(fx[i].s);}
   fx.length=0;
   for(var a=dmgArcs.length-1;a>=0;a--)dmgDirEl.removeChild(dmgArcs[a].node);
   dmgArcs.length=0;

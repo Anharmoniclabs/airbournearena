@@ -90,8 +90,10 @@ function aaFire(s,tgt){
   var sp=0.030;
   aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
   if(s.turret)s.turret.rotation.y=Math.atan2(aim.x,aim.z);
-  bullets.push({p:s.pos.clone().addScaledVector(aim,24).setY(s.pos.y+22),
-    v:aim.clone().multiplyScalar(AA_MUZZLE),life:2.2,team:s.team,owner:s,dmg:AA_DMG});
+  var b=bulletSpawn();
+  b.p.copy(s.pos).addScaledVector(aim,24).setY(s.pos.y+22);
+  b.v.copy(aim).multiplyScalar(AA_MUZZLE);
+  b.life=2.2;b.team=s.team;b.owner=s;b.dmg=AA_DMG;
   gunSfx(earGain(s.pos)*0.5);
 }
 function stepStructs(dt){

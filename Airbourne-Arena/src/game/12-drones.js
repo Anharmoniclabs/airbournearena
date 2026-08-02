@@ -114,9 +114,10 @@ function stepDrones(dt){
           dist/MUZZLE).sub(dr.pos).normalize();
         var sp=.026;
         aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
-        bullets.push({p:dr.pos.clone().addScaledVector(aim,7),
-          v:aim.clone().multiplyScalar(MUZZLE*.82),life:1.7,
-          team:'blackwing',owner:dr,dmg:DRONE_DMG});
+        var b=bulletSpawn();
+        b.p.copy(dr.pos).addScaledVector(aim,7);
+        b.v.copy(aim).multiplyScalar(MUZZLE*.82);
+        b.life=1.7;b.team='blackwing';b.owner=dr;b.dmg=DRONE_DMG;
         gunSfx(earGain(dr.pos)*.42);
       }
     }

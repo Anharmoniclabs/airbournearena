@@ -69,7 +69,7 @@ test("magnetic aim is earned, bounded, and supports ground targets", () => {
   assert.match(canonical, /if\(!target\.vel&&target\.height\)out\.y\+=target\.height\*\.52/);
   assert.match(canonical, /if\(sc\.alive&&sc\.team!==player\.team\)out\.push\(sc\)/);
   assert.match(canonical, /if\(site\.alive&&site\.hostile&&!site\.hold\)out\.push\(site\)/);
-  assert.match(canonical, /guide:guide,guideT:guide\?GUIDE_TIME:0/);
+  assert.match(canonical, /b\.guide=guide;b\.guideT=guide\?GUIDE_TIME:0/);
   assert.match(canonical, /b\.guideT-=dt/);
 });
 
