@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "asset": "Airbourne-Arena/UnityProject/Assets/Art/Generated/starter-coast-pilot-idle.fbx",
+      "bytes": 2148124,
+      "objects": 19,
+      "meshes": 2,
+      "triangles": 11376,
+      "materials": [
+        "VanguardBodyMat",
+        "Vanguard_VisorMat"
+      ]
+    },
+    {
+      "asset": "Airbourne-Arena/UnityProject/Assets/Art/Generated/starter-coast-pilot-walk.fbx",
+      "bytes": 2054540,
+      "objects": 19,
+      "meshes": 2,
+      "triangles": 11376,
+      "materials": [
+        "VanguardBodyMat.001",
+        "Vanguard_VisorMat.001"
+      ]
+    },
+    {
+      "asset": "Airbourne-Arena/UnityProject/Assets/Art/Generated/starter-coast-pilot-run.fbx",
+      "bytes": 2005836,
+      "objects": 19,
+      "meshes": 2,
+      "triangles": 11376,
+      "materials": [
+        "VanguardBodyMat.002",
+        "Vanguard_VisorMat.002"
+      ]
+    }
+  ]
+}
