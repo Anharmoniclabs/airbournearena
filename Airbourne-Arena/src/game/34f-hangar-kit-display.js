@@ -6,9 +6,9 @@
    The suit is a display stand, not a character. It was generated unrigged and
    in a T-pose — exactly wrong for a combatant, exactly right for a suit on a
    mannequin — so every animated role in the game still belongs to the rigged
-   pilot in 34-hangar-characters.js. The note on that entry in the
-   generated-art manifest under source-assets/ is the reason, and is where a
-   change should start if this ever becomes a real character.
+   pilot in 34-hangar-characters.js. The note on that entry in the generated-art
+   manifest is the reason, and is where a change should start if this ever
+   becomes a real character.
 
    This is a separate part rather than a block in 33-hangar.js because it reads
    ARENA_ARMS while building, and the arsenal that declares it is assembled

@@ -1,13 +1,19 @@
 /* ===================== generated art kit =====================
    One loader and one calibration pass for everything that came out of the AI
    Toolkit drop: the 4v4 arena decks, the airbases, the arena masterplan, the
-   weapons and the props. The generated-art manifest under source-assets/ is
-   where each of those is given its real-world size and its material role name;
-   this is the other half of that contract, and the names below have to stay in
-   step with the ones in the manifest or a surface loses its calibration
-   silently. (Its full path is not spelled out here on purpose: the deploy check
-   that every asset path in the built file resolves to a real file would read
-   the tail of it as one, and fail.)
+   weapons and the props. The generated-art manifest in the source-art folder
+   is where each of those is given its real-world size and its material role
+   name; this is the other half of that contract, and the names below have to
+   stay in step with the ones in the manifest or a surface loses its calibration
+   silently.
+
+   That manifest's path is described rather than written out, and so is every
+   other repository path in these parts. The deploy step scans the built file
+   for asset references and accepts an empty filename after the slash, so any
+   folder whose name happens to end in the asset directory's name — even inside
+   a comment like this one — is read as a reference to a file that cannot
+   exist, and fails the deploy. Naming folders without their trailing slash
+   avoids it.
 
    These differ from the Blender-authored world in the way that matters here:
    every one carries its own baked colour and normal map inside the GLB, so

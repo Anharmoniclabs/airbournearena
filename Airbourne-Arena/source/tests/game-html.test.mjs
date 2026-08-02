@@ -31,8 +31,18 @@ test("every referenced asset exists in both asset directories", async () => {
   // The game ships from two roots and each needs a complete asset set. New art
   // has landed in public/assets only before now, which leaves the standalone
   // index.html rendering with missing textures and nothing to catch it.
-  const refs = [...new Set([...canonical.matchAll(/assets\/[\w./-]+/g)].map((m) => m[0]))];
+  // Zero-or-more, not one-or-more, to match the deploy step in pages.yml
+  // exactly. With `+` this passed while the deploy failed: prose in a source
+  // comment mentioning a folder ending in "-assets/" is a reference with an
+  // empty filename to the shell grep, and the published site has no such file.
+  // A local gate looser than the deploy gate is not a gate.
+  const refs = [...new Set([...canonical.matchAll(/assets\/[\w./-]*/g)].map((m) => m[0]))];
   assert.ok(refs.length > 0, "expected the game to reference some assets");
+  assert.deepEqual(
+    refs.filter((ref) => ref === "assets/"),
+    [],
+    "a bare `assets/` in the built file fails the deploy as a missing empty filename",
+  );
 
   const roots = {
     "<root>/assets": new URL("../../", import.meta.url),
