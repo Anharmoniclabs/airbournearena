@@ -8,6 +8,23 @@ const servedUrl = new URL("../public/case-run.html", import.meta.url);
 const canonical = await readFile(canonicalUrl, "utf8");
 const served = await readFile(servedUrl, "utf8");
 
+const readGlbJson = (buffer) => {
+  assert.equal(buffer.toString("ascii", 0, 4), "glTF", "invalid GLB magic");
+  let offset = 12;
+  while (offset < buffer.length) {
+    const length = buffer.readUInt32LE(offset);
+    const type = buffer.readUInt32LE(offset + 4);
+    offset += 8;
+    if (type === 0x4e4f534a)
+      return JSON.parse(buffer.toString("utf8", offset, offset + length).replace(/\0+$/g, ""));
+    offset += length;
+  }
+  throw new Error("GLB has no JSON chunk");
+};
+const pilotGltf = readGlbJson(await readFile(
+  new URL("../../assets/arena-pilot-rigged-v1.glb", import.meta.url),
+));
+
 test("the served copy has not drifted from the canonical game file", () => {
   assert.equal(
     served,
@@ -112,19 +129,79 @@ test("the Blender world and campaign story kit are runtime assets", () => {
   }
 });
 
-test("open world has a complete dock, launch, descent, landing, and exit loop", () => {
+test("the generated pilot is the playable skinned character in every mode", () => {
+  assert.match(canonical, /var RUNTIME_PILOT_ASSET='assets\/arena-pilot-rigged-v1\.glb'/);
+  assert.equal(
+    [...canonical.matchAll(/characterLoader\.load\(RUNTIME_PILOT_ASSET/g)].length,
+    4,
+    "the hangar player, Mara, free-roam player and CQC bots must share the production pilot",
+  );
+  assert.match(canonical, /RIGGED_CHARACTER_READY=!!\(playerActions\.Idle&&playerActions\.Walk&&playerActions\.Run\)/);
+  assert.match(canonical, /setCharacterAction\(walk\.moving<\.12\?'Idle':\(walk\.run>\.45\?'Run':'Walk'\)\)/);
+  assert.match(canonical, /setGroundAction\(ml<\.01\?'Idle':\(run\?'Run':'Walk'\)\)/);
+  assert.match(canonical, /mn\.indexOf\('pilot flightsuit'\)>=0/);
+  assert.match(canonical, /getHangarPilot:function\(\)/);
+  assert.doesNotMatch(
+    canonical,
+    /characterLoader\.load\('assets\/starter-coast-pilot-rig-v1\.glb'/,
+    "the legacy pilot must not remain connected to a playable character",
+  );
+});
+
+test("the production pilot is a normalized Mixamo skin with three runtime clips", () => {
+  assert.equal(pilotGltf.meshes.length, 1);
+  assert.equal(pilotGltf.skins.length, 1);
+  assert.equal(pilotGltf.skins[0].joints.length, 49);
+  assert.equal(
+    pilotGltf.nodes.filter((node) => node.name?.startsWith("mixamorig:")).length,
+    49,
+  );
+  assert.deepEqual(
+    pilotGltf.animations.map((clip) => clip.name).sort(),
+    ["Idle", "Run", "Walk"],
+  );
+  const attributes = pilotGltf.meshes[0].primitives[0].attributes;
+  assert.ok(Number.isInteger(attributes.JOINTS_0));
+  assert.ok(Number.isInteger(attributes.WEIGHTS_0));
+  assert.equal(attributes.JOINTS_1, undefined, "portable WebGL skin must stay at four influences");
+  const armatureRoot = pilotGltf.nodes.find((node) => node.name === "Character");
+  assert.ok(armatureRoot);
+  assert.equal(armatureRoot.scale, undefined, "FBX's 0.01 scale must be baked before export");
+  assert.ok(pilotGltf.materials[0].pbrMetallicRoughness.baseColorTexture);
+  assert.ok(pilotGltf.materials[0].normalTexture);
+  assert.ok(pilotGltf.extensionsUsed.includes("EXT_meshopt_compression"));
+});
+
+test("the authored aircraft keeps its own UV maps while fit-out changes colour", () => {
+  assert.match(canonical, /if\(o\.userData\.authoredPlane\)\{/);
+  assert.match(canonical, /o\.userData\.authoredPlane\.traverse\(function\(mesh\)/);
+  assert.match(canonical, /name\.indexOf\('Vanguard ceramic armor'\)>=0/);
+  assert.match(canonical, /name\.indexOf\('Vanguard cobalt armor'\)>=0/);
+  assert.match(canonical, /\}else\{[\s\S]{0,500}?o\.userData\.hull\.map=active\?kestrelSkin:o\.userData\.factionSurface/);
+});
+
+test("open world arrives on the generated Skycity landing zones", () => {
   for (const faction of ["vanguard", "tempest", "inferno"]) {
     assert.match(canonical, new RegExp(`assets/${faction}-ozone-base-v3\\.glb`));
     assert.match(canonical, new RegExp(`assets/${faction}-ozone-base-v3-lod1\\.glb`));
   }
   assert.match(canonical, /function startOpenWorld\(\)/);
-  assert.match(canonical, /salvage\.landed=true;salvage\.surface='skybase'/);
+  assert.match(canonical, /salvage\.landed=true;salvage\.surface='skycity'/);
+  assert.match(canonical, /var SKYCITY_DECK_HEIGHT=50,SKYCITY_DECK_REACH=175,SKYCITY_WALK_REACH=150/);
+  assert.match(canonical, /function openWorldSkycityForFaction\(faction\)/);
+  assert.match(canonical, /landing=openWorldSkycityForFaction\(faction\)/);
+  assert.match(canonical, /worldFlow\.base=base;worldFlow\.skycity=landing\.installation/);
+  assert.match(canonical, /player\.pos\.copy\(base\)\.add\(new THREE\.Vector3\(0,3\.2,0\)\)/);
+  assert.match(canonical, /player\.quat\.setFromEuler\(new THREE\.Euler\(0,landing\.heading,0\)\)/);
+  assert.match(canonical, /function skycityDeckAt\(x,z\)/);
+  assert.match(canonical, /function clampToSkycityDeck\(point,installation\)/);
+  assert.match(canonical, /LAUNCHED · SKYCITY AIRSPACE · FREE FLIGHT/);
   assert.match(canonical, /function skyDeckAt\(x,z\)/);
   assert.match(canonical, /function worldSurfaceAt\(x,z\)/);
   assert.match(canonical, /function stepWorldFlow\(dt\)/);
   assert.match(canonical, /LAUNCHED · INSERTION ROUTE LOCKED/);
-  assert.match(canonical, /settleAircraft\(gh,deck\?'skybase':'ground'\)/);
-  assert.match(canonical, /if\(e\.code==='KeyF'&&salvage\.surface==='skybase'\)\{openOperations\(\)/);
+  assert.match(canonical, /settleAircraft\(gh,deck\?\(deck\.surface\|\|'skybase'\):'ground'\)/);
+  assert.match(canonical, /if\(e\.code==='KeyF'&&isOperationsDeck\(salvage\.surface\)\)\{openOperations\(\)/);
   assert.match(canonical, /hp:100,maxHp:100,alive:true/);
   assert.match(canonical, /if\(typeof applyLoadout==='function'\)applyLoadout\(\)/);
   assert.match(canonical, /player\.maxHp=Number\.isFinite\(player\.maxHp\)\?player\.maxHp:100/);
@@ -159,7 +236,7 @@ test("lower-city free roam includes a complete filler ground-combat encounter", 
   assert.match(canonical, /host\.userData\.legacy\.visible=false/);
 });
 
-test("sky-base operations route every game mode and every input class", () => {
+test("Skycity operations route every game mode and every input class", () => {
   for (const id of ["opSalvage", "opGroundWar", "opArena", "opCampaign", "opClose"])
     assert.match(canonical, new RegExp(`id=["']${id}["']`));
   assert.match(canonical, /function openOperations\(\)/);
@@ -167,7 +244,7 @@ test("sky-base operations route every game mode and every input class", () => {
   assert.match(canonical, /function startArenaOperation\(\)/);
   assert.match(canonical, /stick\.active\?stick\.dx:0/);
   assert.match(canonical, /salvage\.on&&padTap\(gp,0\)/);
-  assert.match(canonical, /else if\(salvage\.surface==='skybase'\)openOperations\(\)/);
+  assert.match(canonical, /else if\(isOperationsDeck\(salvage\.surface\)\)openOperations\(\)/);
 });
 
 test("sky-base launch inserts the aircraft into a dressed open world", () => {

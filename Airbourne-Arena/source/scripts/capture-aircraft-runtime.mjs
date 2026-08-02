@@ -48,6 +48,7 @@ await page.waitForFunction(() => (
   && window.__AIRBOURNE_CAPTURE__.hangarPlanes.blue
   && window.__AIRBOURNE_CAPTURE__.hangarPlanes.blue.userData.authoredPlane
   && window.__AIRBOURNE_CAPTURE__.hangarPlanes.blue.userData.authoredPlaneLod1
+  && window.__AIRBOURNE_CAPTURE__.getHangarPilot().ready
   && window.__AIRBOURNE_CAPTURE__.renderer.info.render.calls > 0
 ), null, { timeout: 30_000 });
 await page.waitForTimeout(1_500);
@@ -55,7 +56,23 @@ await page.waitForTimeout(1_500);
 const hangarDiagnostics = await page.evaluate(() => {
   const capture = window.__AIRBOURNE_CAPTURE__;
   const host = capture.hangarPlanes.blue;
+  const pilot = capture.getHangarPilot();
   const gl = capture.renderer.getContext();
+  const pilotBounds = new THREE.Box3().setFromObject(pilot.root);
+  let skinnedMeshes = 0;
+  let mappedPilotMaterials = 0;
+  pilot.root.traverse((object) => {
+    if (!object.isSkinnedMesh) return;
+    skinnedMeshes++;
+    if (object.material?.map && object.material?.normalMap) mappedPilotMaterials++;
+  });
+  let authoredMappedMeshes = 0;
+  let wrongAircraftMaps = 0;
+  host.userData.authoredPlane.traverse((object) => {
+    if (!object.isMesh || !object.material) return;
+    if (object.material.map) authoredMappedMeshes++;
+    if (object.material.map === window.kestrelSkin) wrongAircraftMaps++;
+  });
   return {
     phase: capture.st.phase,
     webglRenderer: gl.getParameter(gl.RENDERER),
@@ -63,6 +80,16 @@ const hangarDiagnostics = await page.evaluate(() => {
     lodLevels: host.userData.authoredPlane.levels.length,
     lod0Visible: host.userData.authoredPlane.levels[0].object.visible,
     fallbackVisible: host.userData.legacyParts.some((part) => part.visible),
+    authoredMappedMeshes,
+    wrongAircraftMaps,
+    pilot: {
+      ready: pilot.ready,
+      actions: pilot.actions,
+      active: pilot.active,
+      skinnedMeshes,
+      mappedPilotMaterials,
+      height: pilotBounds.max.y - pilotBounds.min.y,
+    },
     renderCalls: capture.renderer.info.render.calls,
     triangles: capture.renderer.info.render.triangles,
   };

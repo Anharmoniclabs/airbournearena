@@ -18,7 +18,7 @@ function startMission(id){
   var def=MISSIONS[id];
   if(!def)return false;
   if(typeof worldFlow!=='undefined'){
-    worldFlow.active=false;worldFlow.zone='surface';worldFlow.faction=null;worldFlow.base=null;worldFlow.transition=null;
+    worldFlow.active=false;worldFlow.zone='surface';worldFlow.faction=null;worldFlow.base=null;worldFlow.skycity=null;worldFlow.transition=null;
   }
   if(typeof salvage!=='undefined'){
     salvage.on=false;salvage.landed=false;salvage.surface=null;

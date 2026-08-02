@@ -2,6 +2,7 @@
    This is a real skinned GLB: one continuous character mesh, a Mixamo-style
    skeleton and embedded Idle/Walk/Run clips. Raster character concepts remain
    art direction only; they are never cut into fake body geometry. */
+var RUNTIME_PILOT_ASSET='assets/arena-pilot-rigged-v1.glb';
 var playerAvatar=new THREE.Group(),maraAvatar=new THREE.Group();
 var CAPTURE_FLIGHT=new URLSearchParams(location.search).has('captureFlight');
 var playerMixer=null,maraMixer=null,playerActions={},maraActions={};
@@ -30,7 +31,15 @@ function prepareCharacter(root,accent){
       o.material=o.material.clone();
       var mn=o.material.name||'';
       if(o.material.color){
-        if(mn.indexOf('Visor')>=0){
+        if(mn.indexOf('pilot flightsuit')>=0){
+          /* This is the generated pilot's authored colour + normal surface.
+             Keep both maps intact: replacing this UV layout with the legacy
+             pilot atlas is the character equivalent of the aircraft bug that
+             produced the broken blue-and-white web model. */
+          o.material.color.setHex(0xffffff);
+          o.material.roughness=.62;o.material.metalness=.10;
+          if(o.material.emissive){o.material.emissive.setHex(0x0b1117);o.material.emissiveIntensity=.05;}
+        }else if(mn.indexOf('Visor')>=0){
           o.material.color.setHex(0x80d9e7);
           if(o.material.emissive){o.material.emissive.setHex(0x123c4b);o.material.emissiveIntensity=.55;}
         }else if(mn.indexOf('Body')>=0){
@@ -52,7 +61,7 @@ function prepareCharacter(root,accent){
   root.scale.setScalar(1.72);
 }
 var characterLoader=makeGltfLoader();
-characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
+characterLoader.load(RUNTIME_PILOT_ASSET,function(gltf){
   playerAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x5d83b4);
   playerMixer=new THREE.AnimationMixer(gltf.scene);
   playerActions=characterActions(playerMixer,gltf.animations);
@@ -61,7 +70,7 @@ characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
   if(RIGGED_CHARACTER_READY)setCharacterAction('Idle');
   else console.error('Pilot GLB is missing Idle, Walk or Run.');
 },undefined,function(err){console.error('Pilot GLB failed to load.',err);});
-characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
+characterLoader.load(RUNTIME_PILOT_ASSET,function(gltf){
   maraAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x6b3328);
   maraMixer=new THREE.AnimationMixer(gltf.scene);
   maraActions=characterActions(maraMixer,gltf.animations);
@@ -99,15 +108,39 @@ function paintHangarPlane(){
     var o=hangarPlanes[tm];
     if(!o)return;
     var active=tm===PILOT.team;
-    if(o.userData.hull){
-      o.userData.hull.map=active?kestrelSkin:o.userData.factionSurface;
-      o.userData.hull.color.setHex(active?livery(PILOT.livery).hull:0xe9edf0);
-      o.userData.hull.needsUpdate=true;
-    }
-    if(o.userData.trim){
-      o.userData.trim.map=active?kestrelSkin:o.userData.factionSurface;
-      o.userData.trim.color.setHex(active?ACCENTS[PILOT.accent]:TEAM_COL[tm]);
-      o.userData.trim.needsUpdate=true;
+    if(o.userData.authoredPlane){
+      /* The authored interceptor has its own UVs and embedded tileable map.
+         The old fit-out path put the fallback Kestrel atlas on those UVs,
+         causing the stretched white/blue aircraft visible on Pages. Repaint
+         only physical colours and leave every authored map attached. */
+      o.userData.authoredPlane.traverse(function(mesh){
+        if(!mesh.isMesh||!mesh.material||!mesh.material.color)return;
+        var name=mesh.material.name||'';
+        if(name.indexOf('Vanguard ceramic armor')>=0||
+           name.indexOf('Vanguard clean ceramic armor')>=0){
+          mesh.material.color.setHex(active?livery(PILOT.livery).hull:
+            (tm==='blue'?0xd3e0e5:0xe0d0cc));
+          mesh.material.needsUpdate=true;
+        }else if(name.indexOf('Vanguard cobalt armor')>=0){
+          mesh.material.color.setHex(active?ACCENTS[PILOT.accent]:TEAM_COL[tm]);
+          if(mesh.material.emissive){
+            mesh.material.emissive.setHex(active?ACCENTS[PILOT.accent]:TEAM_COL[tm]);
+          }
+          mesh.material.needsUpdate=true;
+        }
+      });
+    }else{
+      /* Procedural load-error fallback: these meshes do use the Kestrel atlas. */
+      if(o.userData.hull){
+        o.userData.hull.map=active?kestrelSkin:o.userData.factionSurface;
+        o.userData.hull.color.setHex(active?livery(PILOT.livery).hull:0xe9edf0);
+        o.userData.hull.needsUpdate=true;
+      }
+      if(o.userData.trim){
+        o.userData.trim.map=active?kestrelSkin:o.userData.factionSurface;
+        o.userData.trim.color.setHex(active?ACCENTS[PILOT.accent]:TEAM_COL[tm]);
+        o.userData.trim.needsUpdate=true;
+      }
     }
   });
 }
@@ -481,6 +514,8 @@ if(new URLSearchParams(location.search).has('capture')){
     getWorld:function(){return authoredWorld;},
     getPhase:function(){return st.phase;},
     getWalk:function(){return {x:walk.x,z:walk.z,yaw:walk.yaw,pitch:walk.pitch};},
+    getHangarPilot:function(){return {root:playerAvatar,ready:RIGGED_CHARACTER_READY,
+      actions:Object.keys(playerActions),active:playerAction};},
     getBulletCount:function(){return bullets.length;},
     getPad:function(){return {on:pad.on,index:pad.index,id:pad.id};},
     setEnvironment:function(hours,key){

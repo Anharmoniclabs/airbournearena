@@ -74,7 +74,7 @@ function damageGroundPlayer(amount){
   banner('DOWNED · RECOVERED AT AIRCRAFT',2.2);
 }
 function stepGroundCombat(dt){
-  if(!groundCombat.active||salvage.surface==='skybase')return;
+  if(!groundCombat.active||isOperationsDeck(salvage.surface))return;
   /* Shooting is the arsenal's job now (34d) — it owns the ammunition, the
      spread and the tracer, and it fires at whatever both loops have alive. */
   groundCombat.hurtCd=Math.max(0,groundCombat.hurtCd-dt);

@@ -121,26 +121,37 @@ blender --background --factory-startup --python-exit-code 1 \
   --target-size 190 --rotate 0,0,0
 ```
 
-**Masterplan and airbases** (`src/game/18c-arena-installations.js`) — the
-authored Airbourne Arena skyway circuit hung at 1.4 km so it is flown through
-rather than past, and two forward airbases off the base axis, each with a tower
-and dressed with the generated turrets and cargo. Nothing here is solid: world
-collision is the terrain height field and nothing else.
+**Masterplan and Skycities** (`src/game/18c-arena-installations.js`) — the
+authored Airbourne Arena skyway circuit is hung at 1.4 km so it is flown through
+rather than past. The two forward airbases are now the Open World arrival
+Skycities: their measured deck is 50 m above the model origin, the central
+landing circle is kept clear, and the tower, turrets, and cargo are staged at
+the perimeter as an attached aerial village. The masterplan remains fly-through
+scenery; only the explicitly bounded Skycity decks participate in landing and
+on-foot collision.
 
 **Suit display** (`src/game/34f-hangar-kit-display.js`) — the new pilot and the
 five weapons on a rack opposite the mission board.
 
-## The pilot is a display stand, not a character
+## The pilot is a real playable character
 
-The generated pilot arrived unrigged and in a T-pose. That is exactly wrong for
-a combatant and exactly right for a suit on a mannequin, so it stands in the
-hangar and every animated role — the free-roam avatar, the deck bots — still
-belongs to the rigged Mixamo pilot in `starter-coast-pilot-rig-v1.glb`.
+The generated `pilot-mesh-raw` suit is rebuilt by
+`source-assets/blender/rig_generated_pilot.py`. The Blender step aligns it to
+the shipping Mixamo skeleton, transfers and normalizes at most four bone
+weights per vertex, preserves only the `Idle`, `Walk`, and `Run` clips, and
+exports `assets/arena-pilot-rigged-v1.glb`. A build fails if a vertex is
+unweighted, exceeds four influences, references a non-bone group, or does not
+sum to one.
 
-Making it a real character means rigging it. Note also that
-`THREE.Object3D.clone` does not rebind a skinned mesh to a new skeleton, which
-is why the deck bots each load their own copy of the rigged pilot rather than
-cloning one — the bytes come from the HTTP cache, so this costs parse time at
-first deployment, not bandwidth. Seven bots are built when the map list opens
-rather than after a deck is chosen, which spends that time while the player is
-reading the four descriptions.
+That one skinned asset now drives the hangar player, Mara, the open-world
+ground player, and every CQC bot. Its embedded colour and normal maps remain on
+the authored UVs. `render_rigged_pilot_review.py` poses each clip at its quarter
+and three-quarter frames so collapsed shoulders, detached armour, or weights
+dragged to the origin are visible before publishing.
+
+`THREE.Object3D.clone` does not rebind a skinned mesh to a new skeleton, so the
+deck bots each load their own copy instead of cloning one. The bytes come from
+the HTTP cache, so this costs parse time at first deployment, not bandwidth.
+Seven bots are built when the map list opens rather than after a deck is
+chosen, which spends that time while the player is reading the four
+descriptions.

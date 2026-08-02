@@ -9,7 +9,7 @@ var SKYBASE_POS={
   inferno:new THREE.Vector3(2400,SKYBASE_ALT,900)
 };
 var skyBaseHosts={};
-var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salvage',transition:null};
+var worldFlow={active:false,zone:'surface',faction:null,base:null,skycity:null,activity:'salvage',transition:null};
 var worldFlowPrev=new THREE.Vector3(),worldFlowDir=new THREE.Vector3();
 var SKYBASE_ASSETS={
   vanguard:['assets/vanguard-ozone-base-v3.glb','assets/vanguard-ozone-base-v3-lod1.glb'],
@@ -52,10 +52,12 @@ Object.keys(SKYBASE_ASSETS).forEach(function(faction){
 });
 
 function skyDeckAt(x,z){
+  var skycity=typeof skycityDeckAt==='function'?skycityDeckAt(x,z):null;
+  if(skycity)return skycity;
   for(var faction in SKYBASE_POS){
     var p=SKYBASE_POS[faction],dx=x-p.x,dz=z-p.z;
     var inside=faction==='tempest'?(dx*dx+dz*dz<300*300):(Math.abs(dx)<360&&Math.abs(dz)<105);
-    if(inside)return {height:p.y+10,faction:faction};
+    if(inside)return {height:p.y+10,faction:faction,surface:'skybase'};
   }
   return null;
 }
@@ -69,9 +71,11 @@ function worldSurfaceAt(x,z){
   var deck=st.mode==='world'?skyDeckAt(x,z):null;
   return deck?deck.height:ground(x,z);
 }
+function isOperationsDeck(surface){return surface==='skybase'||surface==='skycity';}
 function stepWorldFlow(dt){
   if(!worldFlow.active)return;
-  worldFlow.zone=player.pos.y>8000?'ozone':(player.pos.y>1800?'descent':'surface');
+  worldFlow.zone=salvage.surface==='skycity'&&(salvage.landed||salvage.on)?'skycity':
+    (player.pos.y>8000?'ozone':(player.pos.y>1800?'descent':'surface'));
   if(worldFlow.transition){
     var tr=worldFlow.transition;tr.t=Math.min(tr.duration,tr.t+dt);
     var u=tr.t/tr.duration,ease=u*u*(3-2*u);
@@ -93,8 +97,14 @@ function stepWorldFlow(dt){
     }
     return;
   }
-  if(aircraftMayEnterCity(player)&&salvage.landed&&!salvage.on&&salvage.surface==='skybase'&&
+  if(aircraftMayEnterCity(player)&&salvage.landed&&!salvage.on&&isOperationsDeck(salvage.surface)&&
      (keys.KeyW||keys.ShiftLeft||keys.ShiftRight||touchIn.thrUp||padIn.thrUp||padIn.boost)){
+    if(salvage.surface==='skycity'){
+      salvage.landed=false;salvage.surface=null;
+      worldFlowDir.set(0,0,-1).applyQuaternion(player.quat).normalize();
+      player.pos.y+=9;player.throttle=.58;player.vel.copy(worldFlowDir).multiplyScalar(55);player.vel.y=14;player.speed=player.vel.length();
+      camLookReady=false;banner('LAUNCHED · SKYCITY AIRSPACE · FREE FLIGHT',2.2);return;
+    }
     salvage.landed=false;salvage.surface=null;
     var entry=cityEntryLane(worldFlow.faction),lane=entry.x,entryZ=entry.z;
     worldFlow.transition={t:0,duration:7,from:player.pos.clone(),
@@ -107,18 +117,18 @@ function stepWorldFlow(dt){
 function startOpenWorld(){
   abandonMission();st.mode='world';st.phase='flight';st.started=true;st.over=false;
   if(typeof applyLoadout==='function')applyLoadout();
-  parkArena(true);salvage.on=false;salvage.landed=true;salvage.surface='skybase';document.body.classList.remove('ground','hangar');
-  var faction=factionKey(),base=SKYBASE_POS[faction]||SKYBASE_POS.vanguard;
-  worldFlow.active=true;worldFlow.zone='ozone';worldFlow.faction=faction;worldFlow.base=base;
+  parkArena(true);salvage.on=false;salvage.landed=true;salvage.surface='skycity';document.body.classList.remove('ground','hangar');
+  var faction=factionKey(),landing=openWorldSkycityForFaction(faction),base=landing.position;
+  worldFlow.active=true;worldFlow.zone='skycity';worldFlow.faction=faction;worldFlow.base=base;worldFlow.skycity=landing.installation;
   worldFlow.activity='salvage';worldFlow.transition=null;
   player.maxHp=Number.isFinite(player.maxHp)?player.maxHp:100;
   player.alive=true;player.mesh.visible=true;player.hp=player.maxHp;
-  /* Every island sits on the negative-X half of its deck. Spawn on the clear
-     runway end so Inferno never starts inside its command tower. */
-  player.pos.copy(base).add(new THREE.Vector3(250,13.2,0));
-  player.quat.identity();player.vel.set(0,0,0);player.speed=0;player.throttle=0;
+  /* The generated platform's broad marked helipad is centred at its origin.
+     Its tower and deck furniture are deliberately staged outside this circle. */
+  player.pos.copy(base).add(new THREE.Vector3(0,3.2,0));
+  player.quat.setFromEuler(new THREE.Euler(0,landing.heading,0));player.vel.set(0,0,0);player.speed=0;player.throttle=0;
   st.camMode=0;camLookReady=false;el.brief.classList.add('gone');el.hud.classList.add('live');
   document.body.classList.add('playing');sortie.startedAt=performance.now();
-  emit('match_start',{mode:'open_world'});banner(factionName(faction)+' OZONE BASE · G EXIT · W LAUNCH',3);
+  emit('match_start',{mode:'open_world'});banner(landing.name+' · LANDING ZONE · G EXIT · W LAUNCH',3);
   audioInit();audioResume();if(!IS_TOUCH)lock();
 }

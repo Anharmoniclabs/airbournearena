@@ -4,7 +4,7 @@
    by a primitive stand-in while the GLB is loading. */
 var groundAvatar=new THREE.Group(),groundMixer=null,groundActions={},groundAction='';
 groundAvatar.visible=false;scene.add(groundAvatar);
-characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
+characterLoader.load(RUNTIME_PILOT_ASSET,function(gltf){
   groundAvatar.add(gltf.scene);prepareCharacter(gltf.scene,0x5d83b4);
   groundMixer=new THREE.AnimationMixer(gltf.scene);
   groundActions=characterActions(groundMixer,gltf.animations);
@@ -56,15 +56,16 @@ function enterGroundMode(){
   var sy=worldSurfaceAt(salvage.x,salvage.z);
   groundAvatar.visible=!!groundActions.Idle;groundAvatar.position.set(salvage.x,sy,salvage.z);
   setGroundAction('Idle');
-  if(salvage.surface!=='skybase'&&worldFlow.activity==='groundwar')beginGroundEncounter();
-  banner(salvage.surface==='skybase'?'OZONE BASE FLIGHT DECK':'LOWER CITY · SALVAGE RUN',2);updateSalvageHud();
+  if(!isOperationsDeck(salvage.surface)&&worldFlow.activity==='groundwar')beginGroundEncounter();
+  banner(salvage.surface==='skycity'?'SKYCITY LANDING ZONE':
+    (salvage.surface==='skybase'?'OZONE BASE FLIGHT DECK':'LOWER CITY · SALVAGE RUN'),2);updateSalvageHud();
 }
 function leaveGroundMode(){
   if(!salvage.on)return;
   if(Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z)>13){banner('RETURN TO YOUR AIRCRAFT',1.4);return;}
   salvage.on=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
   armsHolster();
-  if(salvage.surface==='skybase'){
+  if(isOperationsDeck(salvage.surface)){
     player.pos.y=worldSurfaceAt(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;
     banner('AIRCRAFT BOARDED · W TO LAUNCH',1.5);
   }else{
@@ -100,6 +101,8 @@ function groundControl(dt){
     var reach=arenaMatch.map?arenaMatch.map.reach:80;
     salvage.x=clamp(salvage.x,arenaMatch.origin.x-reach,arenaMatch.origin.x+reach);
     salvage.z=clamp(salvage.z,arenaMatch.origin.z-reach,arenaMatch.origin.z+reach);
+  }else if(salvage.surface==='skycity'){
+    clampToSkycityDeck(salvage,worldFlow.skycity);
   }else if(salvage.surface==='skybase'){
     var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?265:335,limZ=worldFlow.faction==='tempest'?265:86;
     salvage.x=clamp(salvage.x,bp.x-limX,bp.x+limX);salvage.z=clamp(salvage.z,bp.z-limZ,bp.z+limZ);
@@ -112,7 +115,7 @@ function groundControl(dt){
   setGroundAction(ml<.01?'Idle':(run?'Run':'Walk'));if(groundMixer)groundMixer.update(dt);
   stepArenaArms(dt);
   if(salvage.surface==='cqc'){stepArenaMatch(dt);groundCamera(surfaceY);return;}
-  if(salvage.surface==='skybase'){
+  if(isOperationsDeck(salvage.surface)){
     var shipD=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
     updateSalvageHud(shipD<13?'[G] BOARD AIRCRAFT':'[F] OPERATIONS · RETURN TO AIRCRAFT TO BOARD');
     var tp=document.getElementById('tPass');if(tp)tp.textContent=shipD<13?'BOARD':'OPS';

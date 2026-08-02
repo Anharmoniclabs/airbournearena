@@ -83,7 +83,7 @@ function makeArenaBot(index,team){
     }
     checkArenaMatchOver();
   };
-  characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
+  characterLoader.load(RUNTIME_PILOT_ASSET,function(gltf){
     bot.mesh.add(gltf.scene);
     prepareCharacter(gltf.scene,0);
     /* prepareCharacter paints the authored albedo on, so team read has to come

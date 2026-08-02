@@ -131,7 +131,7 @@ document.addEventListener('pointerlockchange',function(){
   hold('tPass',function(){
     if(salvage.on){
       var d=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
-      if(d<13)leaveGroundMode();else if(salvage.surface==='skybase')openOperations();
+      if(d<13)leaveGroundMode();else if(isOperationsDeck(salvage.surface))openOperations();
     }else if(core.carrier===player)passCore(player);
   });
   hold('tRoll',function(){startRoll(player,stick.dx>0?-1:1);});
@@ -193,7 +193,7 @@ addEventListener('keydown',function(e){
   }
   if(salvage.on){
     if(e.code==='KeyH'&&salvage.surface==='cqc'){leaveArenaDeck();e.preventDefault();return;}
-    if(e.code==='KeyF'&&salvage.surface==='skybase'){openOperations();e.preventDefault();return;}
+    if(e.code==='KeyF'&&isOperationsDeck(salvage.surface)){openOperations();e.preventDefault();return;}
     if(e.code==='KeyM'){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
     if(e.code==='KeyP')setPaused(!st.paused);
     return;

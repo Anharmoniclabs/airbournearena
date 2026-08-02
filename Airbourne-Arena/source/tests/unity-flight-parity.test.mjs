@@ -85,7 +85,7 @@ test("the magnetic aim and guidance constants match", () => {
 });
 
 test("rounds live as long and spread as tightly as the canonical ones", () => {
-  assert.match(js.bullets, /life:1\.6/);
+  assert.match(js.bullets, /b\.life=1\.6/);
   assert.equal(csNum(cs.gunnery, "RoundLife"), 1.6);
   assert.match(js.bullets, /f\.isPlayer\?\.0032:/);
   assert.equal(csNum(cs.gunnery, "PlayerSpread"), 0.0032);

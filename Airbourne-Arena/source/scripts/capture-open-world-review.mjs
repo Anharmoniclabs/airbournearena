@@ -38,6 +38,10 @@ if(reviewLow)await desktop.addInitScript(()=>localStorage.setItem('airbourne:set
 if(captureStage!=='ground'){
   const sky=await pageFor(desktop,'sky base');
   await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__;c.startOpenWorld();document.querySelector('#boot')?.classList.add('gone');c.settleFlightCamera();});
+  await sky.waitForFunction(()=>window.__AIRBOURNE_CAPTURE__.getArenaInstallations().airbases.every(base=>base.userData.ready>0));
+  const arrival=await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__,p=c.getPlayer(),s=c.getSalvage(),flow=c.getWorldFlow(),installation=flow.skycity;return {surface:s.surface,zone:flow.zone,player:p.pos.toArray(),deckY:installation?installation.y+50:null,installation:installation?.name||null,distance:installation?Math.hypot(p.pos.x-installation.x,p.pos.z-installation.z):null};});
+  if(arrival.surface!=='skycity'||arrival.zone!=='skycity')failures.push('skycity arrival: Open World did not select the Skycity surface');
+  if(arrival.distance===null||arrival.distance>.1||Math.abs(arrival.player[1]-(arrival.deckY+3.2))>.1)failures.push('skycity arrival: aircraft is not centred on the measured landing deck');
   if(captureStage==='skywalk'){
     await sky.evaluate(()=>window.__AIRBOURNE_CAPTURE__.enterGround());
     await sky.waitForTimeout(700);
@@ -66,10 +70,22 @@ if(captureStage!=='ground'){
     const diagnostic=await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__;return {districtsReady:c.getAuthoredDistrictReady(),districts:c.getWorldDistricts().map(d=>d.name),skyBases:Object.keys(c.getSkyBases()),phase:c.getPhase(),triangles:c.renderer.info.render.triangles,calls:c.renderer.info.render.calls};});
     console.log(JSON.stringify(diagnostic));await sky.close();await desktop.close();await browser.close();process.exit(failures.length?1:0);
   }
-  await sky.waitForTimeout(2400);await canvasPng(sky,out+'/open-world-sky-base-desktop.png');await sky.close();
+  await sky.waitForTimeout(2400);await canvasPng(sky,out+'/open-world-skycity-desktop.png');
+  await sky.keyboard.down('w');await sky.waitForTimeout(220);await sky.keyboard.up('w');
+  const launch=await sky.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__,p=c.getPlayer(),s=c.getSalvage(),flow=c.getWorldFlow();return {landed:s.landed,surface:s.surface,transition:!!flow.transition,speed:p.speed,zone:flow.zone};});
+  if(launch.landed||launch.surface!==null||launch.transition||launch.speed<=0)failures.push('skycity launch: W did not enter local free flight');
+  await sky.close();
   if(captureStage==='sky'){
+    const skyMobile=await browser.newContext({...devices['iPhone 13'],viewport:{width:780,height:360},screen:{width:780,height:360},deviceScaleFactor:1});
+    const phone=await pageFor(skyMobile,'skycity mobile');
+    await phone.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__;c.startOpenWorld();document.querySelector('#boot')?.classList.add('gone');c.settleFlightCamera();});
+    await phone.waitForFunction(()=>window.__AIRBOURNE_CAPTURE__.getArenaInstallations().airbases.every(base=>base.userData.ready>0));
+    await phone.waitForTimeout(1200);await canvasPng(phone,out+'/open-world-skycity-mobile.png');
+    const mobileArrival=await phone.evaluate(()=>{const c=window.__AIRBOURNE_CAPTURE__,p=c.getPlayer(),s=c.getSalvage(),flow=c.getWorldFlow();return {surface:s.surface,zone:flow.zone,player:p.pos.toArray()};});
+    if(mobileArrival.surface!=='skycity'||mobileArrival.zone!=='skycity')failures.push('skycity mobile: Open World did not select the Skycity surface');
+    await phone.close();await skyMobile.close();
     await desktop.close();await browser.close();
-    console.log(JSON.stringify({stage:'sky',failures}));process.exit(failures.length?1:0);
+    console.log(JSON.stringify({stage:'sky',arrival,launch,mobileArrival,failures}));process.exit(failures.length?1:0);
   }
 }
 const ground=await pageFor(desktop,'ground war');

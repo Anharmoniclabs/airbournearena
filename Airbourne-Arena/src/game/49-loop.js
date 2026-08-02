@@ -307,8 +307,8 @@ function step(dt){
         /* Free-roam contact is an assisted landing. The player asked for the
            aircraft to settle automatically when it reaches the floor; speed
            and descent-rate gates turned ordinary approaches into explosions. */
-        if(f===player&&st.mode==='world'){settleAircraft(gh,deck?'skybase':'ground');continue;}
-        if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft(gh,deck?'skybase':'ground');continue;}
+        if(f===player&&st.mode==='world'){settleAircraft(gh,deck?(deck.surface||'skybase'):'ground');continue;}
+        if(f===player&&f.speed<=150&&f.vel.y>-55){settleAircraft(gh,deck?(deck.surface||'skybase'):'ground');continue;}
         kill(f,null);continue;
       }
       /* Open sky: altitude changes aircraft performance through airDensity, but

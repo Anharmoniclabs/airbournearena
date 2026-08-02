@@ -162,7 +162,7 @@ function padTick(dt){
 
   if(salvage.on&&padTap(gp,0)){
     var useD=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
-    if(useD<13)leaveGroundMode();else if(salvage.surface==='skybase')openOperations();
+    if(useD<13)leaveGroundMode();else if(isOperationsDeck(salvage.surface))openOperations();
   }
 
   padIn.fire=padHeld(gp,7);
