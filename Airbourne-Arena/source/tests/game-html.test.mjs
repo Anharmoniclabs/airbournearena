@@ -131,12 +131,19 @@ test("open world has a complete dock, launch, descent, landing, and exit loop", 
 
 test("lower-city free roam includes a complete filler ground-combat encounter", () => {
   assert.match(canonical, /function beginGroundEncounter\(\)/);
-  assert.match(canonical, /function fireGroundWeapon\(\)/);
   assert.match(canonical, /function damageGroundPlayer\(amount\)/);
   assert.match(canonical, /salvage\.shield-=absorbed/);
   assert.match(canonical, /groundCombat\.kills>=groundCombat\.goal/);
   assert.match(canonical, /BLOCK SECURE · RETURN TO AIRCRAFT AND EXTRACT/);
-  assert.match(canonical, /if\(keys\.Space\|\|mouseDown\|\|touchIn\.fire\|\|padIn\.fire\)fireGroundWeapon\(\)/);
+  // Shooting left this encounter for the shared arsenal when the generated
+  // weapons landed: the ground war and the 4v4 decks now fire the same guns at
+  // one merged target list, so the sentries have to present the shape that
+  // arsenal hits. What must stay true is that the encounter is still shot at
+  // from the same four input classes, and that a dead sentry still pays out.
+  assert.match(canonical, /function fireArm\(\)/);
+  assert.match(canonical, /var firing=keys\.Space\|\|mouseDown\|\|touchIn\.fire\|\|padIn\.fire/);
+  assert.match(canonical, /if\(firing&&\(arm\.auto\|\|!armsPrev\.trigger\)\)fireArm\(\)/);
+  assert.match(canonical, /SENTRY DISABLED · 2 PARTS/);
   assert.match(canonical, /assets\/ground-sentry-drone-v1\.glb/);
   assert.match(canonical, /assets\/ground-sentry-drone-v1-lod1\.glb/);
   assert.match(canonical, /host\.userData\.legacy\.visible=false/);
@@ -174,10 +181,19 @@ test("sky-base launch inserts the aircraft into a dressed open world", () => {
   assert.match(canonical, /function aircraftMayEnterCity\(fighter\)/);
   assert.match(canonical, /function districtObstacleHeightAt\(x,z\)/);
   assert.match(canonical, /worldDistrictFallback\.visible=false/);
+  // This used to count two copies of the same six camera lines. Adding the CQC
+  // decks would have made it three, so the copies became one groundCamera()
+  // that every on-foot surface calls. The invariant the count protected is
+  // unchanged — up is reset before the view rotation is calculated — and it is
+  // now impossible for one surface to be the one that forgets.
+  assert.match(
+    canonical,
+    /function groundCamera\(surfaceY\)\{[\s\S]{0,600}?camera\.up\.set\(0,1,0\);[\s\S]{0,400}?camera\.lookAt\(/,
+  );
   assert.equal(
-    [...canonical.matchAll(/camera\.up\.set\(0,1,0\);camera\.lookAt\(/g)].length,
-    2,
-    "both on-foot cameras must reset up before calculating their view rotation",
+    [...canonical.matchAll(/groundCamera\(surfaceY\)/g)].length,
+    4,
+    "the city, sky-base and CQC surfaces must all route through groundCamera",
   );
 });
 
@@ -222,4 +238,54 @@ test("the three-faction story fallback cannot recurse", () => {
     /return PILOT\.faction\|\|\(PILOT\.team==='red'\?'inferno':'vanguard'\)/,
   );
   assert.doesNotMatch(canonical, /function factionKey\(\)\s*\{\s*return factionKey\(\)/);
+});
+
+test("the generated art drop is wired into the game, not just shipped", () => {
+  // Twenty GLBs converted out of the AI Toolkit drop reached assets/ before
+  // any of this existed. An asset that ships but is never referenced costs
+  // repository weight and looks like finished work, so each group below is
+  // pinned to the thing that actually places it.
+  for (const weapon of ["pistol", "smg", "assault", "sniper", "rocket"])
+    assert.match(canonical, new RegExp(`assets/weapon-${weapon}-v1\\.glb`));
+  for (const nade of ["frag", "flash", "smoke"])
+    assert.match(canonical, new RegExp(`assets/weapon-grenade-${nade}-v1\\.glb`));
+  for (const deck of ["vanguard-sky", "tempest-storm", "inferno-volcanic", "bunker-cqb"])
+    assert.match(canonical, new RegExp(`assets/cqc-${deck}-v1\\.glb`));
+  for (const rig of ["airbourne-arena-map", "sky-base-platform", "arena-tower"]) {
+    assert.match(canonical, new RegExp(`assets/${rig}-v1\\.glb`));
+    // Each of these is kilometres wide or hundreds of metres tall and all of
+    // them are on screen together from altitude, so none may ship without the
+    // authored LOD that makes that affordable.
+    assert.match(canonical, new RegExp(`assets/${rig}-v1-lod1\\.glb`));
+  }
+  for (const prop of ["arena-turret", "arena-crate", "arena-ammo-box", "arena-pilot"])
+    assert.match(canonical, new RegExp(`assets/${prop}-v1\\.glb`));
+
+  // The arsenal is shared, so both on-foot loops must reach the same firing
+  // path and the same target list.
+  assert.match(canonical, /function arenaCombatTargets\(hostileOnly\)/);
+  assert.match(canonical, /function arenaHitTarget\(t,damage\)/);
+  assert.match(canonical, /function stepArenaArms\(dt\)/);
+
+  // Deck height is a measured constant because raycasting a gltfpack-quantized
+  // mesh silently misses on this loader — see the note in 34e. A deck that
+  // reverts to the model origin drops the player through Vanguard Sky, so the
+  // audited numbers are pinned here.
+  assert.match(canonical, /id:'vanguard',name:'VANGUARD SKY'[^}]*deck:70/);
+  assert.match(canonical, /id:'bunker',name:'CQB BUNKER'[^}]*deck:0/);
+  assert.doesNotMatch(canonical, /_deckRay|intersectObject\(arenaMatch\.mesh/);
+
+  // Every route back off foot has to holster: otherwise the flight camera
+  // inherits the scope FOV and the weapon rig floats where the pilot was.
+  assert.match(canonical, /function armsHolster\(\)/);
+  assert.equal(
+    [...canonical.matchAll(/armsHolster\(\)/g)].length,
+    3,
+    "armsHolster must be defined and called from both leaveGroundMode and endArenaMatch",
+  );
+
+  // Reachable without already being in the open world: the decks are their own
+  // mode, not a sub-mode of the sky-base operations board.
+  for (const id of ["hDecks", "opCqc", "cqcCard", "cqcGrid", "cqcClose"])
+    assert.match(canonical, new RegExp(`id=["']${id}["']`));
 });

@@ -42,6 +42,9 @@ game/07-scene.js
 game/08-assets.js
 # Shadows and bloom, which need both the renderer (07) and the sun (08).
 game/08a-render-quality.js
+# Loading and surface calibration for the AI Toolkit art drop, needed by every
+# part below that places one of those meshes.
+game/08b-generated-art.js
 game/09-weather.js
 game/10-objectives.js
 game/11-structures.js
@@ -54,6 +57,7 @@ game/17-story-kit.js
 game/18-core-visual.js
 game/18a-ozone-bases.js
 game/18b-open-world-districts.js
+game/18c-arena-installations.js
 game/19-fighters.js
 game/20-pilot.js
 game/21-flight-model.js
@@ -74,6 +78,12 @@ game/34-hangar-characters.js
 game/34a-salvage.js
 game/34b-ground-combat.js
 game/34c-open-world-operations.js
+# The arsenal is shared by the ground war and the 4v4 decks, so it is declared
+# before the deck rules that spawn things for it to shoot.
+game/34d-arena-weapons.js
+game/34e-arena-4v4.js
+# Builds from ARENA_ARMS at load time, so it has to follow the arsenal.
+game/34f-hangar-kit-display.js
 game/35-mission-foundation.js
 game/36-mission-entities.js
 game/37-hostile-behaviour.js

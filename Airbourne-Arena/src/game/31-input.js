@@ -185,10 +185,14 @@ addEventListener('keydown',function(e){
      off on the first step you took across the floor */
   if(st.phase==='hangar')return;
   if(e.code==='KeyG'){
-    if(salvage.on)leaveGroundMode();else enterGroundMode();
+    /* There is no aircraft to board on a CQC deck, so G leaves the deck rather
+       than telling the player to return to a machine that is not there. */
+    if(salvage.surface==='cqc')leaveArenaDeck();
+    else if(salvage.on)leaveGroundMode();else enterGroundMode();
     e.preventDefault();return;
   }
   if(salvage.on){
+    if(e.code==='KeyH'&&salvage.surface==='cqc'){leaveArenaDeck();e.preventDefault();return;}
     if(e.code==='KeyF'&&salvage.surface==='skybase'){openOperations();e.preventDefault();return;}
     if(e.code==='KeyM'){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
     if(e.code==='KeyP')setPaused(!st.paused);

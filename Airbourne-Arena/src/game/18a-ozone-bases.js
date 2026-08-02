@@ -60,6 +60,12 @@ function skyDeckAt(x,z){
   return null;
 }
 function worldSurfaceAt(x,z){
+  /* A live CQC deck is the floor for everything standing on it — the pilot, a
+     bouncing grenade, a smoke cloud. It is asked first because three of those
+     decks hang beside the ozone bases, where the island terrain height under
+     them is 15 km away and meaningless. */
+  var cqc=arenaDeckAt(x,z);
+  if(cqc!==null&&cqc!==undefined)return cqc;
   var deck=st.mode==='world'?skyDeckAt(x,z):null;
   return deck?deck.height:ground(x,z);
 }

@@ -21,6 +21,11 @@ Airbourne-Arena/source/.wrangler/
 # tree is what is tracked, so keeping both would double the repo for nothing
 *.zip
 
+# Where scripts/convert-generated-art.mjs unpacks the AI Toolkit art drop. The
+# converted GLBs under Airbourne-Arena/assets/ are what ships; this is the
+# 146 MB Unity project they were cut from.
+/.art-source/
+
 # editor / OS
 .DS_Store
 *.swp

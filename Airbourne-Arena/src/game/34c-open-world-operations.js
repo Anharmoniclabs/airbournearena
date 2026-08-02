@@ -23,5 +23,8 @@ function startArenaOperation(){
 bindBtn('opSalvage',function(){armWorldActivity('salvage');});
 bindBtn('opGroundWar',function(){armWorldActivity('groundwar');});
 bindBtn('opArena',startArenaOperation);
+/* openArenaMaps is declared in 34e, below this part. Function declarations
+   hoist across the whole IIFE and nothing runs until the button is pressed. */
+bindBtn('opCqc',function(){closeOperations();openArenaMaps();});
 bindBtn('opCampaign',function(){closeOperations();openMissions();});
 bindBtn('opClose',closeOperations);

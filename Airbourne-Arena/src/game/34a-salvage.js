@@ -37,7 +37,7 @@ var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
 function updateSalvageHud(msg){
   var stock=document.getElementById('salvageStock'),prompt=document.getElementById('salvagePrompt');
   if(stock)stock.innerHTML='<b>PARTS '+salvage.parts+'</b> · HEALTH '+Math.ceil(player.hp)+' · ARMOR '+Math.ceil(salvage.shield)+
-    (salvage.banked?' · BASE STORES '+salvage.banked:'');
+    (salvage.banked?' · BASE STORES '+salvage.banked:'')+armsReadout();
   if(prompt)prompt.textContent=msg||'MOUSE LOOK · WASD MOVE · SHIFT RUN · [G] BOARD AIRCRAFT';
 }
 function enterGroundMode(){
@@ -63,6 +63,7 @@ function leaveGroundMode(){
   if(!salvage.on)return;
   if(Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z)>13){banner('RETURN TO YOUR AIRCRAFT',1.4);return;}
   salvage.on=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
+  armsHolster();
   if(salvage.surface==='skybase'){
     player.pos.y=worldSurfaceAt(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;
     banner('AIRCRAFT BOARDED · W TO LAUNCH',1.5);
@@ -95,7 +96,11 @@ function groundControl(dt){
   var mx=-Math.sin(salvage.yaw)*fwd+Math.cos(salvage.yaw)*side;
   var mz=-Math.cos(salvage.yaw)*fwd-Math.sin(salvage.yaw)*side,ml=Math.hypot(mx,mz),sp=run?18:10;
   if(ml>.01){mx/=ml;mz/=ml;salvage.x+=mx*sp*dt;salvage.z+=mz*sp*dt;salvage.face=Math.atan2(-mx,-mz);}
-  if(salvage.surface==='skybase'){
+  if(salvage.surface==='cqc'){
+    var reach=arenaMatch.map?arenaMatch.map.reach:80;
+    salvage.x=clamp(salvage.x,arenaMatch.origin.x-reach,arenaMatch.origin.x+reach);
+    salvage.z=clamp(salvage.z,arenaMatch.origin.z-reach,arenaMatch.origin.z+reach);
+  }else if(salvage.surface==='skybase'){
     var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?265:335,limZ=worldFlow.faction==='tempest'?265:86;
     salvage.x=clamp(salvage.x,bp.x-limX,bp.x+limX);salvage.z=clamp(salvage.z,bp.z-limZ,bp.z+limZ);
   }else{
@@ -105,13 +110,13 @@ function groundControl(dt){
   var surfaceY=worldSurfaceAt(salvage.x,salvage.z);
   groundAvatar.position.set(salvage.x,surfaceY,salvage.z);groundAvatar.rotation.y=salvage.face;
   setGroundAction(ml<.01?'Idle':(run?'Run':'Walk'));if(groundMixer)groundMixer.update(dt);
+  stepArenaArms(dt);
+  if(salvage.surface==='cqc'){stepArenaMatch(dt);groundCamera(surfaceY);return;}
   if(salvage.surface==='skybase'){
     var shipD=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
     updateSalvageHud(shipD<13?'[G] BOARD AIRCRAFT':'[F] OPERATIONS · RETURN TO AIRCRAFT TO BOARD');
     var tp=document.getElementById('tPass');if(tp)tp.textContent=shipD<13?'BOARD':'OPS';
-    var sf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
-    camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(sf,-10);
-    camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3+Math.tan(salvage.lookPitch)*7,salvage.z);return;
+    groundCamera(surfaceY);return;
   }
   var nearest=null,nearD=1e9;
   for(var i=0;i<loot.length;i++){
@@ -131,7 +136,22 @@ function groundControl(dt){
   updateSalvageHud(msg);
   var tp=document.getElementById('tPass');if(tp)tp.textContent=back<13?'BOARD':'USE';
   stepGroundCombat(dt);
-  var cf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
-  camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(cf,-10);
-  camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3+Math.tan(salvage.lookPitch)*7,salvage.z);
+  groundCamera(surfaceY);
+}
+/* One camera for every surface fought on foot. Aiming down the sights swings it
+   in to the right shoulder and points it far down the sightline instead of at
+   the pilot's back — at scope FOV the chase camera would otherwise be looking
+   at nothing but the pilot. */
+var _gcFwd=new THREE.Vector3(),_gcRight=new THREE.Vector3();
+function groundCamera(surfaceY){
+  var ads=arsenal.ads,
+      fwd=_gcFwd.set(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw)),
+      right=_gcRight.set(-fwd.z,0,fwd.x);
+  camera.position.set(salvage.x,surfaceY+(ads?4.2:5.6),salvage.z)
+    .addScaledVector(fwd,ads?-2.2:-10).addScaledVector(right,ads?1.5:0);
+  camera.up.set(0,1,0);
+  var look=ads?60:0;
+  camera.lookAt(salvage.x+fwd.x*look,
+    surfaceY+(ads?3.9:2.3)+Math.tan(salvage.lookPitch)*(ads?look:7),
+    salvage.z+fwd.z*look);
 }

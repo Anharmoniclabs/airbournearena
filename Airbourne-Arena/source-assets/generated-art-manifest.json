@@ -1,0 +1,211 @@
+{
+  "comment": [
+    "Every runtime GLB the web game loads that came out of the AI Toolkit, and",
+    "the numbers needed to turn the generator's output into it.",
+    "",
+    "sourceFolder is a directory under Assets/Art/Generated in the art drop; it",
+    "always holds one selected.fbx plus a selected.fbm texture pair. targetSize",
+    "is the longest dimension in metres — the generator's own scale is",
+    "arbitrary, so this is where an asset's real size is decided. material is",
+    "the stable name the runtime calibration in src/game/08b-generated-art.js",
+    "matches on; renaming one here without renaming it there leaves the surface",
+    "uncalibrated, and nothing fails to tell you so.",
+    "",
+    "textureSize is enforced by re-saving the scaled image — see the note on",
+    "load_downsampled in convert_generated_fbx.py. It was silently ignored once,",
+    "and every asset shipped 2048 maps regardless of what was asked for here.",
+    "",
+    "rotate is stated rather than inferred because the generator is not",
+    "consistent about up/forward, and a wrong guess only shows up in a render.",
+    "docs/renders/generated/ holds the proof for each entry.",
+    "",
+    "Regenerate with: npm run art:convert (from source/)."
+  ],
+  "assets": [
+    {
+      "sourceFolder": "pilot-mesh-raw_Assets",
+      "output": "arena-pilot-v1.glb",
+      "material": "pilot flightsuit",
+      "targetSize": 1.85,
+      "textureSize": 1024,
+      "comment": "Generated unrigged and in a T-pose, so this is the hangar suit display, not a gameplay avatar; the rigged Mixamo pilot still carries every animated role. 90 turns its authored +X facing to -Z, which is forward in three.js.",
+      "rotate": "0,0,90",
+      "origin": "floor"
+    },
+
+    {
+      "sourceFolder": "weapon_pistol_mesh_Assets",
+      "output": "weapon-pistol-v1.glb",
+      "material": "weapon ceramic",
+      "targetSize": 0.26,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "centre"
+    },
+    {
+      "sourceFolder": "weapon_smg_mesh_Assets",
+      "output": "weapon-smg-v1.glb",
+      "material": "weapon polymer",
+      "targetSize": 0.52,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "centre"
+    },
+    {
+      "sourceFolder": "weapon_assault_mesh_Assets",
+      "output": "weapon-assault-v1.glb",
+      "material": "weapon alloy",
+      "targetSize": 0.88,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "centre"
+    },
+    {
+      "sourceFolder": "weapon_sniper_mesh_Assets",
+      "output": "weapon-sniper-v1.glb",
+      "material": "weapon alloy",
+      "targetSize": 1.36,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "centre"
+    },
+    {
+      "sourceFolder": "weapon_rocket_mesh_Assets",
+      "output": "weapon-rocket-v1.glb",
+      "material": "weapon ordnance",
+      "targetSize": 1.2,
+      "textureSize": 512,
+      "comment": "Alone among the weapons this was generated barrel-along-X; 90 puts its muzzle on -Z like the rest, so one grip transform serves every weapon.",
+      "rotate": "0,0,90",
+      "origin": "centre"
+    },
+    {
+      "sourceFolder": "grenade_frag_mesh_Assets",
+      "output": "weapon-grenade-frag-v1.glb",
+      "material": "grenade shell",
+      "targetSize": 0.14,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "centre"
+    },
+    {
+      "sourceFolder": "grenade_flash_mesh_Assets",
+      "output": "weapon-grenade-flash-v1.glb",
+      "material": "grenade shell",
+      "targetSize": 0.15,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "centre"
+    },
+    {
+      "sourceFolder": "grenade_smoke_mesh_Assets",
+      "output": "weapon-grenade-smoke-v1.glb",
+      "material": "grenade shell",
+      "targetSize": 0.16,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "centre"
+    },
+
+    {
+      "sourceFolder": "map_vanguard_arena_mesh_Assets",
+      "output": "cqc-vanguard-sky-v1.glb",
+      "material": "arena vanguard deck",
+      "targetSize": 190,
+      "textureSize": 2048,
+      "rotate": "0,0,0",
+      "origin": "floor",
+      "lod": { "ratio": 0.34, "textureSize": 1024 }
+    },
+    {
+      "sourceFolder": "map_tempest_arena_mesh_Assets",
+      "output": "cqc-tempest-storm-v1.glb",
+      "material": "arena tempest deck",
+      "targetSize": 190,
+      "textureSize": 2048,
+      "rotate": "0,0,0",
+      "origin": "floor",
+      "lod": { "ratio": 0.34, "textureSize": 1024 }
+    },
+    {
+      "sourceFolder": "map_inferno_arena_mesh_Assets",
+      "output": "cqc-inferno-volcanic-v1.glb",
+      "material": "arena inferno deck",
+      "targetSize": 190,
+      "textureSize": 2048,
+      "rotate": "0,0,0",
+      "origin": "floor",
+      "lod": { "ratio": 0.34, "textureSize": 1024 }
+    },
+    {
+      "sourceFolder": "map_bunker_arena_mesh_Assets",
+      "output": "cqc-bunker-cqb-v1.glb",
+      "material": "arena bunker deck",
+      "targetSize": 170,
+      "textureSize": 2048,
+      "rotate": "0,0,0",
+      "origin": "floor",
+      "lod": { "ratio": 0.34, "textureSize": 1024 }
+    },
+
+    {
+      "sourceFolder": "sky-base-platform-mesh_Assets",
+      "output": "sky-base-platform-v1.glb",
+      "material": "airbase hull plating",
+      "targetSize": 460,
+      "comment": "1024 not 2048: this and the masterplan are the only generated meshes resident for the whole session, and at the range they are read the extra detail is invisible while the resident texture cost is four times higher.",
+      "textureSize": 1024,
+      "rotate": "0,0,0",
+      "origin": "centre",
+      "lod": { "ratio": 0.3, "textureSize": 512 }
+    },
+    {
+      "sourceFolder": "arena-tower-mesh_Assets",
+      "output": "arena-tower-v1.glb",
+      "material": "airbase tower alloy",
+      "targetSize": 210,
+      "textureSize": 1024,
+      "rotate": "0,0,0",
+      "origin": "floor",
+      "lod": { "ratio": 0.3, "textureSize": 512 }
+    },
+    {
+      "sourceFolder": "airbourne-arena-map-mesh_Assets",
+      "output": "airbourne-arena-map-v1.glb",
+      "material": "arena masterplan",
+      "targetSize": 3600,
+      "textureSize": 1024,
+      "rotate": "0,0,0",
+      "origin": "centre",
+      "lod": { "ratio": 0.28, "textureSize": 512 }
+    },
+
+    {
+      "sourceFolder": "sci_fi_turret_Assets",
+      "output": "arena-turret-v1.glb",
+      "material": "arena turret hardware",
+      "targetSize": 3.4,
+      "textureSize": 1024,
+      "rotate": "0,0,0",
+      "origin": "floor"
+    },
+    {
+      "sourceFolder": "military_crate_Assets",
+      "output": "arena-crate-v1.glb",
+      "material": "arena cargo",
+      "targetSize": 1.15,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "floor"
+    },
+    {
+      "sourceFolder": "ammo_box_Assets",
+      "output": "arena-ammo-box-v1.glb",
+      "material": "arena cargo",
+      "targetSize": 0.78,
+      "textureSize": 512,
+      "rotate": "0,0,0",
+      "origin": "floor"
+    }
+  ]
+}

@@ -16,6 +16,9 @@ function bootLift(){
 function bootFinish(){
   if(assetsReady)return;
   assetsReady=true;
+  /* The generated arena art waits behind the boot bar rather than inside it.
+     08b-generated-art.js explains why; this is the release. */
+  runDeferredArt();
   if(bootFill)bootFill.style.width='100%';
   if(!assetErrors.length&&!bootTimedOut){bootLift();return;}
   /* A gap in the art is a dull surface, not a dead game — so say what happened,

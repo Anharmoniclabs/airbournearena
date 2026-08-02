@@ -272,6 +272,7 @@ function updateSignPanel(){
   bindBtn('hFit',function(){openFit();});
   bindBtn('hGo',function(){startCampaign();});
   bindBtn('hMissions',function(){openMissions();});
+  bindBtn('hDecks',function(){openArenaMaps();});
   bindBtn('hSet',function(){setOpen(true);});
 
   /* Walk stick (left) and look drag (right). Both place their origin wherever
@@ -524,6 +525,24 @@ if(new URLSearchParams(location.search).has('capture')){
       return {x:x,y:y,z:z};
     },
     getGroundEnemies:function(){return groundCombat.enemies;},
+    /* The 4v4 decks and the arsenal, for scripts/probe-arena-decks.mjs. Same
+       wrapper discipline as everything else here: the names are declared in
+       parts below this one, so the lookup has to happen at call time. */
+    startArenaDeck:function(id){return startArenaMatch(id);},
+    leaveArenaDeck:function(){return leaveArenaDeck();},
+    getArenaMatch:function(){return arenaMatch;},
+    getCqcMaps:function(){return CQC_MAPS;},
+    getArsenal:function(){return arsenal;},
+    getArenaArms:function(){return ARENA_ARMS;},
+    getArenaGrenades:function(){return ARENA_NADES;},
+    getArenaOrdnance:function(){return arenaOrdnance;},
+    equipArm:function(i){return equipArm(i);},
+    fireArm:function(){return fireArm();},
+    throwGrenade:function(){return throwGrenade();},
+    arenaDeckAt:function(x,z){return arenaDeckAt(x,z);},
+    getArenaInstallations:function(){
+      return {masterplan:arenaMasterplan,airbases:arenaAirbases};
+    },
     startMission:function(id){return startMission(id);},
     /* The net layer is declared in parts below this one, so every accessor here
        is a wrapper: reading the name inside the function defers the lookup to

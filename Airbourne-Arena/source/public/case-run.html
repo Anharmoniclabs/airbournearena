@@ -415,7 +415,7 @@
      on a short phone the buttons at the bottom of a long card could not be
      scrolled to at all. */
   #pause,#pause *,#end,#end *,#brief,#brief *,
-  #missionCard,#missionCard *,#operationsCard,#operationsCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
+  #missionCard,#missionCard *,#operationsCard,#operationsCard *,#cqcCard,#cqcCard *,#finaleCard,#finaleCard *{touch-action:manipulation}
   .card,.setCard,.pauseCard,#end>div{max-height:92vh;overflow-y:auto;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
   /* The way out of a panel has to be on screen.
@@ -684,18 +684,18 @@
   .objMeta{margin-top:8px;padding-top:7px;border-top:1px solid rgba(111,227,208,.18);
     font-size:9px;letter-spacing:.18em;line-height:1.9;color:rgba(223,243,255,.55)}
   .objMeta b{color:var(--teal);font-weight:600}
-  #debrief,#choiceCard,#missionCard,#operationsCard,#finaleCard{position:fixed;inset:0;display:grid;
+  #debrief,#choiceCard,#missionCard,#operationsCard,#cqcCard,#finaleCard{position:fixed;inset:0;display:grid;
     place-items:center;z-index:11;background:rgba(2,5,9,.9);opacity:0;pointer-events:none;
     transition:opacity .2s}
-  #debrief.on,#choiceCard.on,#missionCard.on,#operationsCard.on,#finaleCard.on{opacity:1;pointer-events:auto}
-  #debrief *,#choiceCard *,#missionCard *,#operationsCard *,#finaleCard *{touch-action:auto}
+  #debrief.on,#choiceCard.on,#missionCard.on,#operationsCard.on,#cqcCard.on,#finaleCard.on{opacity:1;pointer-events:auto}
+  #debrief *,#choiceCard *,#missionCard *,#operationsCard *,#cqcCard *,#finaleCard *{touch-action:auto}
   #debriefStats,#finaleStats{display:grid;
     grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:9px;margin:18px 0 0}
   #campaignRow{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
   /* mission select — every chapter and every mission, with what is reachable
      and what is already flown stated plainly rather than implied */
   #missionCard .setCard{width:min(560px,94vw)}
-  #operationsCard .setCard{width:min(620px,94vw)}
+  #operationsCard .setCard,#cqcCard .setCard{width:min(620px,94vw)}
   .opLead{font-size:10px;line-height:1.7;color:rgba(223,243,255,.65);text-align:center;margin:12px 0 18px}
   .opGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .opGrid .actionBtn{text-align:left;display:grid;gap:7px;line-height:1.35}
@@ -839,6 +839,7 @@
   <div id="hangarTouch">
     <div class="pill" id="hFit" role="button" tabindex="0">FIT OUT</div>
     <div class="pill" id="hMissions" role="button" tabindex="0">CAMPAIGN</div>
+    <div class="pill" id="hDecks" role="button" tabindex="0">ARENA DECKS</div>
     <div class="pill" id="hSet" role="button" tabindex="0">SETTINGS</div>
     <div class="pill" id="hGo" role="button" tabindex="0">BEGIN</div>
   </div>
@@ -1150,9 +1151,19 @@
       <button class="actionBtn" id="opSalvage"><b>SALVAGE RUN</b><span>Explore the ruins and recover parts, health, and armor.</span></button>
       <button class="actionBtn" id="opGroundWar"><b>GROUND WAR</b><span>Clear hostile city blocks, secure parts, and extract.</span></button>
       <button class="actionBtn" id="opArena"><b>4v4 CORE ARENA</b><span>Enter the competitive aircraft match immediately.</span></button>
+      <button class="actionBtn" id="opCqc"><b>4v4 ARENA DECKS</b><span>Close-quarters infantry combat on one of four faction decks.</span></button>
       <button class="actionBtn" id="opCampaign"><b>CAMPAIGN MISSIONS</b><span>Select a story operation from the full mission board.</span></button>
     </div>
     <div class="btnRow"><button class="actionBtn" id="opClose">RETURN TO DECK</button></div>
+  </div>
+</div>
+
+<div id="cqcCard">
+  <div class="setCard">
+    <h2>ARENA DECKS — 4v4</h2>
+    <p class="opLead">Close-quarters combat on foot. Five weapons on 1&ndash;5, R reloads, B throws the selected grenade and N cycles it, right mouse aims down the sights. First side to 25 takes the deck.</p>
+    <div class="opGrid" id="cqcGrid"></div>
+    <div class="btnRow"><button class="actionBtn" id="cqcClose">BACK</button></div>
   </div>
 </div>
 
@@ -1560,6 +1571,9 @@ function bootLift(){
 function bootFinish(){
   if(assetsReady)return;
   assetsReady=true;
+  /* The generated arena art waits behind the boot bar rather than inside it.
+     08b-generated-art.js explains why; this is the release. */
+  runDeferredArt();
   if(bootFill)bootFill.style.width='100%';
   if(!assetErrors.length&&!bootTimedOut){bootLift();return;}
   /* A gap in the art is a dull surface, not a dead game — so say what happened,
@@ -1940,6 +1954,133 @@ function setGfxTier(tier,automatic){
 
 applyShadowQuality();
 buildComposer();
+/* ===================== generated art kit =====================
+   One loader and one calibration pass for everything that came out of the AI
+   Toolkit drop: the 4v4 arena decks, the airbases, the arena masterplan, the
+   weapons and the props. The generated-art manifest under source-assets/ is
+   where each of those is given its real-world size and its material role name;
+   this is the other half of that contract, and the names below have to stay in
+   step with the ones in the manifest or a surface loses its calibration
+   silently. (Its full path is not spelled out here on purpose: the deploy check
+   that every asset path in the built file resolves to a real file would read
+   the tail of it as one, and fail.)
+
+   These differ from the Blender-authored world in the way that matters here:
+   every one carries its own baked colour and normal map inside the GLB, so
+   there is nothing to reassign out of the shared texture kit. Calibration is
+   light response only. Repainting base colours would tint baked art into mud —
+   the same trap calibrateSkyBase already documents.
+
+   Loads are cached and cloned rather than repeated. A 4v4 match puts eight
+   combatants on the deck from one pilot download, and a second request that
+   arrives while the first is still in flight joins it instead of opening
+   another. */
+/* Nothing here joins the boot load, and that is the point.
+
+   08-assets.js builds its progress bar out of every .load() made during the
+   initial script execution. Registering this drop there as well was correct by
+   that rule and wrong in every other way: it put the arena masterplan, both
+   airbases, the tower, the props, five weapons and three grenades in front of
+   the player before they could reach the hangar — around 130 MB of decoded
+   texture, enough to take the renderer out entirely on a memory-limited
+   machine, for art that is not visible until they fly or fight.
+
+   So these load after the boot cover lifts. bootFinish() in 08-assets.js is
+   what releases them. A caller that arrives later than that runs immediately,
+   which is what makes afterBoot safe to wrap around anything. */
+var deferredArt=[],bootReleased=false,bootReleasing=false;
+function afterBoot(fn){
+  if(bootReleased){fn();return;}
+  deferredArt.push(fn);
+}
+/* Released a beat after the cover rather than inside bootFinish(). Starting a
+   dozen downloads and their decodes in the same tick that lifts the cover
+   competes with the first frames the player actually sees — the hangar should
+   be up and moving before this begins. */
+function runDeferredArt(){
+  if(bootReleasing)return;
+  bootReleasing=true;
+  setTimeout(function(){
+    /* Flipped here, not above: until the queue has actually been flushed a
+       late afterBoot() caller has to join it rather than jump it. */
+    bootReleased=true;
+    var queue=deferredArt;deferredArt=[];
+    for(var i=0;i<queue.length;i++)queue[i]();
+  },400);
+}
+var generatedArt={};
+function calibrateGeneratedArt(root){
+  root.traverse(function(o){
+    if(!o.isMesh||!o.material)return;
+    o.castShadow=!LOW;o.receiveShadow=true;
+    o.material=o.material.clone();
+    var n=(o.material.name||'').toLowerCase();
+    /* No environment map exists in this scene, so metalness has nothing to
+       reflect and reads as soot at anything above about .4. Every branch here
+       keeps it low and moves the character into roughness instead. */
+    if(n.indexOf('weapon')>=0||n.indexOf('grenade')>=0){
+      o.material.metalness=.34;o.material.roughness=.44;
+    }else if(n.indexOf('pilot')>=0){
+      o.material.metalness=.1;o.material.roughness=.62;
+    }else if(n.indexOf('inferno')>=0){
+      /* The volcanic deck bakes its magma into the colour map. Lifting it with
+         emissive is what makes the vents read as heat rather than as paint. */
+      o.material.metalness=.16;o.material.roughness=.72;
+      if(o.material.emissive){o.material.emissive.setHex(0x2a0a02);o.material.emissiveIntensity=.5;}
+    }else if(n.indexOf('tempest')>=0){
+      o.material.metalness=.4;o.material.roughness=.34;
+    }else if(n.indexOf('masterplan')>=0){
+      /* Read at kilometres, lit by the same sun as the island below it. Keep it
+         matte so the skyways stay legible against bright sky. */
+      o.material.metalness=.22;o.material.roughness=.66;
+      if(o.material.emissive){o.material.emissive.setHex(0x0d1c26);o.material.emissiveIntensity=.35;}
+    }else if(n.indexOf('airbase')>=0||n.indexOf('arena')>=0){
+      o.material.metalness=.3;o.material.roughness=.52;
+    }
+    if(o.material.map){
+      if('colorSpace' in o.material.map)o.material.map.colorSpace=THREE.SRGBColorSpace;
+      if('encoding' in o.material.map)o.material.map.encoding=THREE.sRGBEncoding;
+    }
+    o.material.needsUpdate=true;
+  });
+  return root;
+}
+/* onFail matters more than it looks. A caller that puts the game into a mode
+   when the model arrives — the CQC decks do exactly that — would otherwise sit
+   in a loading state for ever on a dropped request, with no way back to the
+   hangar. Every waiting caller is told, not just the first. */
+function loadGeneratedArt(url,onReady,onFail){
+  var entry=generatedArt[url];
+  if(entry&&entry.template){onReady(entry.template.clone(true));return;}
+  if(entry&&!entry.failed){entry.waiting.push({ready:onReady,fail:onFail});return;}
+  if(entry&&entry.failed){if(onFail)onFail();return;}
+  entry=generatedArt[url]={template:null,failed:false,waiting:[{ready:onReady,fail:onFail}]};
+  makeGltfLoader().load(url,function(gltf){
+    entry.template=calibrateGeneratedArt(gltf.scene);
+    var waiting=entry.waiting;entry.waiting=[];
+    for(var i=0;i<waiting.length;i++)waiting[i].ready(entry.template.clone(true));
+  },undefined,function(err){
+    console.error('Generated art failed to load.',url,err);
+    entry.failed=true;
+    var waiting=entry.waiting;entry.waiting=[];
+    for(var i=0;i<waiting.length;i++)if(waiting[i].fail)waiting[i].fail();
+  });
+}
+/* Object3D.clone shares materials with the original, which is what keeps eight
+   combatants cheap — so anything that needs its own colour has to break that
+   sharing first. Only call this on clones that actually get recoloured. */
+function tintGeneratedArt(root,hex,emissiveHex){
+  root.traverse(function(o){
+    if(!o.isMesh||!o.material)return;
+    o.material=o.material.clone();
+    if(o.material.color)o.material.color.setHex(hex);
+    if(emissiveHex!==undefined&&o.material.emissive){
+      o.material.emissive.setHex(emissiveHex);o.material.emissiveIntensity=.45;
+    }
+    o.material.needsUpdate=true;
+  });
+  return root;
+}
 /* ===================== weather ===================== */
 var WX={clear:{name:'CLEAR',fog:.00012,cover:.10,rain:0,wind:8,gust:2},
   fair:{name:'SCATTERED CLOUD',fog:.00024,cover:.42,rain:0,wind:16,gust:5},
@@ -2984,6 +3125,12 @@ function skyDeckAt(x,z){
   return null;
 }
 function worldSurfaceAt(x,z){
+  /* A live CQC deck is the floor for everything standing on it — the pilot, a
+     bouncing grenade, a smoke cloud. It is asked first because three of those
+     decks hang beside the ozone bases, where the island terrain height under
+     them is 15 km away and meaningless. */
+  var cqc=arenaDeckAt(x,z);
+  if(cqc!==null&&cqc!==undefined)return cqc;
   var deck=st.mode==='world'?skyDeckAt(x,z):null;
   return deck?deck.height:ground(x,z);
 }
@@ -3179,6 +3326,91 @@ function stepWorldDistricts(dt){
     }
   }
 }
+/* ===================== arena masterplan and forward airbases =====================
+   Three things live up here, all from the generated art drop.
+
+   The masterplan is the authored Airbourne Arena layout — the skyway circuit,
+   the neon navigation rings and the connecting bridges — hung across the middle
+   of the flight band at 1.4 km so it is the thing you fly through rather than
+   scenery you fly past. Nothing in it is solid: world collision in this game is
+   the terrain height field and nothing else, and adding a mesh collider for a
+   3.6 km structure would cost more per frame than the whole flight model.
+
+   The two forward airbases sit off the base axis, so a run between the team
+   bases at z=0 passes them rather than through them. Each is dressed with the
+   generated turrets and cargo so it reads as a working installation instead of
+   a parked platform, and each carries a tower for a silhouette that survives
+   being seen from 3 km out.
+
+   Everything is a THREE.LOD with an authored -lod1 variant. These are the
+   largest meshes in the game and they are all visible at once from altitude. */
+var ARENA_INSTALLATIONS=[
+  {x:-1600,y:760,z:-1450,rot:.42},
+  {x:1600,y:760,z:1450,rot:-2.24}
+];
+var arenaMasterplan=null,arenaAirbases=[];
+
+function installLod(host,url,lodUrl,distance){
+  afterBoot(function(){
+    loadGeneratedArt(url,function(model){host.addLevel(model,0);host.userData.ready++;});
+    loadGeneratedArt(lodUrl,function(model){host.addLevel(model,distance);});
+  });
+}
+(function buildArenaMasterplan(){
+  var host=new THREE.LOD();host.name='airbourne arena masterplan';
+  host.position.set(0,1400,0);host.userData.ready=0;
+  /* The circuit is read from kilometres away and never walked on, so it takes
+     no shadow work at all — a 3.6 km caster would swamp the flight shadow map
+     the same way the world batches do (see 16-authored-world.js). */
+  installLod(host,'assets/airbourne-arena-map-v1.glb',
+                  'assets/airbourne-arena-map-v1-lod1.glb',LOW?2600:5200);
+  host.traverse(function(o){if(o.isMesh)o.castShadow=false;});
+  scene.add(host);arenaMasterplan=host;
+})();
+
+(function buildForwardAirbases(){
+  ARENA_INSTALLATIONS.forEach(function(spot,index){
+    var host=new THREE.LOD();host.name='forward airbase '+(index+1);
+    host.position.set(spot.x,spot.y,spot.z);host.rotation.y=spot.rot;
+    host.userData.ready=0;
+    installLod(host,'assets/sky-base-platform-v1.glb',
+                    'assets/sky-base-platform-v1-lod1.glb',LOW?900:1800);
+    var tower=new THREE.LOD();tower.userData.ready=0;
+    /* The platform's origin is its centre and it is 460 m deep, so the tower
+       goes below the deck to read as the mast it is rising through. */
+    tower.position.set(0,-150,0);
+    installLod(tower,'assets/arena-tower-v1.glb',
+                     'assets/arena-tower-v1-lod1.glb',LOW?900:1800);
+    host.add(tower);
+
+    /* Deck furniture. Placed by hand rather than scattered: four gun positions
+       on the corners of the pad and the cargo grouped where a deck crew would
+       stage it, which is what separates a base from a prop. */
+    [[-52,34],[52,34],[-52,-34],[52,-34]].forEach(function(at,i){
+      afterBoot(function(){loadGeneratedArt('assets/arena-turret-v1.glb',function(turret){
+        turret.position.set(at[0],14,at[1]);
+        turret.rotation.y=i*Math.PI*.5+.4;
+        turret.scale.setScalar(4.5);
+        host.add(turret);
+      });});
+    });
+    [[18,-8,'crate'],[24,-8,'crate'],[21,-14,'ammo'],[-30,12,'crate'],[-34,16,'ammo']]
+      .forEach(function(at){
+        afterBoot(function(){
+        loadGeneratedArt(at[2]==='crate'?'assets/arena-crate-v1.glb':'assets/arena-ammo-box-v1.glb',
+          function(box){
+            box.position.set(at[0],14,at[1]);
+            box.rotation.y=hash(at[0],at[1])*3.1;
+            box.scale.setScalar(4.5);
+            host.add(box);
+          });});
+      });
+
+    var beacon=new THREE.PointLight(0x8fd0ff,LOW?.9:1.8,900);
+    beacon.position.set(0,60,0);host.add(beacon);
+    scene.add(host);arenaAirbases.push(host);
+  });
+})();
 /* ===================== fighters ===================== */
 /* Slot 0 of whichever side you sign with gets overwritten by your callsign, so
    both rosters carry a real name and neither has a hole in it. */
@@ -5315,10 +5547,14 @@ addEventListener('keydown',function(e){
      off on the first step you took across the floor */
   if(st.phase==='hangar')return;
   if(e.code==='KeyG'){
-    if(salvage.on)leaveGroundMode();else enterGroundMode();
+    /* There is no aircraft to board on a CQC deck, so G leaves the deck rather
+       than telling the player to return to a machine that is not there. */
+    if(salvage.surface==='cqc')leaveArenaDeck();
+    else if(salvage.on)leaveGroundMode();else enterGroundMode();
     e.preventDefault();return;
   }
   if(salvage.on){
+    if(e.code==='KeyH'&&salvage.surface==='cqc'){leaveArenaDeck();e.preventDefault();return;}
     if(e.code==='KeyF'&&salvage.surface==='skybase'){openOperations();e.preventDefault();return;}
     if(e.code==='KeyM'){st.mapBig=!st.mapBig;el.mapWrap.classList.toggle('big',st.mapBig);}
     if(e.code==='KeyP')setPaused(!st.paused);
@@ -5918,6 +6154,7 @@ function updateSignPanel(){
   bindBtn('hFit',function(){openFit();});
   bindBtn('hGo',function(){startCampaign();});
   bindBtn('hMissions',function(){openMissions();});
+  bindBtn('hDecks',function(){openArenaMaps();});
   bindBtn('hSet',function(){setOpen(true);});
 
   /* Walk stick (left) and look drag (right). Both place their origin wherever
@@ -6170,6 +6407,24 @@ if(new URLSearchParams(location.search).has('capture')){
       return {x:x,y:y,z:z};
     },
     getGroundEnemies:function(){return groundCombat.enemies;},
+    /* The 4v4 decks and the arsenal, for scripts/probe-arena-decks.mjs. Same
+       wrapper discipline as everything else here: the names are declared in
+       parts below this one, so the lookup has to happen at call time. */
+    startArenaDeck:function(id){return startArenaMatch(id);},
+    leaveArenaDeck:function(){return leaveArenaDeck();},
+    getArenaMatch:function(){return arenaMatch;},
+    getCqcMaps:function(){return CQC_MAPS;},
+    getArsenal:function(){return arsenal;},
+    getArenaArms:function(){return ARENA_ARMS;},
+    getArenaGrenades:function(){return ARENA_NADES;},
+    getArenaOrdnance:function(){return arenaOrdnance;},
+    equipArm:function(i){return equipArm(i);},
+    fireArm:function(){return fireArm();},
+    throwGrenade:function(){return throwGrenade();},
+    arenaDeckAt:function(x,z){return arenaDeckAt(x,z);},
+    getArenaInstallations:function(){
+      return {masterplan:arenaMasterplan,airbases:arenaAirbases};
+    },
     startMission:function(id){return startMission(id);},
     /* The net layer is declared in parts below this one, so every accessor here
        is a wrapper: reading the name inside the function defers the lookup to
@@ -6250,7 +6505,7 @@ var loot=[],lootGroup=new THREE.Group();scene.add(lootGroup);
 function updateSalvageHud(msg){
   var stock=document.getElementById('salvageStock'),prompt=document.getElementById('salvagePrompt');
   if(stock)stock.innerHTML='<b>PARTS '+salvage.parts+'</b> · HEALTH '+Math.ceil(player.hp)+' · ARMOR '+Math.ceil(salvage.shield)+
-    (salvage.banked?' · BASE STORES '+salvage.banked:'');
+    (salvage.banked?' · BASE STORES '+salvage.banked:'')+armsReadout();
   if(prompt)prompt.textContent=msg||'MOUSE LOOK · WASD MOVE · SHIFT RUN · [G] BOARD AIRCRAFT';
 }
 function enterGroundMode(){
@@ -6276,6 +6531,7 @@ function leaveGroundMode(){
   if(!salvage.on)return;
   if(Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z)>13){banner('RETURN TO YOUR AIRCRAFT',1.4);return;}
   salvage.on=false;st.phase='flight';document.body.classList.remove('ground');groundAvatar.visible=false;
+  armsHolster();
   if(salvage.surface==='skybase'){
     player.pos.y=worldSurfaceAt(player.pos.x,player.pos.z)+3.2;player.vel.set(0,0,0);player.speed=0;
     banner('AIRCRAFT BOARDED · W TO LAUNCH',1.5);
@@ -6308,7 +6564,11 @@ function groundControl(dt){
   var mx=-Math.sin(salvage.yaw)*fwd+Math.cos(salvage.yaw)*side;
   var mz=-Math.cos(salvage.yaw)*fwd-Math.sin(salvage.yaw)*side,ml=Math.hypot(mx,mz),sp=run?18:10;
   if(ml>.01){mx/=ml;mz/=ml;salvage.x+=mx*sp*dt;salvage.z+=mz*sp*dt;salvage.face=Math.atan2(-mx,-mz);}
-  if(salvage.surface==='skybase'){
+  if(salvage.surface==='cqc'){
+    var reach=arenaMatch.map?arenaMatch.map.reach:80;
+    salvage.x=clamp(salvage.x,arenaMatch.origin.x-reach,arenaMatch.origin.x+reach);
+    salvage.z=clamp(salvage.z,arenaMatch.origin.z-reach,arenaMatch.origin.z+reach);
+  }else if(salvage.surface==='skybase'){
     var bp=worldFlow.base,limX=worldFlow.faction==='tempest'?265:335,limZ=worldFlow.faction==='tempest'?265:86;
     salvage.x=clamp(salvage.x,bp.x-limX,bp.x+limX);salvage.z=clamp(salvage.z,bp.z-limZ,bp.z+limZ);
   }else{
@@ -6318,13 +6578,13 @@ function groundControl(dt){
   var surfaceY=worldSurfaceAt(salvage.x,salvage.z);
   groundAvatar.position.set(salvage.x,surfaceY,salvage.z);groundAvatar.rotation.y=salvage.face;
   setGroundAction(ml<.01?'Idle':(run?'Run':'Walk'));if(groundMixer)groundMixer.update(dt);
+  stepArenaArms(dt);
+  if(salvage.surface==='cqc'){stepArenaMatch(dt);groundCamera(surfaceY);return;}
   if(salvage.surface==='skybase'){
     var shipD=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
     updateSalvageHud(shipD<13?'[G] BOARD AIRCRAFT':'[F] OPERATIONS · RETURN TO AIRCRAFT TO BOARD');
     var tp=document.getElementById('tPass');if(tp)tp.textContent=shipD<13?'BOARD':'OPS';
-    var sf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
-    camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(sf,-10);
-    camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3+Math.tan(salvage.lookPitch)*7,salvage.z);return;
+    groundCamera(surfaceY);return;
   }
   var nearest=null,nearD=1e9;
   for(var i=0;i<loot.length;i++){
@@ -6344,15 +6604,30 @@ function groundControl(dt){
   updateSalvageHud(msg);
   var tp=document.getElementById('tPass');if(tp)tp.textContent=back<13?'BOARD':'USE';
   stepGroundCombat(dt);
-  var cf=new THREE.Vector3(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw));
-  camera.position.set(salvage.x,surfaceY+5.6,salvage.z).addScaledVector(cf,-10);
-  camera.up.set(0,1,0);camera.lookAt(salvage.x,surfaceY+2.3+Math.tan(salvage.lookPitch)*7,salvage.z);
+  groundCamera(surfaceY);
+}
+/* One camera for every surface fought on foot. Aiming down the sights swings it
+   in to the right shoulder and points it far down the sightline instead of at
+   the pilot's back — at scope FOV the chase camera would otherwise be looking
+   at nothing but the pilot. */
+var _gcFwd=new THREE.Vector3(),_gcRight=new THREE.Vector3();
+function groundCamera(surfaceY){
+  var ads=arsenal.ads,
+      fwd=_gcFwd.set(-Math.sin(salvage.yaw),0,-Math.cos(salvage.yaw)),
+      right=_gcRight.set(-fwd.z,0,fwd.x);
+  camera.position.set(salvage.x,surfaceY+(ads?4.2:5.6),salvage.z)
+    .addScaledVector(fwd,ads?-2.2:-10).addScaledVector(right,ads?1.5:0);
+  camera.up.set(0,1,0);
+  var look=ads?60:0;
+  camera.lookAt(salvage.x+fwd.x*look,
+    surfaceY+(ads?3.9:2.3)+Math.tan(salvage.lookPitch)*(ads?look:7),
+    salvage.z+fwd.z*look);
 }
 /* ===================== ground combat encounter =====================
    Hostiles are deliberately temporary rigid sentry-drone fillers. They provide
    complete combat timing, damage, objective and extraction mechanics while the
    final enemy character/vehicle art remains a separate production asset pass. */
-var groundCombat={active:false,kills:0,goal:0,shotCd:0,hurtCd:0,enemies:[]};
+var groundCombat={active:false,kills:0,goal:0,hurtCd:0,enemies:[]};
 var groundEnemyGroup=new THREE.Group();groundEnemyGroup.name='ground combat fillers';scene.add(groundEnemyGroup);
 
 function makeGroundSentry(i){
@@ -6363,7 +6638,16 @@ function makeGroundSentry(i){
   var legs=new THREE.Mesh(new THREE.CylinderGeometry(.72,1.65,1.1,6),dark);legs.position.y=.65;root.add(legs);
   host.userData.legacy=root;host.userData.runtimeReady=false;host.add(root);
   host.visible=false;groundEnemyGroup.add(host);
-  return {mesh:host,x:0,z:0,hp:50,cd:.5+i*.12,alive:false};
+  /* radius/height/onKill are the shape 34d's hitscan and splash expect, so a
+     sentry and a 4v4 deck bot are the same kind of thing to the arsenal. */
+  return {mesh:host,x:0,z:0,y:0,hp:50,cd:.5+i*.12,alive:false,stun:0,
+          radius:1.6,height:2.4,team:'hostile',
+          onKill:function(){
+            groundCombat.kills++;salvage.parts+=2;
+            feed('<span style="color:#ff8b72">SENTRY DISABLED · 2 PARTS</span>');
+            if(groundCombat.kills>=groundCombat.goal)
+              banner('BLOCK SECURE · RETURN TO AIRCRAFT AND EXTRACT',2.5);
+          }};
 }
 (function(){for(var i=0;i<(LOW?6:9);i++)groundCombat.enemies.push(makeGroundSentry(i));})();
 
@@ -6385,7 +6669,7 @@ installGroundSentryLevel('assets/ground-sentry-drone-v1-lod1.glb',LOW?42:75,fals
 
 function beginGroundEncounter(){
   if(groundCombat.active)return;
-  groundCombat.active=true;groundCombat.kills=0;groundCombat.goal=LOW?4:6;groundCombat.shotCd=0;groundCombat.hurtCd=0;
+  groundCombat.active=true;groundCombat.kills=0;groundCombat.goal=LOW?4:6;groundCombat.hurtCd=0;
   for(var i=0;i<groundCombat.enemies.length;i++){
     var e=groundCombat.enemies[i],a=(i/groundCombat.enemies.length)*Math.PI*2+.35,r=42+(i%3)*18;
     e.x=clamp(salvage.x+Math.cos(a)*r,-CITY_REACH+15,CITY_REACH-15);
@@ -6404,45 +6688,34 @@ function damageGroundPlayer(amount){
   groundCombat.hurtCd=.22;
   var absorbed=Math.min(salvage.shield,amount);salvage.shield-=absorbed;player.hp-=amount-absorbed;
   st.dmgFlash=Math.max(st.dmgFlash,.45);shake=Math.max(shake,.22);
-  if(player.hp<=0){
-    player.hp=Math.max(35,player.maxHp*.5);salvage.shield=0;
-    salvage.x=player.pos.x;salvage.z=player.pos.z+7;
-    banner('DOWNED · RECOVERED AT AIRCRAFT',2.2);
-  }
-}
-function fireGroundWeapon(){
-  if(groundCombat.shotCd>0)return;
-  groundCombat.shotCd=.16;tone(155,.045,.07,'sawtooth',95);
-  var fx=-Math.sin(salvage.yaw),fz=-Math.cos(salvage.yaw),best=null,bestScore=1e9;
-  for(var i=0;i<groundCombat.enemies.length;i++){
-    var e=groundCombat.enemies[i];if(!e.alive)continue;
-    var dx=e.x-salvage.x,dz=e.z-salvage.z,d=Math.hypot(dx,dz);if(d>125)continue;
-    var ahead=(dx*fx+dz*fz)/Math.max(1,d),off=Math.abs(dx*fz-dz*fx);
-    if(ahead>.93&&off<3.6&&d<bestScore){best=e;bestScore=d;}
-  }
-  if(!best)return;
-  best.hp-=25;st.hitmark=.12;
-  if(best.hp<=0){
-    best.alive=false;best.mesh.visible=false;groundCombat.kills++;
-    salvage.parts+=2;feed('<span style="color:#ff8b72">SENTRY DISABLED · 2 PARTS</span>');
-    if(groundCombat.kills>=groundCombat.goal)banner('BLOCK SECURE · RETURN TO AIRCRAFT AND EXTRACT',2.5);
-  }
+  if(player.hp>0)return;
+  /* On a CQC deck there is no aircraft to recover at — it is parked wherever
+     the flight left it, which is not on the deck — and going down is a scored
+     event the deck rules own. Leave the player down and let stepArenaMatch
+     count it and respawn them. Everywhere else the aircraft is the checkpoint. */
+  if(salvage.surface==='cqc'){player.hp=0;salvage.shield=0;return;}
+  player.hp=Math.max(35,player.maxHp*.5);salvage.shield=0;
+  salvage.x=player.pos.x;salvage.z=player.pos.z+7;
+  banner('DOWNED · RECOVERED AT AIRCRAFT',2.2);
 }
 function stepGroundCombat(dt){
   if(!groundCombat.active||salvage.surface==='skybase')return;
-  groundCombat.shotCd=Math.max(0,groundCombat.shotCd-dt);groundCombat.hurtCd=Math.max(0,groundCombat.hurtCd-dt);
-  if(keys.Space||mouseDown||touchIn.fire||padIn.fire)fireGroundWeapon();
+  /* Shooting is the arsenal's job now (34d) — it owns the ammunition, the
+     spread and the tracer, and it fires at whatever both loops have alive. */
+  groundCombat.hurtCd=Math.max(0,groundCombat.hurtCd-dt);
   var nearest=1e9;
   for(var i=0;i<groundCombat.enemies.length;i++){
     var e=groundCombat.enemies[i];if(!e.alive)continue;
     var dx=salvage.x-e.x,dz=salvage.z-e.z,d=Math.hypot(dx,dz);nearest=Math.min(nearest,d);
+    if(e.stun>0){e.stun-=dt;e.mesh.position.set(e.x,ground(e.x,e.z),e.z);continue;}
     if(d>13){var speed=d>35?3.8:2.1;e.x+=dx/d*speed*dt;e.z+=dz/d*speed*dt;}
-    e.mesh.position.set(e.x,ground(e.x,e.z),e.z);e.mesh.rotation.y=Math.atan2(dx,dz);
+    e.y=ground(e.x,e.z);
+    e.mesh.position.set(e.x,e.y,e.z);e.mesh.rotation.y=Math.atan2(dx,dz);
     e.cd-=dt;
     if(d<48&&e.cd<=0){e.cd=1.1+hash(i,groundCombat.kills+17)*.75;damageGroundPlayer(d<20?12:7);}
   }
   if(groundCombat.kills<groundCombat.goal){
-    updateSalvageHud('GROUND WAR '+groundCombat.kills+'/'+groundCombat.goal+' · SPACE/CLICK FIRE · HOSTILE '+Math.round(nearest)+' M');
+    updateSalvageHud('GROUND WAR '+groundCombat.kills+'/'+groundCombat.goal+' · FIRE · HOSTILE '+Math.round(nearest)+' M');
   }else{
     var back=Math.hypot(salvage.x-player.pos.x,salvage.z-player.pos.z);
     updateSalvageHud(back<13?'BLOCK SECURE · [G] BOARD AND EXTRACT':'BLOCK SECURE · RETURN TO AIRCRAFT');
@@ -6473,8 +6746,731 @@ function startArenaOperation(){
 bindBtn('opSalvage',function(){armWorldActivity('salvage');});
 bindBtn('opGroundWar',function(){armWorldActivity('groundwar');});
 bindBtn('opArena',startArenaOperation);
+/* openArenaMaps is declared in 34e, below this part. Function declarations
+   hoist across the whole IIFE and nothing runs until the button is pressed. */
+bindBtn('opCqc',function(){closeOperations();openArenaMaps();});
 bindBtn('opCampaign',function(){closeOperations();openMissions();});
 bindBtn('opClose',closeOperations);
+/* ===================== arena small arms =====================
+   Five weapons and three grenades for everything fought on foot: the lower-city
+   ground war and the 4v4 arena decks both draw from this one arsenal, so a
+   balance change lands in both places at once.
+
+   The rig is deliberately not parented to the pilot's hand bone. Ground mode is
+   third-person and aim lives on salvage.yaw/lookPitch, which the walk cycle
+   knows nothing about — a hand-mounted weapon would point wherever the last
+   footstep left the arm rather than where the player is looking. So the rig is
+   its own node driven straight off the aim angles, and the shot direction is
+   read from the same transform the model is drawn with. What you see pointed at
+   a target is what the hitscan uses.
+
+   Every action here is edge-triggered off the shared `keys` map rather than its
+   own listener: 31-input.js already returns early for every key once
+   salvage.on, so polling keeps the ground controls in one place. */
+var ARENA_ARMS=[
+  {id:'pistol',name:'CERAMIC SIDEARM',asset:'assets/weapon-pistol-v1.glb',
+   damage:26,rpm:340,mag:14,reserve:84,reload:1.05,spread:.010,range:95,auto:false,
+   grip:{x:.30,y:1.30,z:-.16,scale:1}},
+  {id:'smg',name:'GRAPHITE SMG',asset:'assets/weapon-smg-v1.glb',
+   damage:16,rpm:820,mag:32,reserve:192,reload:1.5,spread:.030,range:70,auto:true,
+   grip:{x:.30,y:1.28,z:-.24,scale:1}},
+  {id:'assault',name:'MODULAR CARBINE',asset:'assets/weapon-assault-v1.glb',
+   damage:25,rpm:620,mag:30,reserve:180,reload:1.8,spread:.017,range:135,auto:true,
+   grip:{x:.28,y:1.27,z:-.30,scale:1}},
+  {id:'sniper',name:'ANTI-MATERIAL RIFLE',asset:'assets/weapon-sniper-v1.glb',
+   damage:98,rpm:48,mag:5,reserve:30,reload:2.6,spread:.0015,range:420,auto:false,zoom:34,
+   grip:{x:.27,y:1.26,z:-.38,scale:1}},
+  {id:'rocket',name:'SHOULDER LAUNCHER',asset:'assets/weapon-rocket-v1.glb',
+   damage:40,rpm:40,mag:1,reserve:8,reload:2.9,spread:.004,range:320,auto:false,
+   splash:{radius:11,damage:135},grip:{x:.30,y:1.36,z:-.30,scale:1}}
+];
+var ARENA_NADES=[
+  {id:'frag',name:'FRAG',asset:'assets/weapon-grenade-frag-v1.glb',fuse:2.1,
+   splash:{radius:11,damage:115},colour:0xff7a3c},
+  {id:'flash',name:'FLASH',asset:'assets/weapon-grenade-flash-v1.glb',fuse:1.5,
+   splash:{radius:15,damage:0},stun:3.2,colour:0xfff2c0},
+  {id:'smoke',name:'SMOKE',asset:'assets/weapon-grenade-smoke-v1.glb',fuse:1.4,
+   splash:{radius:14,damage:0},smoke:9,colour:0xbfd6e2}
+];
+var arsenal={slot:2,mag:[],reserve:[],reload:0,cool:0,nade:0,pouch:[],
+             ads:false,swap:0,ready:false};
+(function armSupplies(){
+  for(var i=0;i<ARENA_ARMS.length;i++){arsenal.mag[i]=ARENA_ARMS[i].mag;arsenal.reserve[i]=ARENA_ARMS[i].reserve;}
+  for(var n=0;n<ARENA_NADES.length;n++)arsenal.pouch[n]=2;
+})();
+
+/* Driven off the aim angles every frame; see the note at the top of the file
+   for why this is not on the hand bone. */
+var armsRig=new THREE.Group();armsRig.name='arena arms';scene.add(armsRig);
+var armsPivot=new THREE.Group();armsRig.add(armsPivot);
+var armsModels=[],armsFlash=null;
+(function loadArms(){
+  ARENA_ARMS.forEach(function(arm,i){
+    afterBoot(function(){loadGeneratedArt(arm.asset,function(model){
+      model.position.set(arm.grip.x,arm.grip.y,arm.grip.z);
+      model.scale.setScalar(arm.grip.scale);
+      model.visible=(i===arsenal.slot);
+      armsPivot.add(model);armsModels[i]=model;arsenal.ready=true;
+    });});
+  });
+  var flash=new THREE.Mesh(new THREE.SphereGeometry(.14,7,6),
+    new THREE.MeshBasicMaterial({color:0xffd9a0,transparent:true,opacity:0,
+      blending:THREE.AdditiveBlending,depthWrite:false}));
+  flash.visible=false;armsPivot.add(flash);armsFlash=flash;
+})();
+function currentArm(){return ARENA_ARMS[arsenal.slot];}
+function equipArm(i){
+  i=clamp(i|0,0,ARENA_ARMS.length-1);
+  if(i===arsenal.slot||arsenal.swap>0)return;
+  arsenal.slot=i;arsenal.reload=0;arsenal.swap=.34;arsenal.ads=false;
+  for(var m=0;m<armsModels.length;m++)if(armsModels[m])armsModels[m].visible=(m===i);
+  tone(240,.05,.05,'square',300);
+  feed('<span style="color:#9fd0ff">'+ARENA_ARMS[i].name+'</span>');
+}
+function beginReload(){
+  var arm=currentArm(),i=arsenal.slot;
+  if(arsenal.reload>0||arsenal.mag[i]>=arm.mag||arsenal.reserve[i]<=0)return;
+  arsenal.reload=arm.reload;tone(120,.08,.05,'square',180);
+}
+function finishReload(){
+  var arm=currentArm(),i=arsenal.slot,
+      want=Math.min(arm.mag-arsenal.mag[i],arsenal.reserve[i]);
+  arsenal.mag[i]+=want;arsenal.reserve[i]-=want;
+  tone(320,.06,.05,'triangle',420);
+}
+
+/* ---------- shot presentation ----------
+   Pooled: a full-auto SMG puts twelve tracers a second into the world and this
+   runs on phones. */
+var tracerPool=[],tracerNext=0;
+(function buildTracers(){
+  var geo=new THREE.BoxGeometry(.045,.045,1),
+      mat=new THREE.MeshBasicMaterial({color:0xffe2a8,transparent:true,opacity:.9,
+        blending:THREE.AdditiveBlending,depthWrite:false});
+  for(var i=0;i<(LOW?10:20);i++){
+    var t=new THREE.Mesh(geo,mat.clone());t.visible=false;t.userData.life=0;
+    scene.add(t);tracerPool.push(t);
+  }
+})();
+function spawnTracer(from,dir,length){
+  var t=tracerPool[tracerNext=(tracerNext+1)%tracerPool.length];
+  t.position.copy(from).addScaledVector(dir,length*.5);
+  t.quaternion.setFromUnitVectors(_armsZ,dir);
+  t.scale.set(1,1,Math.max(.5,length));
+  t.material.opacity=.9;t.visible=true;t.userData.life=.07;
+}
+var _armsZ=new THREE.Vector3(0,0,1),_armsDir=new THREE.Vector3(),
+    _armsMuzzle=new THREE.Vector3(),_armsQuat=new THREE.Quaternion(),
+    _armsTargets=[];
+
+/* ---------- targets ----------
+   The ground war's sentries and the 4v4 deck's bots are the same shape to this
+   file — {x,z,hp,alive,mesh,onKill} — so one hitscan serves both loops. */
+function arenaCombatTargets(hostileOnly){
+  _armsTargets.length=0;
+  if(groundCombat.active){
+    for(var i=0;i<groundCombat.enemies.length;i++){
+      var e=groundCombat.enemies[i];if(e.alive)_armsTargets.push(e);
+    }
+  }
+  if(typeof arenaMatch!=='undefined'&&arenaMatch&&arenaMatch.active){
+    for(var b=0;b<arenaMatch.bots.length;b++){
+      var bot=arenaMatch.bots[b];
+      if(bot.alive&&(!hostileOnly||bot.team!=='blue'))_armsTargets.push(bot);
+    }
+  }
+  return _armsTargets;
+}
+function arenaHitTarget(t,damage){
+  if(!t.alive)return false;
+  t.hp-=damage;st.hitmark=.12;
+  if(t.hp>0)return false;
+  t.alive=false;if(t.mesh)t.mesh.visible=false;
+  if(t.onKill)t.onKill(t);
+  return true;
+}
+function arenaSplash(point,radius,damage){
+  if(damage>0){
+    var targets=arenaCombatTargets(true);
+    for(var i=targets.length-1;i>=0;i--){
+      var t=targets[i],d=Math.hypot(t.x-point.x,t.z-point.z);
+      if(d<radius)arenaHitTarget(t,damage*(1-d/radius*.6));
+    }
+    var self=Math.hypot(salvage.x-point.x,salvage.z-point.z);
+    /* Own ordnance hurts. Without this the launcher is a point-blank weapon
+       with no cost, which is the whole reason it has a minimum range. */
+    if(self<radius)damageGroundPlayer(damage*(1-self/radius)*.5);
+  }
+  boom(point,radius*3);
+}
+/* Smoke is the one effect the aircraft fx pool cannot serve: boom() is an
+   additive orange flash on a 0.85 s life, and a screen a grenade is meant to
+   deny needs a dull cloud that outlives it. Same sprite texture, read as an
+   alpha shape instead of as light. */
+var smokePool=[],smokeLive=[];
+function arenaSmoke(x,y,z,life){
+  var s=smokePool.pop();
+  if(!s){
+    s=new THREE.Sprite(new THREE.SpriteMaterial({map:explosionVfxSkin,transparent:true,
+      depthWrite:false,fog:false,color:0x9fb0bc}));
+    scene.add(s);
+  }
+  s.visible=true;s.material.opacity=.62;s.position.set(x,y,z);s.scale.set(9,9,1);
+  smokeLive.push({s:s,t:0,life:life});
+}
+function stepArenaSmoke(dt){
+  for(var i=smokeLive.length-1;i>=0;i--){
+    var p=smokeLive[i];p.t+=dt;
+    var k=p.t/p.life,sz=9+k*16;
+    p.s.scale.set(sz,sz,1);p.s.position.y+=dt*.55;
+    p.s.material.opacity=.62*Math.max(0,1-k*k);
+    if(k>=1){p.s.visible=false;smokePool.push(p.s);smokeLive.splice(i,1);}
+  }
+}
+/* ---------- firing ---------- */
+function armsMuzzleTransform(){
+  armsPivot.getWorldQuaternion(_armsQuat);
+  _armsDir.set(0,0,-1).applyQuaternion(_armsQuat);
+  armsPivot.getWorldPosition(_armsMuzzle);
+  _armsMuzzle.addScaledVector(_armsDir,.55);
+  return _armsDir;
+}
+function fireArm(){
+  var arm=currentArm(),i=arsenal.slot;
+  if(arsenal.cool>0||arsenal.reload>0||arsenal.swap>0)return;
+  if(arsenal.mag[i]<=0){beginReload();return;}
+  arsenal.mag[i]--;arsenal.cool=60/arm.rpm;
+  var dir=armsMuzzleTransform(),spread=arm.spread*(arsenal.ads?.35:1);
+  dir.x+=(hash(i,arsenal.mag[i])-.5)*spread*2;
+  dir.y+=(hash(arsenal.mag[i],i+7)-.5)*spread*2;
+  dir.normalize();
+  armsFlash.visible=true;armsFlash.material.opacity=.85;
+  shake=Math.max(shake,arm.splash?.3:.08);
+  tone(arm.splash?90:(arm.id==='sniper'?140:190),arm.splash?.14:.05,.07,'sawtooth',
+       arm.splash?55:110);
+
+  if(arm.splash){launchRocket(_armsMuzzle,dir,arm);return;}
+
+  /* Hitscan against target cylinders. Ground combat is fought on decks and
+     streets at under 400 m, so a closest-approach test against a radius beats
+     raycasting meshes and costs nothing per frame. */
+  var targets=arenaCombatTargets(true),best=null,bestD=arm.range;
+  for(var t=0;t<targets.length;t++){
+    var e=targets[t],dx=e.x-_armsMuzzle.x,dz=e.z-_armsMuzzle.z,
+        along=dx*dir.x+dz*dir.z;
+    if(along<=0||along>bestD)continue;
+    var offX=dx-dir.x*along,offZ=dz-dir.z*along,
+        offY=(e.y!==undefined?e.y+1.1:_armsMuzzle.y)-(_armsMuzzle.y+dir.y*along);
+    if(Math.hypot(offX,offZ)<(e.radius||1.5)&&Math.abs(offY)<(e.height||2.2)){best=e;bestD=along;}
+  }
+  spawnTracer(_armsMuzzle,dir,best?bestD:arm.range);
+  if(!best)return;
+  if(arenaHitTarget(best,arm.damage))tone(520,.09,.06,'triangle',300);
+}
+
+/* ---------- rockets and grenades ----------
+   One pool covers both: a rocket is a thrown object with no gravity and a very
+   short fuse, so splitting them would be two copies of the same integrator. */
+var arenaOrdnance=[];
+function ordnanceSlot(){
+  for(var i=0;i<arenaOrdnance.length;i++)if(!arenaOrdnance[i].live)return arenaOrdnance[i];
+  var o={live:false,mesh:null,vel:new THREE.Vector3(),pos:new THREE.Vector3(),
+         fuse:0,gravity:0,splash:null,spin:0,kind:null};
+  arenaOrdnance.push(o);return o;
+}
+function launchRocket(from,dir,arm){
+  var o=ordnanceSlot();
+  o.live=true;o.kind='rocket';o.pos.copy(from);o.vel.copy(dir).multiplyScalar(78);
+  o.fuse=arm.range/78;o.gravity=0;o.splash=arm.splash;o.spin=0;
+  if(!o.mesh){
+    o.mesh=new THREE.Mesh(new THREE.SphereGeometry(.22,8,6),
+      new THREE.MeshBasicMaterial({color:0xffb066}));
+    scene.add(o.mesh);
+  }
+  o.mesh.visible=true;o.mesh.position.copy(o.pos);
+}
+/* The authored grenade bodies, thrown rather than represented by a marker.
+   GRENADE_READ scales them up: these are 140 mm objects and the chase camera
+   sits 10 m back, so at true size the throw is invisible and the only thing the
+   player can read is the blast. */
+var GRENADE_READ=2.4;
+var nadeModels={};
+ARENA_NADES.forEach(function(nade){
+  afterBoot(function(){
+    loadGeneratedArt(nade.asset,function(model){
+      model.scale.setScalar(GRENADE_READ);nadeModels[nade.id]=model;
+    });
+  });
+});
+function throwGrenade(){
+  var nade=ARENA_NADES[arsenal.nade];
+  if(arsenal.pouch[arsenal.nade]<=0||arsenal.swap>0)return;
+  arsenal.pouch[arsenal.nade]--;arsenal.swap=.5;
+  var dir=armsMuzzleTransform(),o=ordnanceSlot();
+  o.live=true;o.kind=nade.id;o.pos.copy(_armsMuzzle);
+  o.vel.copy(dir).multiplyScalar(21);o.vel.y+=5.5;
+  o.fuse=nade.fuse;o.gravity=19;o.splash=nade.splash;o.spin=6;o.def=nade;
+  if(!o.mesh){o.mesh=new THREE.Group();scene.add(o.mesh);}
+  /* A pooled slot is reused by whichever grenade is thrown next, so the body
+     is swapped rather than the slot being typed to one. */
+  if(o.body!==nade.id){
+    while(o.mesh.children.length)o.mesh.remove(o.mesh.children[0]);
+    var art=nadeModels[nade.id];
+    o.mesh.add(art?art.clone(true)
+      :new THREE.Mesh(new THREE.SphereGeometry(.11,7,6),
+        new THREE.MeshBasicMaterial({color:nade.colour})));
+    /* A live grenade has to be findable on a cluttered deck. */
+    var pip=new THREE.Mesh(new THREE.SphereGeometry(.34,7,6),
+      new THREE.MeshBasicMaterial({color:nade.colour,transparent:true,opacity:.45,
+        blending:THREE.AdditiveBlending,depthWrite:false}));
+    o.mesh.add(pip);
+    o.body=nade.id;
+  }
+  o.mesh.visible=true;o.mesh.position.copy(o.pos);
+  tone(300,.05,.05,'triangle',210);
+  feed('<span style="color:#ffd08a">'+nade.name+' OUT</span>');
+}
+function stepOrdnance(dt){
+  for(var i=0;i<arenaOrdnance.length;i++){
+    var o=arenaOrdnance[i];if(!o.live)continue;
+    o.vel.y-=o.gravity*dt;
+    o.pos.addScaledVector(o.vel,dt);
+    var floor=worldSurfaceAt(o.pos.x,o.pos.z);
+    if(o.pos.y<=floor+.1){
+      o.pos.y=floor+.1;
+      if(o.kind==='rocket'){o.fuse=0;}
+      else{o.vel.y=Math.abs(o.vel.y)*.32;o.vel.x*=.6;o.vel.z*=.6;}
+    }
+    o.mesh.position.copy(o.pos);
+    if(o.spin)o.mesh.rotation.y+=o.spin*dt;
+    o.fuse-=dt;
+    if(o.fuse>0)continue;
+    o.live=false;o.mesh.visible=false;
+    var stun=o.def&&o.def.stun,smoke=o.def&&o.def.smoke;
+    arenaSplash(o.pos,o.splash.radius,o.splash.damage);
+    if(stun){
+      var targets=arenaCombatTargets(true);
+      for(var t=0;t<targets.length;t++){
+        var e=targets[t];
+        if(Math.hypot(e.x-o.pos.x,e.z-o.pos.z)<o.splash.radius)e.stun=stun;
+      }
+      if(Math.hypot(salvage.x-o.pos.x,salvage.z-o.pos.z)<o.splash.radius)st.dmgFlash=Math.max(st.dmgFlash,.9);
+    }
+    if(smoke)for(var p=0;p<(LOW?4:8);p++){
+      var a=p/(LOW?4:8)*Math.PI*2;
+      arenaSmoke(o.pos.x+Math.cos(a)*3,o.pos.y+1.4,o.pos.z+Math.sin(a)*3,smoke);
+    }
+    o.def=null;
+  }
+}
+
+/* ---------- per-frame ---------- */
+var armsPrev={};
+function armsPressed(code){
+  var down=!!keys[code],was=!!armsPrev[code];
+  armsPrev[code]=down;
+  return down&&!was;
+}
+function armsReadout(){
+  if(!arsenal.ready)return '';
+  var arm=currentArm(),nade=ARENA_NADES[arsenal.nade];
+  return ' · '+arm.name+' '+(arsenal.reload>0?'RELOADING':
+    arsenal.mag[arsenal.slot]+'/'+arsenal.reserve[arsenal.slot])+
+    ' · '+nade.name+' x'+arsenal.pouch[arsenal.nade];
+}
+function stepArenaArms(dt){
+  arsenal.cool=Math.max(0,arsenal.cool-dt);
+  arsenal.swap=Math.max(0,arsenal.swap-dt);
+  if(arsenal.reload>0){
+    arsenal.reload-=dt;
+    if(arsenal.reload<=0){arsenal.reload=0;finishReload();}
+  }
+  if(armsFlash&&armsFlash.visible){
+    armsFlash.material.opacity-=dt*14;
+    if(armsFlash.material.opacity<=0)armsFlash.visible=false;
+  }
+  for(var i=0;i<tracerPool.length;i++){
+    var t=tracerPool[i];if(!t.visible)continue;
+    t.userData.life-=dt;t.material.opacity=Math.max(0,t.userData.life*13);
+    if(t.userData.life<=0)t.visible=false;
+  }
+  stepOrdnance(dt);
+  stepArenaSmoke(dt);
+
+  var surface=worldSurfaceAt(salvage.x,salvage.z);
+  armsRig.visible=salvage.on;
+  armsRig.position.set(salvage.x,surface,salvage.z);
+  armsRig.rotation.y=salvage.yaw;
+  armsPivot.rotation.x=salvage.lookPitch;
+  if(!salvage.on)return;
+
+  for(var d=0;d<ARENA_ARMS.length;d++)if(armsPressed('Digit'+(d+1)))equipArm(d);
+  if(armsPressed('KeyR'))beginReload();
+  if(armsPressed('KeyB'))throwGrenade();
+  if(armsPressed('KeyN')){
+    arsenal.nade=(arsenal.nade+1)%ARENA_NADES.length;
+    feed('<span style="color:#ffd08a">'+ARENA_NADES[arsenal.nade].name+' SELECTED</span>');
+  }
+  arsenal.ads=!!(mouseRight||padIn.zoom||touchIn.zoom);
+  /* camWork() does not run on foot (49-loop.js), so the ground camera keeps
+     whatever FOV it is given — which is what makes a scope possible here at
+     all, and why leaving on foot has to hand it back. */
+  var arm=currentArm(),wantFov=arsenal.ads&&arm.zoom?arm.zoom:70;
+  if(Math.abs(camera.fov-wantFov)>.05){
+    camera.fov+=(wantFov-camera.fov)*Math.min(1,dt*9);
+    camera.updateProjectionMatrix();
+  }
+  /* Semi-automatics fire on the press, not on the hold — otherwise the sniper
+     empties its magazine in half a second on a held mouse button. */
+  var firing=keys.Space||mouseDown||touchIn.fire||padIn.fire;
+  if(firing&&(arm.auto||!armsPrev.trigger))fireArm();
+  armsPrev.trigger=firing;
+}
+/* Called by every route back off foot. Three things outlive the on-foot step if
+   this is skipped: the weapon rig keeps floating where the pilot was, a thrown
+   grenade freezes mid-arc because nothing integrates it any more, and the
+   flight camera inherits the scope's narrow FOV. */
+function armsHolster(){
+  arsenal.ads=false;armsRig.visible=false;
+  for(var i=0;i<arenaOrdnance.length;i++){
+    var o=arenaOrdnance[i];
+    if(!o.live)continue;
+    o.live=false;if(o.mesh)o.mesh.visible=false;
+  }
+  if(Math.abs(camera.fov-70)>.05){camera.fov=70;camera.updateProjectionMatrix();}
+}
+/* ===================== 4v4 CQC decks =====================
+   Four close-quarters arenas fought on foot, using the same arsenal as the
+   ground war (34d) and the same walk/look controls as the salvage run (34a).
+   Three hang beside their faction's ozone base so they inherit an established,
+   lit, reachable position in the world; the bunker is cut into the island
+   plateau because an underground CQB map floating at 15 km reads as a mistake.
+
+   Deck height is a measured constant, not a raycast, and that is not laziness.
+   The shipped decks are packed by gltfpack, which quantizes positions to
+   normalized shorts and moves the scale onto the node. three.js r128 draws that
+   correctly because the GPU denormalizes the attribute — but Mesh.raycast reads
+   it raw, computes in ±32767 space, and a downward ray never hits anything. So
+   the floor and the walkable half-extent of each deck are measured off the
+   unpacked source by audit_generated_deck.py in the Blender source folder, and
+   recorded below. Re-run it whenever a deck is regenerated.
+
+   The cost is that cover is walked around rather than climbed. That is the
+   right trade here: the audit shows each of these four decks is one dominant
+   floor carrying most of its walkable area. arenaDeckAt() is what 18a's
+   worldSurfaceAt() consults once a match is up, so everything that already asks
+   the world how high the ground is keeps working unchanged.
+
+   Bots load the rigged pilot one GLB at a time rather than cloning it. That is
+   not a preference: THREE.Object3D.clone does not rebind a skinned mesh to a
+   new skeleton, so a cloned pilot animates from whichever instance loaded
+   first. 34-hangar-characters.js already loads it twice for the same reason.
+   The bytes come from the HTTP cache after the first, so this costs parse time
+   at match start, not bandwidth. */
+/* deck and reach are audit output, held back about an eighth from the measured
+   edge so the player stands on the deck rather than on its lip. */
+var CQC_MAPS=[
+  {id:'vanguard',name:'VANGUARD SKY',asset:'assets/cqc-vanguard-sky-v1.glb',
+   blurb:'Floating platform, defensive cover shields and a command terminal.',
+   anchor:'vanguard',deck:70,reach:80},
+  {id:'tempest',name:'TEMPEST STORM',asset:'assets/cqc-tempest-storm-v1.glb',
+   blurb:'Rain-slicked facility deck, wind turbines and industrial ducting.',
+   anchor:'tempest',deck:6,reach:70},
+  {id:'inferno',name:'INFERNO VOLCANIC',asset:'assets/cqc-inferno-volcanic-v1.glb',
+   blurb:'Volcanic fortress, molten vents and heavy tactical cover.',
+   anchor:'inferno',deck:8,reach:57},
+  {id:'bunker',name:'CQB BUNKER',asset:'assets/cqc-bunker-cqb-v1.glb',
+   blurb:'Underground concrete works, modular barricades and tight sightlines.',
+   anchor:'island',deck:0,reach:26}
+];
+var arenaMatch={active:false,map:null,mesh:null,origin:new THREE.Vector3(),
+                bots:[],score:{blue:0,red:0},target:25,loading:false,over:false,
+                respawn:0,ready:0};
+var CQC_TARGET=25,CQC_RESPAWN=5;
+
+function cqcOrigin(map){
+  if(map.anchor==='island'){
+    /* The engineered plateau at 1900,-1400 is already flat in both the runtime
+       terrain and the Blender source, so the bunker sits level on it. */
+    return new THREE.Vector3(1900,ground(1900,-1400),-1400);
+  }
+  return SKYBASE_POS[map.anchor].clone().add(new THREE.Vector3(880,-40,0));
+}
+/* ---------- deck surface ----------
+   Null when no match is up, which is what tells worldSurfaceAt to fall through
+   to the sky-base decks and then to the island. It has to answer safely before
+   this part has run at all, because the parts that call it are assembled
+   above this one. */
+function arenaDeckAt(x,z){
+  if(typeof arenaMatch==='undefined'||!arenaMatch||!arenaMatch.active)return null;
+  return arenaMatch.origin.y+arenaMatch.map.deck;
+}
+/* ---------- combatants ---------- */
+function cqcSpawnPoint(team,i){
+  var map=arenaMatch.map,a=(team==='blue'?Math.PI:0)+(i-1.5)*.42,r=map.reach*.74;
+  return {x:arenaMatch.origin.x+Math.cos(a)*r,z:arenaMatch.origin.z+Math.sin(a)*r};
+}
+function makeArenaBot(index,team){
+  var bot={index:index,team:team,alive:false,hp:100,x:0,z:0,y:0,
+           radius:1.5,height:2.4,cd:.8+index*.17,stun:0,down:0,
+           mesh:new THREE.Group(),mixer:null,actions:{},action:'',face:0,ready:false};
+  bot.mesh.visible=false;scene.add(bot.mesh);
+  bot.onKill=function(){
+    var scorer=team==='blue'?'red':'blue';
+    arenaMatch.score[scorer]++;bot.down=CQC_RESPAWN;
+    if(team!=='blue'){
+      feed('<span style="color:#7fe0b0">HOSTILE DOWN · '+arenaMatch.score.blue+'</span>');
+      tone(560,.1,.06,'triangle',340);
+    }
+    checkArenaMatchOver();
+  };
+  characterLoader.load('assets/starter-coast-pilot-rig-v1.glb',function(gltf){
+    bot.mesh.add(gltf.scene);
+    prepareCharacter(gltf.scene,0);
+    /* prepareCharacter paints the authored albedo on, so team read has to come
+       from a tint over it rather than a flat colour that would erase the art. */
+    gltf.scene.traverse(function(o){
+      if(!o.isMesh||!o.material||!o.material.color)return;
+      if((o.material.name||'').indexOf('Visor')>=0)return;
+      o.material=o.material.clone();
+      o.material.color.setHex(team==='blue'?0x9fc4ef:0xf0a08c);
+      o.material.needsUpdate=true;
+    });
+    bot.mixer=new THREE.AnimationMixer(gltf.scene);
+    bot.actions=characterActions(bot.mixer,gltf.animations);
+    bot.ready=true;arenaMatch.ready++;
+  },undefined,function(err){console.error('Arena bot failed to load.',err);});
+  return bot;
+}
+/* Seven rigged pilots are the slowest part of getting onto a deck, and they are
+   the same seven whichever deck is chosen. Building them when the map list
+   opens spends that time while the player is reading the four descriptions
+   instead of after they have committed. Idempotent — the second call is free,
+   which is what makes it safe to call from both places. */
+function ensureArenaBots(){
+  if(arenaMatch.bots.length)return;
+  var per=LOW?3:4;
+  for(var b=0;b<per;b++)arenaMatch.bots.push(makeArenaBot(b,'red'));
+  for(var a=0;a<per-1;a++)arenaMatch.bots.push(makeArenaBot(a,'blue'));
+}
+function setBotAction(bot,name){
+  if(!bot.actions[name]||bot.action===name)return;
+  if(bot.actions[bot.action])bot.actions[bot.action].fadeOut(.16);
+  bot.actions[name].reset().fadeIn(.16).play();bot.action=name;
+}
+function reviveBot(bot){
+  var spot=cqcSpawnPoint(bot.team,bot.index%4);
+  bot.x=spot.x;bot.z=spot.z;bot.hp=100;bot.alive=true;bot.stun=0;bot.down=0;
+  bot.mesh.visible=true;
+}
+/* ---------- match ---------- */
+function startArenaMatch(id){
+  var map=null;
+  for(var i=0;i<CQC_MAPS.length;i++)if(CQC_MAPS[i].id===id)map=CQC_MAPS[i];
+  if(!map||arenaMatch.loading)return;
+  closeArenaMaps();
+  if(typeof abandonMission==='function')abandonMission();
+  endGroundEncounter();
+  arenaMatch.loading=true;arenaMatch.map=map;arenaMatch.origin.copy(cqcOrigin(map));
+  arenaMatch.score.blue=0;arenaMatch.score.red=0;arenaMatch.over=false;
+  arenaMatch.respawn=0;arenaMatch.ready=0;
+  /* Held until the deck arrives rather than timed out after a couple of
+     seconds: on a cold cache this is a multi-second wait, and a blank hangar
+     with no explanation reads as a hang. Both the success and the failure
+     banner below replace it. */
+  banner('DEPLOYING · '+map.name,60);
+
+  loadGeneratedArt(map.asset,function(deck){
+    deck.position.copy(arenaMatch.origin);
+    scene.add(deck);arenaMatch.mesh=deck;
+    arenaMatch.loading=false;arenaMatch.active=true;
+    st.mode='cqc';st.phase='ground';st.started=true;st.over=false;
+    worldFlow.active=false;parkArena(true);
+    document.body.classList.add('playing','ground');
+    el.brief.classList.add('gone');el.hud.classList.add('live');
+
+    /* The player is put on the deck directly rather than through
+       enterGroundMode(), which requires a landed aircraft — there is no
+       aircraft on a CQC deck, and the parked one must stay where it is. */
+    salvage.on=true;salvage.landed=false;salvage.surface='cqc';
+    var spot=cqcSpawnPoint('blue',0);
+    salvage.x=spot.x;salvage.z=spot.z;salvage.yaw=0;salvage.lookPitch=0;
+    salvage.shield=50;player.hp=player.maxHp=100;player.alive=true;
+    groundAvatar.visible=!!groundActions.Idle;
+    camLookReady=false;
+    if(!IS_TOUCH)lock();
+    audioInit();audioResume();
+    emit('match_start',{mode:'cqc',map:map.id});
+    banner(map.name+' · FIRST TO '+CQC_TARGET+' · 1-5 WEAPONS · B GRENADE',3.4);
+  },function(){
+    /* Without this the mode is stuck: loading stays true, so every later
+       attempt returns early and the deck can never be entered again. */
+    arenaMatch.loading=false;arenaMatch.map=null;
+    banner('DECK UNAVAILABLE · '+map.name+' FAILED TO LOAD',3);
+  });
+
+  ensureArenaBots();
+  for(var r=0;r<arenaMatch.bots.length;r++)reviveBot(arenaMatch.bots[r]);
+}
+function endArenaMatch(won){
+  if(!arenaMatch.active)return;
+  arenaMatch.active=false;arenaMatch.over=true;
+  if(arenaMatch.mesh){scene.remove(arenaMatch.mesh);arenaMatch.mesh=null;}
+  for(var i=0;i<arenaMatch.bots.length;i++){
+    arenaMatch.bots[i].alive=false;arenaMatch.bots[i].mesh.visible=false;
+  }
+  salvage.on=false;salvage.surface=null;groundAvatar.visible=false;
+  document.body.classList.remove('ground');
+  armsHolster();
+  st.mode='arena';st.phase='flight';
+  banner(won?'DECK SECURED · '+arenaMatch.score.blue+' — '+arenaMatch.score.red
+            :'DECK LOST · '+arenaMatch.score.blue+' — '+arenaMatch.score.red,4);
+  emit('match_end',{mode:'cqc',won:!!won});
+  enterHangar();
+}
+/* Walking out is not a loss. The deck is a drop-in mode reached from the hangar
+   bar, so leaving it reports the score as it stands rather than a defeat. */
+function leaveArenaDeck(){
+  if(!arenaMatch.active)return;
+  endArenaMatch(arenaMatch.score.blue>=arenaMatch.score.red);
+}
+function checkArenaMatchOver(){
+  if(arenaMatch.score.blue>=CQC_TARGET)endArenaMatch(true);
+  else if(arenaMatch.score.red>=CQC_TARGET)endArenaMatch(false);
+}
+function stepArenaMatch(dt){
+  if(!arenaMatch.active)return;
+  var deck=arenaMatch.origin.y+arenaMatch.map.deck;
+  for(var i=0;i<arenaMatch.bots.length;i++){
+    var bot=arenaMatch.bots[i];
+    if(bot.mixer)bot.mixer.update(dt);
+    if(!bot.alive){
+      if(bot.down>0&&(bot.down-=dt)<=0)reviveBot(bot);
+      continue;
+    }
+    if(bot.stun>0){bot.stun-=dt;setBotAction(bot,'Idle');bot.mesh.position.set(bot.x,deck,bot.z);continue;}
+    /* Nearest enemy, with the player standing in as a blue combatant. */
+    var tx=0,tz=0,best=1e9,found=false;
+    if(bot.team==='red'){tx=salvage.x;tz=salvage.z;best=Math.hypot(tx-bot.x,tz-bot.z);found=true;}
+    for(var o=0;o<arenaMatch.bots.length;o++){
+      var other=arenaMatch.bots[o];
+      if(!other.alive||other.team===bot.team)continue;
+      var d=Math.hypot(other.x-bot.x,other.z-bot.z);
+      if(d<best){best=d;tx=other.x;tz=other.z;found=true;}
+    }
+    if(!found){setBotAction(bot,'Idle');continue;}
+    var dx=tx-bot.x,dz=tz-bot.z,dist=Math.max(.01,Math.hypot(dx,dz));
+    /* Close to a working range, then hold and shoot. Walking into contact is
+       what makes them readable; charging to zero makes them a melee blob. */
+    var want=22,move=dist>want?1:(dist<12?-1:0);
+    if(move){
+      var speed=(dist>46?7.2:4.6)*move;
+      bot.x+=dx/dist*speed*dt;bot.z+=dz/dist*speed*dt;
+      var reach=arenaMatch.map.reach;
+      bot.x=clamp(bot.x,arenaMatch.origin.x-reach,arenaMatch.origin.x+reach);
+      bot.z=clamp(bot.z,arenaMatch.origin.z-reach,arenaMatch.origin.z+reach);
+      setBotAction(bot,dist>46?'Run':'Walk');
+    }else setBotAction(bot,'Idle');
+    bot.y=deck;
+    bot.face=Math.atan2(dx,dz);
+    bot.mesh.position.set(bot.x,deck,bot.z);bot.mesh.rotation.y=bot.face;
+    bot.cd-=dt;
+    if(bot.cd>0||dist>90)continue;
+    bot.cd=.75+hash(i,Math.floor(arenaMatch.score.red))*.85;
+    if(bot.team==='red'){
+      /* Bots shoot the player; allied bots trade with the red side. */
+      if(dist<62)damageGroundPlayer(dist<24?11:7);
+    }else{
+      for(var e=0;e<arenaMatch.bots.length;e++){
+        var foe=arenaMatch.bots[e];
+        if(!foe.alive||foe.team==='blue')continue;
+        if(Math.hypot(foe.x-bot.x,foe.z-bot.z)<62){arenaHitTarget(foe,26);break;}
+      }
+    }
+  }
+  if(player.hp<=0&&arenaMatch.respawn<=0){
+    arenaMatch.respawn=CQC_RESPAWN;arenaMatch.score.red++;
+    banner('YOU ARE DOWN · RESPAWNING',2);checkArenaMatchOver();
+  }
+  if(arenaMatch.respawn>0&&(arenaMatch.respawn-=dt)<=0){
+    var spot=cqcSpawnPoint('blue',0);
+    salvage.x=spot.x;salvage.z=spot.z;player.hp=player.maxHp;salvage.shield=50;
+  }
+  updateSalvageHud('DECK '+arenaMatch.map.name+' · '+arenaMatch.score.blue+' — '+
+    arenaMatch.score.red+' TO '+CQC_TARGET+(arenaMatch.respawn>0?
+    ' · RESPAWN '+Math.ceil(arenaMatch.respawn):' · [H] LEAVE DECK'));
+}
+/* ---------- map select ---------- */
+function openArenaMaps(){
+  var card=document.getElementById('cqcCard');if(!card)return;
+  ensureArenaBots();
+  var list=document.getElementById('cqcGrid');
+  if(list&&!list.childElementCount){
+    CQC_MAPS.forEach(function(map){
+      var b=document.createElement('button');
+      b.className='actionBtn';
+      b.innerHTML='<b></b><span></span>';
+      b.querySelector('b').textContent=map.name;
+      b.querySelector('span').textContent=map.blurb;
+      bindBtn(b,function(){startArenaMatch(map.id);});
+      list.appendChild(b);
+    });
+  }
+  card.classList.add('on');
+  if(document.exitPointerLock)document.exitPointerLock();
+}
+function closeArenaMaps(){
+  var card=document.getElementById('cqcCard');if(card)card.classList.remove('on');
+}
+bindBtn('cqcClose',function(){
+  closeArenaMaps();
+  if(!IS_TOUCH&&st.started&&!st.paused&&st.phase!=='hangar')lock();
+});
+/* ===================== hangar kit display =====================
+   The generated flight suit and the five arena weapons, stood up opposite the
+   mission board so the loadout is something you walk past on the way out
+   rather than a list behind a menu.
+
+   The suit is a display stand, not a character. It was generated unrigged and
+   in a T-pose — exactly wrong for a combatant, exactly right for a suit on a
+   mannequin — so every animated role in the game still belongs to the rigged
+   pilot in 34-hangar-characters.js. The note on that entry in the
+   generated-art manifest under source-assets/ is the reason, and is where a
+   change should start if this ever becomes a real character.
+
+   This is a separate part rather than a block in 33-hangar.js because it reads
+   ARENA_ARMS while building, and the arsenal that declares it is assembled
+   after the hangar. Hoisting covers a call made later; it does not cover a
+   value read at load time. */
+(function kitDisplay(){
+  var plinth=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.7,.34,20),
+    new THREE.MeshPhongMaterial({map:aviationHardwareSkin,color:0x59636d,shininess:22}));
+  plinth.position.set(-11,.17,-27);hangarScene.add(plinth);
+  var spot=new THREE.PointLight(0xdfeaff,1.5,26);
+  spot.position.set(-11,7.4,-26);hangarScene.add(spot);
+  afterBoot(function(){loadGeneratedArt('assets/arena-pilot-v1.glb',function(suit){
+    suit.position.set(-11,.34,-27);
+    suit.rotation.y=.5;
+    hangarScene.add(suit);
+  });});
+
+  var rackMat=new THREE.MeshPhongMaterial({map:aviationHardwareSkin,color:0x4e565f,shininess:16});
+  var rack=new THREE.Mesh(new THREE.BoxGeometry(7.4,.28,1.1),rackMat);
+  rack.position.set(-15.5,2.5,-29.4);hangarScene.add(rack);
+  for(var leg=-1;leg<=1;leg+=2){
+    var post=new THREE.Mesh(new THREE.BoxGeometry(.24,2.5,.24),rackMat);
+    post.position.set(-15.5+leg*3.4,1.25,-29.4);hangarScene.add(post);
+  }
+  /* Hung muzzle-up in a row so the silhouettes read against the wall panel
+     instead of overlapping each other end to end. */
+  ARENA_ARMS.forEach(function(arm,i){
+    afterBoot(function(){loadGeneratedArt(arm.asset,function(model){
+      model.position.set(-18.6+i*1.55,3.5,-29.3);
+      model.rotation.set(Math.PI*.5,0,.12);
+      hangarScene.add(model);
+    });});
+  });
+})();
 /* ===================== PHASE 1 — FOUNDATION =====================
    STORY-BIBLE section 23. Everything narrative hangs off four structures kept
    deliberately separate from the flight code: a versioned save, a reputation
