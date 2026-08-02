@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "project": "Airbourne Arena — Ozone Sky Bases v3",
+  "units": "meters",
+  "runtime": {
+    "engine": "Three.js r128",
+    "format": "GLB (EXT_meshopt_compression via scripts/compress-glb.sh)",
+    "up_axis": "Y",
+    "canonical_scene": "Airbourne-Arena/index.html"
+  },
+  "concept_reference": "../concepts/sky-bases-ozone-concept-v1.png",
+  "quality_reference": [
+    "vanguard-interceptor-v4.glb — lofted silhouette + tiled diffusion albedo",
+    "starter-coast-pilot-rig-v1.glb — the character quality bar"
+  ],
+  "gameplay_contract": {
+    "deck_top_local_y": 10,
+    "walkable_extents": {
+      "vanguard": "|x| <= 360, |z| <= 105",
+      "inferno": "|x| <= 360, |z| <= 105",
+      "tempest": "radius <= 300"
+    },
+    "spawn_point_local": [250, 13.2, 0],
+    "superstructure_rule": "command island / citadel / tower mass stays on the -X half; +X launch lane stays clear",
+    "source": "src/game/18a-ozone-bases.js skyDeckAt()/startOpenWorld()"
+  },
+  "authoring_sources": [
+    {
+      "script": "build_ozone_sky_bases_v3.py",
+      "blend_output": "ozone-sky-bases-authored-v3.blend",
+      "render_review": "render_ozone_sky_bases_v3.py",
+      "runtime_outputs": [
+        "vanguard-ozone-base-v3.glb", "vanguard-ozone-base-v3-lod1.glb", "vanguard-ozone-base-v3-collision.glb",
+        "tempest-ozone-base-v3.glb", "tempest-ozone-base-v3-lod1.glb", "tempest-ozone-base-v3-collision.glb",
+        "inferno-ozone-base-v3.glb", "inferno-ozone-base-v3-lod1.glb", "inferno-ozone-base-v3-collision.glb"
+      ],
+      "status": "authored_rendered_reviewed_and_runtime_integrated"
+    }
+  ],
+  "surface_inputs": {
+    "deck": "airbase-deck-diffusion-4k-v1.webp scaled to 2048, embedded as JPEG, tiled every 96 m",
+    "vanguard_hull": "vanguard-surface-diffusion-4k-v1.webp scaled to 1024, tiled every 120 m",
+    "tempest_hull": "tempest-surface-diffusion-4k-v1.webp scaled to 1024, tiled every 120 m",
+    "inferno_hull": "inferno-surface-diffusion-4k-v1.webp scaled to 1024, tiled every 120 m",
+    "mapping": "world-scale cube projection (uv.cube_project at fixed metres-per-tile); imagery never substitutes for closed geometry"
+  },
+  "materials": {
+    "names": ["deck surface", "hull plating", "light armor", "structural frame",
+              "emissive guidance", "recessed glazing", "lift beam"],
+    "runtime_calibration": "calibrateSkyBase() tunes metalness/roughness and emissive intensity only; base colors and textures ship authored",
+    "emissive_strength": "1.0 in Blender so no KHR_materials_emissive_strength is exported (r128 cannot parse it)"
+  },
+  "budgets": {
+    "lod0_triangles_max": 40000,
+    "lod0_bytes_max": 1500000,
+    "lod1_bytes_max": 250000,
+    "measured": {
+      "vanguard": {"triangles": 22158, "lod0_bytes": 1054376, "lod1_bytes": 168500},
+      "tempest": {"lod0_bytes": 1320448, "lod1_bytes": 211156},
+      "inferno": {"lod0_bytes": 1030660, "lod1_bytes": 129348}
+    }
+  },
+  "review_artifacts": [
+    "../previews/ozone-sky-bases-v3-vanguard-aerial.png",
+    "../previews/ozone-sky-bases-v3-vanguard-spawn.png",
+    "../previews/ozone-sky-bases-v3-vanguard-under.png",
+    "../previews/ozone-sky-bases-v3-tempest-aerial.png",
+    "../previews/ozone-sky-bases-v3-tempest-spawn.png",
+    "../previews/ozone-sky-bases-v3-tempest-under.png",
+    "../previews/ozone-sky-bases-v3-inferno-aerial.png",
+    "../previews/ozone-sky-bases-v3-inferno-spawn.png",
+    "../previews/ozone-sky-bases-v3-inferno-under.png"
+  ]
+}
