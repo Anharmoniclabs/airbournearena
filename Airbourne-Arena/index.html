@@ -2186,8 +2186,10 @@ function aaFire(s,tgt){
   var sp=0.030;
   aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
   if(s.turret)s.turret.rotation.y=Math.atan2(aim.x,aim.z);
-  bullets.push({p:s.pos.clone().addScaledVector(aim,24).setY(s.pos.y+22),
-    v:aim.clone().multiplyScalar(AA_MUZZLE),life:2.2,team:s.team,owner:s,dmg:AA_DMG});
+  var b=bulletSpawn();
+  b.p.copy(s.pos).addScaledVector(aim,24).setY(s.pos.y+22);
+  b.v.copy(aim).multiplyScalar(AA_MUZZLE);
+  b.life=2.2;b.team=s.team;b.owner=s;b.dmg=AA_DMG;
   gunSfx(earGain(s.pos)*0.5);
 }
 function stepStructs(dt){
@@ -2330,9 +2332,10 @@ function stepDrones(dt){
           dist/MUZZLE).sub(dr.pos).normalize();
         var sp=.026;
         aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
-        bullets.push({p:dr.pos.clone().addScaledVector(aim,7),
-          v:aim.clone().multiplyScalar(MUZZLE*.82),life:1.7,
-          team:'blackwing',owner:dr,dmg:DRONE_DMG});
+        var b=bulletSpawn();
+        b.p.copy(dr.pos).addScaledVector(aim,7);
+        b.v.copy(aim).multiplyScalar(MUZZLE*.82);
+        b.life=1.7;b.team='blackwing';b.owner=dr;b.dmg=DRONE_DMG;
         gunSfx(earGain(dr.pos)*.42);
       }
     }
@@ -2933,20 +2936,26 @@ var skyBaseHosts={};
 var worldFlow={active:false,zone:'surface',faction:null,base:null,activity:'salvage',transition:null};
 var worldFlowPrev=new THREE.Vector3(),worldFlowDir=new THREE.Vector3();
 var SKYBASE_ASSETS={
-  vanguard:['assets/vanguard-ozone-base-v1.glb','assets/vanguard-ozone-base-v1-lod1.glb'],
-  tempest:['assets/tempest-ozone-base-v1.glb','assets/tempest-ozone-base-v1-lod1.glb'],
-  inferno:['assets/inferno-ozone-base-v1.glb','assets/inferno-ozone-base-v1-lod1.glb']
+  vanguard:['assets/vanguard-ozone-base-v3.glb','assets/vanguard-ozone-base-v3-lod1.glb'],
+  tempest:['assets/tempest-ozone-base-v3.glb','assets/tempest-ozone-base-v3-lod1.glb'],
+  inferno:['assets/inferno-ozone-base-v3.glb','assets/inferno-ozone-base-v3-lod1.glb']
 };
 function calibrateSkyBase(root,faction){
-  var shell={vanguard:0x243b4a,tempest:0x174642,inferno:0x202126}[faction],
-      accent={vanguard:0x159bd1,tempest:0x10a998,inferno:0xd64a1d}[faction];
+  /* The v3 bases carry their own tiled diffusion surfaces, so calibration
+     only tunes light response and emissive energy — repainting base colors
+     here would tint the authored textures into mud. */
   root.traverse(function(o){
     if(!o.isMesh||!o.material)return;o.material=o.material.clone();
     var name=(o.material.name||'').toLowerCase();
-    if(name.indexOf('aerospace shell')>=0){o.material.color.setHex(shell);o.material.roughness=.48;}
-    else if(name.indexOf('structural frame')>=0){o.material.color.setHex(0x080d12);o.material.roughness=.34;}
-    else if(name.indexOf('emissive guidance')>=0){o.material.color.setHex(accent);o.material.emissive.setHex(accent);o.material.emissiveIntensity=1.35;}
-    else if(name.indexOf('recessed glazing')>=0){o.material.color.setHex(0x071923);o.material.emissive.setHex(0x062330);o.material.emissiveIntensity=.5;}
+    if(name.indexOf('hull plating')>=0||name.indexOf('deck surface')>=0){
+      /* no environment map in the scene: high metalness reads as soot */
+      o.material.metalness=Math.min(o.material.metalness,.38);o.material.roughness=.6;
+    }else if(name.indexOf('structural frame')>=0){o.material.metalness=.55;o.material.roughness=.4;}
+    else if(name.indexOf('emissive guidance')>=0){o.material.emissiveIntensity=1.5;}
+    else if(name.indexOf('lift beam')>=0){
+      o.material.emissiveIntensity=2.2;o.material.transparent=true;o.material.opacity=.82;
+      o.material.blending=THREE.AdditiveBlending;o.material.depthWrite=false;
+    }else if(name.indexOf('recessed glazing')>=0){o.material.emissiveIntensity=1.1;}
     o.material.needsUpdate=true;
   });
 }
@@ -3799,12 +3808,30 @@ var MUZZLE=780,BULLET_DMG=14,HIT_RADIUS=14;
 var ASSIST_CONE=.9903,ASSIST_PULL=.38,GUIDE_FIRE_CONE=.9703;
 var GUIDE_TIME=.62,GUIDE_TURN=1.35,GUIDE_TRACK_CONE=.9455;
 
+/* Every gun in the game — fighters, masts, drones, raiders — used to build a
+   fresh bullet object and two fresh vectors per round, over a hundred small
+   allocations a second in a full furball, all of it garbage half a life later.
+   Rounds are interchangeable, so spent ones go on a shelf and come back with
+   their vectors intact. The caller fills in every field it cares about;
+   spawn only clears the two a caller is allowed to skip. */
+var bulletPool=[];
+function bulletSpawn(){
+  var b=bulletPool.pop()||{p:new THREE.Vector3(),v:new THREE.Vector3()};
+  b.guide=null;b.guideT=0;
+  bullets.push(b);
+  return b;
+}
+/* owner and guide are dropped on release so a shelved round cannot pin a dead
+   drone or convoy ship in memory for the rest of the session */
+function bulletFree(b){b.owner=null;b.guide=null;bulletPool.push(b);}
+
+var _fireF=new THREE.Vector3(),_fireD=new THREE.Vector3();
 function fire(f){
   if(f.cannonCd>0||!f.alive)return;
   f.cannonCd=.085/(f.gunRate||1);
-  var fwd=new THREE.Vector3(0,0,-1).applyQuaternion(f.quat);
+  var fwd=_fireF.set(0,0,-1).applyQuaternion(f.quat);
   var spread=(f.isPlayer?.0032:f.spread)*(f.gunSpread||1);
-  var d=fwd.clone(),guide=null;
+  var d=_fireD.copy(fwd),guide=null;
   var assist=f.isPlayer&&lockOn.target&&targetAlive(lockOn.target)&&
     (lockOn.assisted||lockOn.manual);
   if(assist){
@@ -3816,20 +3843,33 @@ function fire(f){
   }
   d.x+=rnd(-spread,spread);d.y+=rnd(-spread,spread);d.z+=rnd(-spread,spread);
   d.normalize();
-  bullets.push({p:f.pos.clone().addScaledVector(fwd,6.4),
-    v:d.multiplyScalar(MUZZLE).add(f.vel),   /* rounds carry the aircraft's velocity */
-    life:1.6,team:f.team,owner:f,dmg:BULLET_DMG*(f.gunDmg||1),
-    guide:guide,guideT:guide?GUIDE_TIME:0});
+  var b=bulletSpawn();
+  b.p.copy(f.pos).addScaledVector(fwd,6.4);
+  b.v.copy(d).multiplyScalar(MUZZLE).add(f.vel);   /* rounds carry the aircraft's velocity */
+  b.life=1.6;b.team=f.team;b.owner=f;b.dmg=BULLET_DMG*(f.gunDmg||1);
+  b.guide=guide;b.guideT=guide?GUIDE_TIME:0;
   gunSfx(f.isPlayer?1:earGain(f.pos)*.75);
   if(f.isPlayer){shake=Math.min(0.5,shake+0.05);sortie.shots++;}
 }
 
 /* ===================== fx ===================== */
-var fxTex=explosionVfxSkin,fx=[],shake=0;
+/* Explosion sprites are pooled. Every impact used to build a Sprite plus a
+   SpriteMaterial and dispose both .85s later — hundreds a minute in a busy
+   sortie, and all of it churn for sprites that are interchangeable. A spent
+   sprite goes invisible on the shelf instead; the pool's high-water mark is
+   the largest number of blasts ever on screen at once, which gameplay keeps
+   small. The shared explosion skin now belongs to the pool, not to any one
+   blast, so nothing here ever disposes it. */
+var fxTex=explosionVfxSkin,fx=[],fxPool=[],shake=0;
 function boom(pos,scale){
-  var s=new THREE.Sprite(new THREE.SpriteMaterial({map:fxTex,transparent:true,depthWrite:false,
-    fog:false,blending:THREE.AdditiveBlending}));
-  s.position.copy(pos); s.scale.set(20,20,1); scene.add(s);
+  var s=fxPool.pop();
+  if(!s){
+    s=new THREE.Sprite(new THREE.SpriteMaterial({map:fxTex,transparent:true,depthWrite:false,
+      fog:false,blending:THREE.AdditiveBlending}));
+    scene.add(s);
+  }
+  s.visible=true; s.material.opacity=1;
+  s.position.copy(pos); s.scale.set(20,20,1);
   fx.push({s:s,t:0,life:.85,scale:scale||90});
   bangSfx(earGain(pos)*Math.min(1.1,(scale||90)/200));
 }
@@ -3838,10 +3878,7 @@ function stepFx(dt){
     var e=fx[i]; e.t+=dt; var k=e.t/e.life;
     var sz=20+e.scale*k; e.s.scale.set(sz,sz,1);
     e.s.material.opacity=Math.max(0,1-k);
-    /* one SpriteMaterial per explosion, and a busy sortie makes hundreds.
-       Removing the sprite from the scene never freed the material — the map is
-       the shared explosion skin and stays. */
-    if(k>=1){scene.remove(e.s);e.s.material.dispose();fx.splice(i,1);}
+    if(k>=1){e.s.visible=false;fxPool.push(e.s);fx.splice(i,1);}
   }
   shake=Math.max(0,shake-dt*2.2);
 }
@@ -4814,14 +4851,16 @@ function resetMatch(){
   st.dmgFlash=0; st.hitmark=0; shake=0; st.ringWarned=false;
   lockOn.target=null;lockOn.manual=false;lockOn.assisted=false;
   lockOn.hover=null;lockOn.hoverT=0;lockOn.grace=0;
-  bullets.length=0;
+  while(bullets.length)bulletFree(bullets.pop());
   for(var s=0;s<structs.length;s++){
     var sc=structs[s];
     sc.alive=true; sc.hp=sc.maxHp; sc.respawnT=0; sc.cd=0; sc.mesh.visible=true;
   }
   clearDrones();
   stepGoalRings(0);
-  for(var i=fx.length-1;i>=0;i--){scene.remove(fx[i].s);fx[i].s.material.dispose();}
+  /* explosion sprites are pooled now — a rematch shelves them, it does not
+     dispose them; see the fx pool in 22-bullets.js */
+  for(var i=fx.length-1;i>=0;i--){fx[i].s.visible=false;fxPool.push(fx[i].s);}
   fx.length=0;
   for(var a=dmgArcs.length-1;a>=0;a--)dmgDirEl.removeChild(dmgArcs[a].node);
   dmgArcs.length=0;
@@ -6890,8 +6929,10 @@ function stepConvoy(dt){
         var aim=_drV2.copy(player.pos).sub(c.pos).normalize();
         var sp=.03;
         aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
-        bullets.push({p:c.pos.clone().addScaledVector(aim,9),v:aim.clone().multiplyScalar(MUZZLE*.8),
-          life:1.7,team:'blackwing',owner:c,dmg:7});
+        var b=bulletSpawn();
+        b.p.copy(c.pos).addScaledVector(aim,9);
+        b.v.copy(aim).multiplyScalar(MUZZLE*.8);
+        b.life=1.7;b.team='blackwing';b.owner=c;b.dmg=7;
         gunSfx(earGain(c.pos)*.4);
       }
     }
@@ -7004,8 +7045,10 @@ function stepSites(dt){
       aim.y+=10; aim.normalize();
       var sp=.028;
       aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
-      bullets.push({p:s.pos.clone().addScaledVector(aim,30).setY(s.pos.y+s.height*.6),
-        v:aim.clone().multiplyScalar(AA_MUZZLE),life:2.2,team:'blackwing',owner:s,dmg:AA_DMG});
+      var b=bulletSpawn();
+      b.p.copy(s.pos).addScaledVector(aim,30).setY(s.pos.y+s.height*.6);
+      b.v.copy(aim).multiplyScalar(AA_MUZZLE);
+      b.life=2.2;b.team='blackwing';b.owner=s;b.dmg=AA_DMG;
       gunSfx(earGain(s.pos)*.5);
     }
   }
@@ -8690,6 +8733,10 @@ requestAnimationFrame(function loop(now){
   renderFrame(scene,camera);
 });
 
+/* env() and stepBullets() run every frame; anything they need is hoisted here
+   so the steady state allocates nothing for the garbage collector to chase. */
+var seaTint=new THREE.Color(0x14405f),rainStreak=new THREE.Vector3(),_boomV=new THREE.Vector3();
+
 function env(dt){
   st.hours=(st.hours+dt*st.timeSpeed*24/300)%24;
   /* Two very slow UV drifts keep the generated water alive without replacing
@@ -8743,7 +8790,7 @@ function env(dt){
   }
   stars.material.opacity=(1-dayF)*(1-wx.cover*.85);
   moon.material.opacity=(1-dayF)*.9*(1-wx.cover*.8);
-  sea.material.color.copy(cBot).multiplyScalar(.42).lerp(new THREE.Color(0x14405f),.55);
+  sea.material.color.copy(cBot).multiplyScalar(.42).lerp(seaTint,.55);
 
   st.flash=Math.max(0,st.flash-dt*4.5);
   if(wxKey==='storm'&&Math.random()<dt*.55)st.flash=cfg.motion?.22:.9;
@@ -8773,7 +8820,7 @@ function env(dt){
   if(wx.rain>.02){
     rain.visible=true;
     var fallY=-(220+wx.rain*160)*dt;
-    var streak=new THREE.Vector3(-windVec.x*.16,9+wx.rain*7,-windVec.z*.16);
+    var streak=rainStreak.set(-windVec.x*.16,9+wx.rain*7,-windVec.z*.16);
     for(var r2=0;r2<RAIN_N;r2++){
       var p=rainPt[r2]; p.y+=fallY; p.x+=windVec.x*dt*.35; p.z+=windVec.z*dt*.35;
       if(p.y<-90){p.y=140;p.x=rnd(-130,130);p.z=rnd(-130,130);}
@@ -9051,7 +9098,7 @@ function stepBullets(dt){
             else netClaimHit(f,b.dmg||BULLET_DMG,b.owner);
           }
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
-          boom(new THREE.Vector3(cx,cy,cz),18); dead=true; break;
+          boom(_boomV.set(cx,cy,cz),18); dead=true; break;
         }
       }
     }
@@ -9121,7 +9168,7 @@ function stepBullets(dt){
         }
       }
     }
-    if(dead)bullets.splice(i,1);
+    if(dead){bulletFree(b);bullets.splice(i,1);}
   }
   for(var k=0;k<B_MAX;k++){
     var o=k*6;

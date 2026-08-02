@@ -94,8 +94,10 @@ function stepSites(dt){
       aim.y+=10; aim.normalize();
       var sp=.028;
       aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
-      bullets.push({p:s.pos.clone().addScaledVector(aim,30).setY(s.pos.y+s.height*.6),
-        v:aim.clone().multiplyScalar(AA_MUZZLE),life:2.2,team:'blackwing',owner:s,dmg:AA_DMG});
+      var b=bulletSpawn();
+      b.p.copy(s.pos).addScaledVector(aim,30).setY(s.pos.y+s.height*.6);
+      b.v.copy(aim).multiplyScalar(AA_MUZZLE);
+      b.life=2.2;b.team='blackwing';b.owner=s;b.dmg=AA_DMG;
       gunSfx(earGain(s.pos)*.5);
     }
   }

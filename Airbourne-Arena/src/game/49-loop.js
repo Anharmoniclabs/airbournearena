@@ -23,6 +23,10 @@ requestAnimationFrame(function loop(now){
   renderFrame(scene,camera);
 });
 
+/* env() and stepBullets() run every frame; anything they need is hoisted here
+   so the steady state allocates nothing for the garbage collector to chase. */
+var seaTint=new THREE.Color(0x14405f),rainStreak=new THREE.Vector3(),_boomV=new THREE.Vector3();
+
 function env(dt){
   st.hours=(st.hours+dt*st.timeSpeed*24/300)%24;
   /* Two very slow UV drifts keep the generated water alive without replacing
@@ -76,7 +80,7 @@ function env(dt){
   }
   stars.material.opacity=(1-dayF)*(1-wx.cover*.85);
   moon.material.opacity=(1-dayF)*.9*(1-wx.cover*.8);
-  sea.material.color.copy(cBot).multiplyScalar(.42).lerp(new THREE.Color(0x14405f),.55);
+  sea.material.color.copy(cBot).multiplyScalar(.42).lerp(seaTint,.55);
 
   st.flash=Math.max(0,st.flash-dt*4.5);
   if(wxKey==='storm'&&Math.random()<dt*.55)st.flash=cfg.motion?.22:.9;
@@ -106,7 +110,7 @@ function env(dt){
   if(wx.rain>.02){
     rain.visible=true;
     var fallY=-(220+wx.rain*160)*dt;
-    var streak=new THREE.Vector3(-windVec.x*.16,9+wx.rain*7,-windVec.z*.16);
+    var streak=rainStreak.set(-windVec.x*.16,9+wx.rain*7,-windVec.z*.16);
     for(var r2=0;r2<RAIN_N;r2++){
       var p=rainPt[r2]; p.y+=fallY; p.x+=windVec.x*dt*.35; p.z+=windVec.z*dt*.35;
       if(p.y<-90){p.y=140;p.x=rnd(-130,130);p.z=rnd(-130,130);}
@@ -384,7 +388,7 @@ function stepBullets(dt){
             else netClaimHit(f,b.dmg||BULLET_DMG,b.owner);
           }
           if(b.owner===player){st.hitmark=.12;sortie.hits++;tone(1500,.05,.12,'square');}
-          boom(new THREE.Vector3(cx,cy,cz),18); dead=true; break;
+          boom(_boomV.set(cx,cy,cz),18); dead=true; break;
         }
       }
     }
@@ -454,7 +458,7 @@ function stepBullets(dt){
         }
       }
     }
-    if(dead)bullets.splice(i,1);
+    if(dead){bulletFree(b);bullets.splice(i,1);}
   }
   for(var k=0;k<B_MAX;k++){
     var o=k*6;

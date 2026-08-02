@@ -162,8 +162,10 @@ function stepConvoy(dt){
         var aim=_drV2.copy(player.pos).sub(c.pos).normalize();
         var sp=.03;
         aim.set(aim.x+rnd(-sp,sp),aim.y+rnd(-sp,sp),aim.z+rnd(-sp,sp)).normalize();
-        bullets.push({p:c.pos.clone().addScaledVector(aim,9),v:aim.clone().multiplyScalar(MUZZLE*.8),
-          life:1.7,team:'blackwing',owner:c,dmg:7});
+        var b=bulletSpawn();
+        b.p.copy(c.pos).addScaledVector(aim,9);
+        b.v.copy(aim).multiplyScalar(MUZZLE*.8);
+        b.life=1.7;b.team='blackwing';b.owner=c;b.dmg=7;
         gunSfx(earGain(c.pos)*.4);
       }
     }
